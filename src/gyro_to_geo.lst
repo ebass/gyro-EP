@@ -1,0 +1,142 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_to_geo.f90
+Compiled : 01/19/21  15:35:54
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_to_geo.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_TO_GEO
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_to_geo.f90
+Date     : 01/19/2021  15:35:54
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------
+    2.    ! gyro_to_geo.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Pack array and call GEO geometry package.
+    6.    !-----------------------------------------------------
+    7.    
+    8.    subroutine gyro_to_geo(i0)
+    9.    
+   10.      use gyro_globals
+   11.      use GEO_interface
+   12.    
+   13.      !--------------------------------
+   14.      implicit none
+   15.      !
+   16.      integer, intent(in) :: i0
+   17.      !--------------------------------
+   18.    
+   19.      GEO_signb_in   = 1.0
+   20.      GEO_rmin_in    = r_s(i0)
+   21.      GEO_rmaj_in    = rmaj_s(i0)
+   22.      GEO_drmaj_in   = drmaj_s(i0)
+   23.      GEO_zmag_in    = zmag_s(i0)
+   24.      GEO_dzmag_in   = dzmag_s(i0)
+   25.      GEO_q_in       = q_s(i0)
+   26.      GEO_s_in       = shat_s(i0)
+   27.      GEO_kappa_in   = kappa_s(i0)
+   28.      GEO_s_kappa_in = s_kappa_s(i0)
+   29.      GEO_delta_in   = delta_s(i0)
+   30.      GEO_s_delta_in = s_delta_s(i0)
+   31.      GEO_zeta_in    = zeta_s(i0)
+   32.      GEO_s_zeta_in  = s_zeta_s(i0)
+   33.      GEO_beta_star_in = beta_star_s(i0)
+   34.    
+   35.      GEO_fourier_in(:,:) = a_fourier_geo_s(:,0:n_fourier_geo,i0)
+ftn-6262 ftn: VECTOR GYRO_TO_GEO, File = gyro_to_geo.f90, Line = 35 
+  A loop starting at line 35 was not vectorized because it contains a call to a subroutine or function on line 35.
+
+   36.    
+   37.      call GEO_do()
+   38.    
+   39.    end subroutine gyro_to_geo
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GEO_DO
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_TO_GEO (Line 37, file gyro_to_geo.f90)
+
+Name  Messages
+----  --------
+GEO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_TO_GEO
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_TO_GEO
+
+Name  Messages
+----  --------
+GYRO_TO_GEO
+      Defined as:  Subroutine (line 8, file gyro_to_geo.f90)
+
+      Interface:   None
+
+      Calls:       GEO_DO (Line 37, file gyro_to_geo.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GEO_INTERFACE
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

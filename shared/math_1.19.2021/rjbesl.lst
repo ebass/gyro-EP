@@ -1,0 +1,692 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/rjbesl.f
+Compiled : 01/19/21  14:38:39
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -eD -Ktrap=fp -m1 -Rbcdps
+           -c rjbesl.f
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : RJBESL
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/rjbesl.f
+Date     : 01/19/2021  14:38:39
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.          SUBROUTINE RJBESL(X, ALPHA, NB, B, NCALC)
+    2.    C---------------------------------------------------------------------
+    3.    C This routine calculates Bessel functions J sub(N+ALPHA) (X)
+    4.    C   for non-negative argument X, and non-negative order N+ALPHA.
+    5.    C
+    6.    C
+    7.    C  Explanation of variables in the calling sequence.
+    8.    C
+    9.    C   X     - working precision non-negative real argument for which
+   10.    C           J's are to be calculated.
+   11.    C   ALPHA - working precision fractional part of order for which
+   12.    C           J's or exponentially scaled J'r (J*exp(X)) are
+   13.    C           to be calculated.  0 <= ALPHA < 1.0.
+   14.    C   NB  - integer number of functions to be calculated, NB > 0.
+   15.    C           The first function calculated is of order ALPHA, and the
+   16.    C           last is of order (NB - 1 + ALPHA).
+   17.    C   B  - working precision output vector of length NB.  If RJBESL
+   18.    C           terminates normally (NCALC=NB), the vector B contains the
+   19.    C           functions J/ALPHA/(X) through J/NB-1+ALPHA/(X), or the
+   20.    C           corresponding exponentially scaled functions.
+   21.    C   NCALC - integer output variable indicating possible errors.
+   22.    C           Before using the vector B, the user should check that
+   23.    C           NCALC=NB, i.e., all orders have been calculated to
+   24.    C           the desired accuracy.  See Error Returns below.
+   25.    C
+   26.    C
+   27.    C*******************************************************************
+   28.    C*******************************************************************
+   29.    C
+   30.    C  Explanation of machine-dependent constants
+   31.    C
+   32.    C   it     = Number of bits in the mantissa of a working precision
+   33.    C            variable
+   34.    C   NSIG   = Decimal significance desired.  Should be set to
+   35.    C            INT(LOG10(2)*it+1).  Setting NSIG lower will result
+   36.    C            in decreased accuracy while setting NSIG higher will
+   37.    C            increase CPU time without increasing accuracy.  The
+   38.    C            truncation error is limited to a relative error of
+   39.    C            T=.5*10**(-NSIG).
+   40.    C   ENTEN  = 10.0 ** K, where K is the largest integer such that
+   41.    C            ENTEN is machine-representable in working precision
+   42.    C   ENSIG  = 10.0 ** NSIG
+   43.    C   RTNSIG = 10.0 ** (-K) for the smallest integer K such that
+   44.    C            K .GE. NSIG/4
+   45.    C   ENMTEN = Smallest ABS(X) such that X/4 does not underflow
+   46.    C   XLARGE = Upper limit on the magnitude of X.  If ABS(X)=N,
+   47.    C            then at least N iterations of the backward recursion
+   48.    C            will be executed.  The value of 10.0 ** 4 is used on
+   49.    C            every machine.
+   50.    C
+   51.    C
+   52.    C     Approximate values for some important machines are:
+   53.    C
+   54.    C
+   55.    C                            it    NSIG    ENTEN       ENSIG
+   56.    C
+   57.    C   CRAY-1        (S.P.)     48     15    1.0E+2465   1.0E+15
+   58.    C   Cyber 180/855
+   59.    C     under NOS   (S.P.)     48     15    1.0E+322    1.0E+15
+   60.    C   IEEE (IBM/XT,
+   61.    C     SUN, etc.)  (S.P.)     24      8    1.0E+38     1.0E+8
+   62.    C   IEEE (IBM/XT,
+   63.    C     SUN, etc.)  (D.P.)     53     16    1.0D+308    1.0D+16
+   64.    C   IBM 3033      (D.P.)     14      5    1.0D+75     1.0D+5
+   65.    C   VAX           (S.P.)     24      8    1.0E+38     1.0E+8
+   66.    C   VAX D-Format  (D.P.)     56     17    1.0D+38     1.0D+17
+   67.    C   VAX G-Format  (D.P.)     53     16    1.0D+307    1.0D+16
+   68.    C
+   69.    C
+   70.    C                           RTNSIG      ENMTEN      XLARGE
+   71.    C
+   72.    C   CRAY-1        (S.P.)    1.0E-4    1.84E-2466   1.0E+4
+   73.    C   Cyber 180/855
+   74.    C     under NOS   (S.P.)    1.0E-4    1.25E-293    1.0E+4
+   75.    C   IEEE (IBM/XT,
+   76.    C     SUN, etc.)  (S.P.)    1.0E-2    4.70E-38     1.0E+4
+   77.    C   IEEE (IBM/XT,
+   78.    C     SUN, etc.)  (D.P.)    1.0E-4    8.90D-308    1.0D+4
+   79.    C   IBM 3033      (D.P.)    1.0E-2    2.16D-78     1.0D+4
+   80.    C   VAX           (S.P.)    1.0E-2    1.17E-38     1.0E+4
+   81.    C   VAX D-Format  (D.P.)    1.0E-5    1.17D-38     1.0D+4
+   82.    C   VAX G-Format  (D.P.)    1.0E-4    2.22D-308    1.0D+4
+   83.    C
+   84.    C*******************************************************************
+   85.    C*******************************************************************
+   86.    C
+   87.    C  Error returns
+   88.    C
+   89.    C    In case of an error,  NCALC .NE. NB, and not all J's are
+   90.    C    calculated to the desired accuracy.
+   91.    C
+   92.    C    NCALC .LT. 0:  An argument is out of range. For example,
+   93.    C       NBES .LE. 0, ALPHA .LT. 0 or .GT. 1, or X is too large.
+   94.    C       In this case, B(1) is set to zero, the remainder of the
+   95.    C       B-vector is not calculated, and NCALC is set to
+   96.    C       MIN(NB,0)-1 so that NCALC .NE. NB.
+   97.    C
+   98.    C    NB .GT. NCALC .GT. 0: Not all requested function values could
+   99.    C       be calculated accurately.  This usually occurs because NB is
+  100.    C       much larger than ABS(X).  In this case, B(N) is calculated
+  101.    C       to the desired accuracy for N .LE. NCALC, but precision
+  102.    C       is lost for NCALC .LT. N .LE. NB.  If B(N) does not vanish
+  103.    C       for N .GT. NCALC (because it is too small to be represented),
+  104.    C       and B(N)/B(NCALC) = 10**(-K), then only the first NSIG-K
+  105.    C       significant figures of B(N) can be trusted.
+  106.    C
+  107.    C
+  108.    C  Intrinsic and other functions required are:
+  109.    C
+  110.    C     ABS, AINT, COS, DBLE, GAMMA (or DGAMMA), INT, MAX, MIN,
+  111.    C
+  112.    C     REAL, SIN, SQRT
+  113.    C
+  114.    C
+  115.    C  Acknowledgement
+  116.    C
+  117.    C   This program is based on a program written by David J. Sookne
+  118.    C   (2) that computes values of the Bessel functions J or I of real
+  119.    C   argument and integer order.  Modifications include the restriction
+  120.    C   of the computation to the J Bessel function of non-negative real
+  121.    C   argument, the extension of the computation to arbitrary positive
+  122.    C   order, and the elimination of most underflow.
+  123.    C
+  124.    C  References: "A Note on Backward Recurrence Algorithms," Olver,
+  125.    C               F. W. J., and Sookne, D. J., Math. Comp. 26, 1972,
+  126.    C               pp 941-947.
+  127.    C
+  128.    C              "Bessel Functions of Real Argument and Integer Order,"
+  129.    C               Sookne, D. J., NBS Jour. of Res. B. 77B, 1973, pp
+  130.    C               125-132.
+  131.    C
+  132.    C  Latest modification: March 19, 1990
+  133.    C
+  134.    C  Author: W. J. Cody
+  135.    C          Applied Mathematics Division
+  136.    C          Argonne National Laboratory
+  137.    C          Argonne, IL  60439
+  138.    C
+  139.    C---------------------------------------------------------------------
+  140.          implicit none
+  141.    
+  142.          INTEGER I,J,K,L,M,MAGX,N,NB,NBMX,NCALC,NEND,NSTART
+  143.    CS    REAL               GAMMA,
+  144.          DOUBLE PRECISION  DGAMMA,
+  145.         1 ALPHA,ALPEM,ALP2EM,B,CAPP,CAPQ,CONV,EIGHTH,EM,EN,ENMTEN,ENSIG,
+  146.         2 ENTEN,FACT,FOUR,FUNC,GNU,HALF,HALFX,ONE,ONE30,P,PI2,PLAST,
+  147.         3 POLD,PSAVE,PSAVEL,RTNSIG,S,SUM,T,T1,TEMPA,TEMPB,TEMPC,TEST,
+  148.         4 THREE,THREE5,TOVER,TWO,TWOFIV,TWOPI1,TWOPI2,X,XC,XIN,XK,XLARGE,
+  149.         5 XM,VCOS,VSIN,Z,ZERO
+  150.          DIMENSION B(NB), FACT(25)
+  151.    C---------------------------------------------------------------------
+  152.    C  Mathematical constants
+  153.    C
+  154.    C   PI2    - 2 / PI
+  155.    C   TWOPI1 - first few significant digits of 2 * PI
+  156.    C   TWOPI2 - (2*PI - TWOPI) to working precision, i.e.,
+  157.    C            TWOPI1 + TWOPI2 = 2 * PI to extra precision.
+  158.    C---------------------------------------------------------------------
+  159.    CS    DATA PI2, TWOPI1, TWOPI2 /0.636619772367581343075535E0,6.28125E0,
+  160.    CS   1 1.935307179586476925286767E-3/
+  161.    CS    DATA ZERO, EIGHTH, HALF, ONE /0.0E0,0.125E0,0.5E0,1.0E0/
+  162.    CS    DATA TWO, THREE, FOUR, TWOFIV /2.0E0,3.0E0,4.0E0,25.0E0/
+  163.    CS    DATA ONE30, THREE5 /130.0E0,35.0E0/
+  164.          DATA PI2, TWOPI1, TWOPI2 /0.636619772367581343075535D0,6.28125D0,
+  165.         1 1.935307179586476925286767D-3/
+  166.          DATA ZERO, EIGHTH, HALF, ONE /0.0D0,0.125D0,0.5D0,1.0D0/
+  167.          DATA TWO, THREE, FOUR, TWOFIV /2.0D0,3.0D0,4.0D0,25.0D0/
+  168.          DATA ONE30, THREE5 /130.0D0,35.0D0/
+  169.    C---------------------------------------------------------------------
+  170.    C  Machine-dependent parameters
+  171.    C---------------------------------------------------------------------
+  172.    CS    DATA ENTEN, ENSIG, RTNSIG /1.0E38,1.0E8,1.0E-2/
+  173.    CS    DATA ENMTEN, XLARGE /1.2E-37,1.0E4/
+  174.          DATA ENTEN, ENSIG, RTNSIG /1.0D38,1.0D17,1.0D-4/
+  175.          DATA ENMTEN, XLARGE /1.2D-37,1.0D4/
+  176.    C---------------------------------------------------------------------
+  177.    C     Factorial(N)
+  178.    C---------------------------------------------------------------------
+  179.    CS    DATA FACT /1.0E0,1.0E0,2.0E0,6.0E0,24.0E0,1.2E2,7.2E2,5.04E3,
+  180.    CS   1 4.032E4,3.6288E5,3.6288E6,3.99168E7,4.790016E8,6.2270208E9,
+  181.    CS   2 8.71782912E10,1.307674368E12,2.0922789888E13,3.55687428096E14,
+  182.    CS   3 6.402373705728E15,1.21645100408832E17,2.43290200817664E18,
+  183.    CS   4 5.109094217170944E19,1.12400072777760768E21,
+  184.    CS   5 2.585201673888497664E22,6.2044840173323943936E23/
+  185.          DATA FACT /1.0D0,1.0D0,2.0D0,6.0D0,24.0D0,1.2D2,7.2D2,5.04D3,
+  186.         1 4.032D4,3.6288D5,3.6288D6,3.99168D7,4.790016D8,6.2270208D9,
+  187.         2 8.71782912D10,1.307674368D12,2.0922789888D13,3.55687428096D14,
+  188.         3 6.402373705728D15,1.21645100408832D17,2.43290200817664D18,
+  189.         4 5.109094217170944D19,1.12400072777760768D21,
+  190.         5 2.585201673888497664D22,6.2044840173323943936D23/
+  191.    C---------------------------------------------------------------------
+  192.    C Statement functions for conversion and the gamma function.
+  193.    C---------------------------------------------------------------------
+  194.    CS    CONV(I) = REAL(I)
+  195.    CS    FUNC(X) = GAMMA(X)
+  196.          CONV(I) = DBLE(I)
+  197.          FUNC(X) = DGAMMA(X)
+  198.    C---------------------------------------------------------------------
+  199.    C Check for out of range arguments.
+  200.    C---------------------------------------------------------------------
+  201.          MAGX = INT(X)
+  202.          IF ((NB.GT.0) .AND. (X.GE.ZERO) .AND. (X.LE.XLARGE) 
+  203.         1       .AND. (ALPHA.GE.ZERO) .AND. (ALPHA.LT.ONE))  
+  204.         2   THEN
+  205.    C---------------------------------------------------------------------
+  206.    C Initialize result array to zero.
+  207.    C---------------------------------------------------------------------
+  208.                NCALC = NB
+  209.                DO 20 I=1,NB
+  210.                  B(I) = ZERO
+  211.       20       CONTINUE
+  212.    C---------------------------------------------------------------------
+  213.    C Branch to use 2-term ascending series for small X and asymptotic
+  214.    C form for large X when NB is not too large.
+  215.    C---------------------------------------------------------------------
+  216.                IF (X.LT.RTNSIG) THEN
+  217.    C---------------------------------------------------------------------
+  218.    C Two-term ascending series for small X.
+  219.    C---------------------------------------------------------------------
+  220.                   TEMPA = ONE
+  221.                   ALPEM = ONE + ALPHA
+  222.                   HALFX = ZERO
+  223.                   IF (X.GT.ENMTEN) HALFX = HALF*X
+  224.                   IF (ALPHA.NE.ZERO)
+  225.         1            TEMPA = HALFX**ALPHA/(ALPHA*FUNC(ALPHA))
+  226.                   TEMPB = ZERO
+  227.                   IF ((X+ONE).GT.ONE) TEMPB = -HALFX*HALFX
+  228.                   B(1) = TEMPA + TEMPA*TEMPB/ALPEM
+  229.                   IF ((X.NE.ZERO) .AND. (B(1).EQ.ZERO)) NCALC = 0
+  230.                   IF (NB .NE. 1) THEN
+  231.                      IF (X .LE. ZERO) THEN
+  232.                            DO 30 N=2,NB
+  233.                              B(N) = ZERO
+  234.       30                   CONTINUE
+  235.                         ELSE
+  236.    C---------------------------------------------------------------------
+  237.    C Calculate higher order functions.
+  238.    C---------------------------------------------------------------------
+  239.                            TEMPC = HALFX
+  240.                            TOVER = (ENMTEN+ENMTEN)/X
+  241.                            IF (TEMPB.NE.ZERO) TOVER = ENMTEN/TEMPB
+  242.                            DO 50 N=2,NB
+  243.                              TEMPA = TEMPA/ALPEM
+  244.                              ALPEM = ALPEM + ONE
+  245.                              TEMPA = TEMPA*TEMPC
+  246.                              IF (TEMPA.LE.TOVER*ALPEM) TEMPA = ZERO
+  247.                              B(N) = TEMPA + TEMPA*TEMPB/ALPEM
+  248.                              IF ((B(N).EQ.ZERO) .AND. (NCALC.GT.N))
+  249.         1                       NCALC = N-1
+  250.       50                   CONTINUE
+  251.                      END IF
+  252.                   END IF
+  253.                ELSE IF ((X.GT.TWOFIV) .AND. (NB.LE.MAGX+1)) THEN
+  254.    C---------------------------------------------------------------------
+  255.    C Asymptotic series for X .GT. 21.0.
+  256.    C---------------------------------------------------------------------
+  257.                   XC = SQRT(PI2/X)
+  258.                   XIN = (EIGHTH/X)**2
+  259.                   M = 11
+  260.                   IF (X.GE.THREE5) M = 8
+  261.                   IF (X.GE.ONE30) M = 4
+  262.                   XM = FOUR*CONV(M)
+  263.    C---------------------------------------------------------------------
+  264.    C Argument reduction for SIN and COS routines.
+  265.    C---------------------------------------------------------------------
+  266.                   T = AINT(X/(TWOPI1+TWOPI2)+HALF)
+  267.                   Z = ((X-T*TWOPI1)-T*TWOPI2) - (ALPHA+HALF)/PI2
+  268.                   VSIN = SIN(Z)
+  269.                   VCOS = COS(Z)
+  270.                   GNU = ALPHA + ALPHA
+  271.                   DO 80 I=1,2
+  272.                     S = ((XM-ONE)-GNU)*((XM-ONE)+GNU)*XIN*HALF
+  273.                     T = (GNU-(XM-THREE))*(GNU+(XM-THREE))
+  274.                     CAPP = S*T/FACT(2*M+1)
+  275.                     T1 = (GNU-(XM+ONE))*(GNU+(XM+ONE))
+  276.                     CAPQ = S*T1/FACT(2*M+2)
+  277.                     XK = XM
+  278.                     K = M + M
+  279.                     T1 = T
+  280.                     DO 70 J=2,M
+  281.                       XK = XK - FOUR
+  282.                       S = ((XK-ONE)-GNU)*((XK-ONE)+GNU)
+  283.                       T = (GNU-(XK-THREE))*(GNU+(XK-THREE))
+  284.                       CAPP = (CAPP+ONE/FACT(K-1))*S*T*XIN
+  285.                       CAPQ = (CAPQ+ONE/FACT(K))*S*T1*XIN
+  286.                       K = K - 2
+  287.                       T1 = T
+  288.       70            CONTINUE
+  289.                     CAPP = CAPP + ONE
+  290.                     CAPQ = (CAPQ+ONE)*(GNU*GNU-ONE)*(EIGHTH/X)
+  291.                     B(I) = XC*(CAPP*VCOS-CAPQ*VSIN)
+  292.                     IF (NB.EQ.1) GO TO 300
+  293.                     T = VSIN
+  294.                     VSIN = -VCOS
+  295.                     VCOS = T
+  296.                     GNU = GNU + TWO
+  297.       80         CONTINUE
+  298.    C---------------------------------------------------------------------
+  299.    C If  NB .GT. 2, compute J(X,ORDER+I)  I = 2, NB-1
+  300.    C---------------------------------------------------------------------
+  301.                   IF (NB .GT. 2) THEN
+  302.                      GNU = ALPHA + ALPHA + TWO
+  303.                      DO 90 J=3,NB
+  304.                        B(J) = GNU*B(J-1)/X - B(J-2)
+  305.                        GNU = GNU + TWO
+  306.       90             CONTINUE
+  307.                   END IF
+  308.    C---------------------------------------------------------------------
+  309.    C Use recurrence to generate results.  First initialize the
+  310.    C calculation of P*S.
+  311.    C---------------------------------------------------------------------
+  312.                ELSE
+  313.                   NBMX = NB - MAGX
+  314.                   N = MAGX + 1
+  315.                   EN = CONV(N+N) + (ALPHA+ALPHA)
+  316.                   PLAST = ONE
+  317.                   P = EN/X
+  318.    C---------------------------------------------------------------------
+  319.    C Calculate general significance test.
+  320.    C---------------------------------------------------------------------
+  321.                   TEST = ENSIG + ENSIG
+  322.                   IF (NBMX .GE. 3) THEN
+  323.    C---------------------------------------------------------------------
+  324.    C Calculate P*S until N = NB-1.  Check for possible overflow.
+  325.    C---------------------------------------------------------------------
+  326.                      TOVER = ENTEN/ENSIG
+  327.                      NSTART = MAGX + 2
+  328.                      NEND = NB - 1
+  329.                      EN = CONV(NSTART+NSTART) - TWO + (ALPHA+ALPHA)
+  330.                      DO 130 K=NSTART,NEND
+  331.                         N = K
+  332.                         EN = EN + TWO
+  333.                         POLD = PLAST
+  334.                         PLAST = P
+  335.                         P = EN*PLAST/X - POLD
+  336.                         IF (P.GT.TOVER) THEN
+  337.    C---------------------------------------------------------------------
+  338.    C To avoid overflow, divide P*S by TOVER.  Calculate P*S until
+  339.    C ABS(P) .GT. 1.
+  340.    C---------------------------------------------------------------------
+  341.                            TOVER = ENTEN
+  342.                            P = P/TOVER
+  343.                            PLAST = PLAST/TOVER
+  344.                            PSAVE = P
+  345.                            PSAVEL = PLAST
+  346.                            NSTART = N + 1
+  347.      100                   N = N + 1
+  348.                               EN = EN + TWO
+  349.                               POLD = PLAST
+  350.                               PLAST = P
+  351.                               P = EN*PLAST/X - POLD
+  352.                            IF (P.LE.ONE) GO TO 100
+  353.                            TEMPB = EN/X
+  354.    C---------------------------------------------------------------------
+  355.    C Calculate backward test and find NCALC, the highest N such that
+  356.    C the test is passed.
+  357.    C---------------------------------------------------------------------
+  358.                            TEST = POLD*PLAST*(HALF-HALF/(TEMPB*TEMPB))
+  359.                            TEST = TEST/ENSIG
+  360.                            P = PLAST*TOVER
+  361.                            N = N - 1
+  362.                            EN = EN - TWO
+  363.                            NEND = MIN(NB,N)
+  364.                            DO 110 L=NSTART,NEND
+  365.                               POLD = PSAVEL
+  366.                               PSAVEL = PSAVE
+  367.                               PSAVE = EN*PSAVEL/X - POLD
+  368.                               IF (PSAVE*PSAVEL.GT.TEST) THEN
+  369.                                  NCALC = L - 1
+  370.                                  GO TO 190
+  371.                               END IF
+  372.      110                   CONTINUE
+  373.                            NCALC = NEND
+  374.                            GO TO 190
+  375.                         END IF
+  376.      130             CONTINUE
+  377.                      N = NEND
+  378.                      EN = CONV(N+N) + (ALPHA+ALPHA)
+  379.    C---------------------------------------------------------------------
+  380.    C Calculate special significance test for NBMX .GT. 2.
+  381.    C---------------------------------------------------------------------
+  382.                      TEST = MAX(TEST,SQRT(PLAST*ENSIG)*SQRT(P+P))
+  383.                   END IF
+  384.    C---------------------------------------------------------------------
+  385.    C Calculate P*S until significance test passes.
+  386.    C---------------------------------------------------------------------
+  387.      140          N = N + 1
+  388.                      EN = EN + TWO
+  389.                      POLD = PLAST
+  390.                      PLAST = P
+  391.                      P = EN*PLAST/X - POLD
+  392.                   IF (P.LT.TEST) GO TO 140
+  393.    C---------------------------------------------------------------------
+  394.    C Initialize the backward recursion and the normalization sum.
+  395.    C---------------------------------------------------------------------
+  396.      190          N = N + 1
+  397.                   EN = EN + TWO
+  398.                   TEMPB = ZERO
+  399.                   TEMPA = ONE/P
+  400.                   M = 2*N - 4*(N/2)
+  401.                   SUM = ZERO
+  402.                   EM = CONV(N/2)
+  403.                   ALPEM = (EM-ONE) + ALPHA
+  404.                   ALP2EM = (EM+EM) + ALPHA
+  405.                   IF (M .NE. 0) SUM = TEMPA*ALPEM*ALP2EM/EM
+  406.                   NEND = N - NB
+  407.                   IF (NEND .GT. 0) THEN
+  408.    C---------------------------------------------------------------------
+  409.    C Recur backward via difference equation, calculating (but not
+  410.    C storing) B(N), until N = NB.
+  411.    C---------------------------------------------------------------------
+  412.                      DO 200 L=1,NEND
+  413.                         N = N - 1
+  414.                         EN = EN - TWO
+  415.                         TEMPC = TEMPB
+  416.                         TEMPB = TEMPA
+  417.                         TEMPA = (EN*TEMPB)/X - TEMPC
+  418.                         M = 2 - M
+  419.                         IF (M .NE. 0) THEN
+  420.                            EM = EM - ONE
+  421.                            ALP2EM = (EM+EM) + ALPHA
+  422.                            IF (N.EQ.1) GO TO 210
+  423.                            ALPEM = (EM-ONE) + ALPHA
+  424.                            IF (ALPEM.EQ.ZERO) ALPEM = ONE
+  425.                            SUM = (SUM+TEMPA*ALP2EM)*ALPEM/EM
+  426.                         END IF
+  427.      200             CONTINUE
+  428.                   END IF
+  429.    C---------------------------------------------------------------------
+  430.    C Store B(NB).
+  431.    C---------------------------------------------------------------------
+  432.      210          B(N) = TEMPA
+  433.                   IF (NEND .GE. 0) THEN
+  434.                      IF (NB .LE. 1) THEN
+  435.                            ALP2EM = ALPHA
+  436.                            IF ((ALPHA+ONE).EQ.ONE) ALP2EM = ONE
+  437.                            SUM = SUM + B(1)*ALP2EM
+  438.                            GO TO 250
+  439.                         ELSE
+  440.    C---------------------------------------------------------------------
+  441.    C Calculate and store B(NB-1).
+  442.    C---------------------------------------------------------------------
+  443.                            N = N - 1
+  444.                            EN = EN - TWO
+  445.                            B(N) = (EN*TEMPA)/X - TEMPB
+  446.                            IF (N.EQ.1) GO TO 240
+  447.                            M = 2 - M
+  448.                            IF (M .NE. 0) THEN
+  449.                               EM = EM - ONE
+  450.                               ALP2EM = (EM+EM) + ALPHA
+  451.                               ALPEM = (EM-ONE) + ALPHA
+  452.                               IF (ALPEM.EQ.ZERO) ALPEM = ONE
+  453.                               SUM = (SUM+B(N)*ALP2EM)*ALPEM/EM
+  454.                            END IF
+  455.                      END IF
+  456.                   END IF
+  457.                   NEND = N - 2
+  458.                   IF (NEND .NE. 0) THEN
+  459.    C---------------------------------------------------------------------
+  460.    C Calculate via difference equation and store B(N), until N = 2.
+  461.    C---------------------------------------------------------------------
+  462.                      DO 230 L=1,NEND
+  463.                         N = N - 1
+  464.                         EN = EN - TWO
+  465.                         B(N) = (EN*B(N+1))/X - B(N+2)
+  466.                         M = 2 - M
+  467.                         IF (M .NE. 0) THEN
+  468.                            EM = EM - ONE
+  469.                            ALP2EM = (EM+EM) + ALPHA
+  470.                            ALPEM = (EM-ONE) + ALPHA
+  471.                            IF (ALPEM.EQ.ZERO) ALPEM = ONE
+  472.                            SUM = (SUM+B(N)*ALP2EM)*ALPEM/EM
+  473.                         END IF
+  474.      230             CONTINUE
+  475.                   END IF
+  476.    C---------------------------------------------------------------------
+  477.    C Calculate B(1).
+  478.    C---------------------------------------------------------------------
+  479.                   B(1) = TWO*(ALPHA+ONE)*B(2)/X - B(3)
+  480.      240          EM = EM - ONE
+  481.                   ALP2EM = (EM+EM) + ALPHA
+  482.                   IF (ALP2EM.EQ.ZERO) ALP2EM = ONE
+  483.                   SUM = SUM + B(1)*ALP2EM
+  484.    C---------------------------------------------------------------------
+  485.    C Normalize.  Divide all B(N) by sum.
+  486.    C---------------------------------------------------------------------
+  487.      250          IF ((ALPHA+ONE).NE.ONE)
+  488.         1              SUM = SUM*FUNC(ALPHA)*(X*HALF)**(-ALPHA)
+  489.                   TEMPA = ENMTEN
+  490.                   IF (SUM.GT.ONE) TEMPA = TEMPA*SUM
+  491.                   DO 260 N=1,NB
+  492.                     IF (ABS(B(N)).LT.TEMPA) B(N) = ZERO
+  493.                     B(N) = B(N)/SUM
+  494.      260          CONTINUE
+  495.                END IF
+  496.    C---------------------------------------------------------------------
+  497.    C Error return -- X, NB, or ALPHA is out of range.
+  498.    C---------------------------------------------------------------------
+  499.             ELSE
+  500.                B(1) = ZERO
+  501.                NCALC = MIN(NB,0) - 1
+  502.          END IF
+  503.    C---------------------------------------------------------------------
+  504.    C Exit
+  505.    C---------------------------------------------------------------------
+  506.      300 RETURN
+  507.    C ---------- Last line of RJBESL ----------
+  508.          END
+  509.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 492, file rjbesl.f)
+
+Name  Messages
+----  --------
+AINT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 266, file rjbesl.f)
+
+Name  Messages
+----  --------
+COS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 269, file rjbesl.f)
+
+Name  Messages
+----  --------
+DBLE(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 196, file rjbesl.f)
+                   RJBESL (Line 262, file rjbesl.f)
+                   RJBESL (Line 315, file rjbesl.f)
+                   RJBESL (Line 329, file rjbesl.f)
+                   RJBESL (Line 378, file rjbesl.f)
+                   RJBESL (Line 402, file rjbesl.f)
+
+Name  Messages
+----  --------
+DGAMMA
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 197, file rjbesl.f)
+                   RJBESL (Line 225, file rjbesl.f)
+                   RJBESL (Line 488, file rjbesl.f)
+
+Name  Messages
+----  --------
+INT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 201, file rjbesl.f)
+
+Name  Messages
+----  --------
+MAX(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 382, file rjbesl.f)
+
+Name  Messages
+----  --------
+MIN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 363, file rjbesl.f)
+                   RJBESL (Line 501, file rjbesl.f)
+
+Name  Messages
+----  --------
+RJBESL
+      Defined as:  Subroutine (line 1, file rjbesl.f)
+
+      Interface:   None
+
+      Calls:       DGAMMA (Line 197, file rjbesl.f)
+                   DGAMMA (Line 225, file rjbesl.f)
+                   DGAMMA (Line 488, file rjbesl.f)
+                   INT(Intrinsic) (Line 201, file rjbesl.f)
+                   SQRT(Intrinsic) (Line 257, file rjbesl.f)
+                   SQRT(Intrinsic) (Line 382, file rjbesl.f)
+                   SQRT(Intrinsic) (Line 382, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 196, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 262, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 315, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 329, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 378, file rjbesl.f)
+                   DBLE(Intrinsic) (Line 402, file rjbesl.f)
+                   AINT(Intrinsic) (Line 266, file rjbesl.f)
+                   SIN(Intrinsic) (Line 268, file rjbesl.f)
+                   COS(Intrinsic) (Line 269, file rjbesl.f)
+                   MIN(Intrinsic) (Line 363, file rjbesl.f)
+                   MIN(Intrinsic) (Line 501, file rjbesl.f)
+                   MAX(Intrinsic) (Line 382, file rjbesl.f)
+                   ABS(Intrinsic) (Line 492, file rjbesl.f)
+
+Name  Messages
+----  --------
+SIN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 268, file rjbesl.f)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   RJBESL (Line 257, file rjbesl.f)
+                   RJBESL (Line 382, file rjbesl.f)
+                   RJBESL (Line 382, file rjbesl.f)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

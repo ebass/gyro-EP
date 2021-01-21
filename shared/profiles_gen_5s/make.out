@@ -1,0 +1,35 @@
+cd /global/homes/b/bassem/gacode_hopper_develop/shared/math ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/math'
+ar cr math_lib.a math_constants.o bound_deriv.o bound_extrap.o cub_spline.o cub_spline_deriv.o cub_spline_deriv2.o curtis_rad.o energy_integral.o erf.o gamma.o gauss_legendre.o gauss_integ.o ifs_pppl.o invert_p32.o i0.o j0y0.o linint.o logint.o parallel_dim.o pascal.o polydiff.o poly2diff.o proc_time.o p32.o remap_grid.o rjbesl.o sigv.o 
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/math'
+cd /global/homes/b/bassem/gacode_hopper_develop/shared/GEO ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/GEO'
+ar cr GEO_lib.a GEO_interface.o GEO_alloc.o GEO_do.o GEO_interp.o GEO_write.o
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/GEO'
+cd /global/homes/b/bassem/gacode_hopper_develop/shared/ALPHA ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/ALPHA'
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/ALPHA'
+cd /global/homes/b/bassem/gacode_hopper_develop/shared/EXPRO ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/EXPRO'
+ar cr EXPRO_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/ALPHA/Alpha_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/math/math_lib.a EXPRO_interface.o EXPRO_globals.o EXPRO_alloc.o EXPRO_palloc.o EXPRO_alloc_control.o EXPRO_read.o EXPRO_pread.o EXPRO_read_driver.o EXPRO_compute_derived.o EXPRO_write_derived.o EXPRO_write_original.o
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/EXPRO'
+cd locpargen ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/profiles_gen/locpargen'
+ftn -module /global/homes/b/bassem/gacode_hopper_develop/modules  -fast -o locpargen locpargen.o /global/homes/b/bassem/gacode_hopper_develop/shared/EXPRO/EXPRO_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/ALPHA/Alpha_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/GEO/GEO_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/math/math_lib.a  -L/opt/fftw/3.3.0.1/x86_64/lib -Wl,-rpath=/opt/fftw/3.3.0.1/x86_64/lib -lfftw3_threads -lfftw3f_threads -lfftw3 -lfftw3f
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/profiles_gen/locpargen'
+cd src ; make
+make[1]: Entering directory `/global/u2/b/bassem/gacode_hopper_develop/shared/profiles_gen/src'
+ftn -module /global/homes/b/bassem/gacode_hopper_develop/modules  -r8  -fast -o prgen prgen_globals.o prgen_fluxfit_globals.o allocate_internals.o allocate_iterdb_vars.o allocate_plasmastate_vars.o allocate_peqdsk_vars.o allocate_corsica_vars.o allocate_ufile_vars.o prgen_get_chi.o prgen_map_iterdb.o prgen_map_null.o prgen_map_plasmastate.o prgen_map_peqdsk.o prgen_map_corsica.o prgen_map_ufile.o prgen_map_inputprofiles.o prgen_read_cer.o prgen_read_gato.o prgen_read_iterdb.o prgen_read_iterdb_nc.o prgen_read_null.o prgen_read_plasmastate.o prgen_read_peqdsk.o prgen_read_corsica.o prgen_read_ufile.o prgen_read_inputprofiles.o prgen_write.o fluxfit_driver.o fluxfit_moments.o fluxfit_intersect.o fluxfit_minmax.o fluxfit_fourier.o fluxfit_error.o fluxfit_f_model.o prgen.o /global/homes/b/bassem/gacode_hopper_develop/shared/math/math_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/EXPRO/EXPRO_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/ALPHA/Alpha_lib.a /global/homes/b/bassem/gacode_hopper_develop/shared/GEO/GEO_lib.a -L/opt/fftw/3.3.0.1/x86_64/lib -Wl,-rpath=/opt/fftw/3.3.0.1/x86_64/lib -lfftw3_threads -lfftw3f_threads -lfftw3 -lfftw3f /opt/cray/netcdf/4.2.0/pgi/119/lib/libnetcdf.a
+/opt/cray/netcdf/4.2.0/pgi/119/lib/libnetcdf_pgi.a(libnetcdf4_la-nc4file.o): In function `nc4_create_file':
+/home/users/seanb/pelibs/netcdf/4.2.0/rpm/BUILD/cray-netcdf-4.2.0-pgi/netcdf-4.2/libsrc4/./nc4file.c:300: undefined reference to `__wrap_H5Fcreate'
+/home/users/seanb/pelibs/netcdf/4.2.0/rpm/BUILD/cray-netcdf-4.2.0-pgi/netcdf-4.2/libsrc4/./nc4file.c:323: undefined reference to `__wrap_H5Fclose'
+/opt/cray/netcdf/4.2.0/pgi/119/lib/libnetcdf_pgi.a(libnetcdf4_la-nc4file.o): In function `nc4_open_file':
+/home/users/seanb/pelibs/netcdf/4.2.0/rpm/BUILD/cray-netcdf-4.2.0-pgi/netcdf-4.2/libsrc4/./nc4file.c:2255: undefined reference to `__wrap_H5Fopen'
+/home/users/seanb/pelibs/netcdf/4.2.0/rpm/BUILD/cray-netcdf-4.2.0-pgi/netcdf-4.2/libsrc4/./nc4file.c:2296: undefined reference to `__wrap_H5Fclose'
+/opt/cray/netcdf/4.2.0/pgi/119/lib/libnetcdf_pgi.a(libnetcdf4_la-nc4file.o): In function `close_netcdf4_file':
+/home/users/seanb/pelibs/netcdf/4.2.0/rpm/BUILD/cray-netcdf-4.2.0-pgi/netcdf-4.2/libsrc4/./nc4file.c:2942: undefined reference to `__wrap_H5Fclose'
+/usr/bin/ld: link errors found, deleting executable `prgen'
+make[1]: *** [exec] Error 2
+make[1]: Leaving directory `/global/u2/b/bassem/gacode_hopper_develop/shared/profiles_gen/src'
+make: *** [all] Error 2

@@ -1,0 +1,361 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_map_experimental_profiles.f90
+Compiled : 01/19/21  15:35:43
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_map_experimental_profiles.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_MAP_EXPERIMENTAL_PROFILES
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_map_experimental_profiles.f90
+Date     : 01/19/2021  15:35:43
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! gyro_map_experimental_profiles.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Generate radial profile functions on the simulation 
+    6.    !  (slice) r-grid.
+    7.    !
+    8.    ! NOTES:
+    9.    ! "_p" -> experimental (coarse) grid.
+   10.    ! "_s" -> simulation (fine) grid.
+   11.    !
+   12.    !  Nonuniform grid technique:
+   13.    !  -------------------------
+   14.    !
+   15.    !  r_e -> equally spaced grid.
+   16.    !  r   -> physical grid (may be nonuniform).    
+   17.    !-----------------------------------------------------------
+   18.    
+   19.    subroutine gyro_map_experimental_profiles
+   20.    
+   21.      use gyro_globals
+   22.      use gyro_profile_exp
+   23.    
+   24.      !-------------------------------------------------
+   25.      implicit none
+   26.      ! 
+   27.      real :: inter_fac
+   28.      !
+   29.      integer :: j1
+   30.      integer :: j2
+   31.      !-------------------------------------------------
+   32.    
+   33.      !-------------------------------------------------
+   34.      ! Grid mapping:
+   35.      !
+   36.      select case (nonuniform_grid_flag)
+   37.    
+   38.      case (0)
+   39.    
+   40.         ! UNIFORM
+   41.    
+   42.         r_s(:) = r_e(:)
+ftn-6262 ftn: VECTOR GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 42 
+  A loop starting at line 42 was not vectorized because it contains a call to a subroutine or function on line 42.
+
+   43.    
+   44.         dr_eodr(:) = 1.0
+ftn-6263 ftn: VECTOR GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 44 
+  A loop starting at line 44 was not vectorized because it contains a reference to a non-vector intrinsic on line 44.
+
+   45.    
+   46.      case (1)
+   47.    
+   48.         ! NONUNIFORM - changed endpoints
+   49.    
+   50.         r_s(ir_norm) = r_e(ir_norm)
+   51.    
+   52.         !   shoot outward r_s(i) to r_s(i+1)
+   53.    
+   54.         j1 = 0
+   55.         j2 = 0
+   56.    
+   57.         do i=ir_norm,n_x-1
+   58.            do i_exp=1,n_grid_exp-1
+   59.               if (r_s(i) >= r_p(i_exp) .and. r_s(i) < r_p(i_exp+1)) then
+   60.                  j1 = i_exp
+   61.                  j2 = i_exp+1
+   62.               endif
+   63.            enddo
+   64.            if (j1 == 0) then
+   65.               call catch_error("Error in map_experimental_profiles")
+   66.            endif
+   67.    
+   68.            inter_fac = (r_s(i)-r_p(j1))/(r_p(j2)-r_p(j1))
+   69.    
+   70.            rhosda_s(i) = rhosda_p(j1)+(rhosda_p(j2)-rhosda_p(j1))*inter_fac
+   71.    
+   72.            r_s(i+1) = r_s(i)+(r_e(i+1)-r_e(i))*(rhosda_s(i)/rhosda_s(ir_norm))
+   73.    
+   74.         enddo
+   75.    
+   76.         !   shoot inward r_s(i) to r_s(i-1)
+   77.    
+   78.         do i=ir_norm,2,-1
+   79.            do i_exp=1,n_grid_exp-1
+   80.               if (r_s(i) >= r_p(i_exp) .and. r_s(i) < r_p(i_exp+1)) then
+   81.                  j1 = i_exp
+   82.                  j2 = i_exp+1
+   83.               endif
+   84.            enddo
+   85.            inter_fac = (r_s(i)-r_p(j1))/(r_p(j2)-r_p(j1))
+   86.    
+   87.            rhosda_s(i) = rhosda_p(j1)+(rhosda_p(j2)-rhosda_p(j1))*inter_fac
+   88.    
+   89.            r_s(i-1) = r_s(i)+(r_e(i-1)-r_e(i))*(rhosda_s(i)/rhosda_s(ir_norm))
+   90.    
+   91.         enddo
+   92.    
+   93.         ! r_s unequal spaced grid found
+   94.    
+   95.         ! now reset r to r_s and compute dr_eodr
+   96.    
+   97.         r(:) = r_s(:)
+ftn-6262 ftn: VECTOR GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 97 
+  A loop starting at line 97 was not vectorized because it contains a call to a subroutine or function on line 97.
+
+   98.    
+   99.         do i=1,n_x-1
+  100.            dr_eodr(i)=(r_e(i+1)-r_e(i))/(r(i+1)-r(i))
+  101.         enddo
+  102.         dr_eodr(n_x) = dr_eodr(n_x-1)
+  103.    
+  104.      end select
+  105.      !------------------------------------------------------------------
+  106.    
+  107.      !------------------------------------------------------------------
+  108.      ! Use local cubic spline interpolation to get the GYRO slice 
+  109.      ! profiles (_s) from experimental (_p) profiles.
+  110.      ! 
+  111.      call cub_spline(r_p,rhogrid_exp,n_grid_exp,r_s,rhogrid_s,n_x)
+  112.    
+  113.      call cub_spline(r_p,rmaj_exp/rmin_exp(n_grid_exp),n_grid_exp,r_s,rmaj_s,n_x)
+                                        ^                                                
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 113, Column = 31 
+  This argument produces a copy in to a temporary variable.
+
+  114.      call cub_spline(r_p,drmaj_p,n_grid_exp,r_s,drmaj_s,n_x)
+  115.      call cub_spline(r_p,q_p,n_grid_exp,r_s,q_s,n_x)
+  116.      call cub_spline(r_p,shat_p,n_grid_exp,r_s,shat_s,n_x)
+  117.      call cub_spline(r_p,kappa_exp,n_grid_exp,r_s,kappa_s,n_x)
+  118.      call cub_spline(r_p,s_kappa_p,n_grid_exp,r_s,s_kappa_s,n_x)
+  119.      call cub_spline(r_p,delta_exp,n_grid_exp,r_s,delta_s,n_x)
+  120.      call cub_spline(r_p,s_delta_p,n_grid_exp,r_s,s_delta_s,n_x)
+  121.      call cub_spline(r_p,zeta_exp,n_grid_exp,r_s,zeta_s,n_x)
+  122.      call cub_spline(r_p,s_zeta_p,n_grid_exp,r_s,s_zeta_s,n_x)
+  123.      call cub_spline(r_p,zmag_exp/rmin_exp(n_grid_exp),n_grid_exp,r_s,zmag_s,n_x)
+                                        ^                                                
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 123, Column = 31 
+  This argument produces a copy in to a temporary variable.
+
+  124.      call cub_spline(r_p,dzmag_p,n_grid_exp,r_s,dzmag_s,n_x)
+  125.    
+  126.      do is=1,n_spec
+  127.         call cub_spline(r_p,den_exp(is,:),n_grid_exp,r_s,den_s(is,:),n_x)
+                                          ^                                      
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 127, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                     ^           
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 127, Column = 60 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  128.         call cub_spline(r_p,tem_exp(is,:),n_grid_exp,r_s,tem_s(is,:),n_x)
+                                          ^                                      
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 128, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                     ^           
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 128, Column = 60 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  129.      enddo
+  130.      call cub_spline(r_p,ptot_exp,n_grid_exp,r_s,ptot_s,n_x)
+  131.    
+  132.      call cub_spline(r_p,z_eff_exp,n_grid_exp,r_s,z_eff_s,n_x)
+  133.      call cub_spline(r_p,b_unit_p,n_grid_exp,r_s,b_unit_s,n_x)
+  134.      call cub_spline(r_p,rhosda_p,n_grid_exp,r_s,rhosda_s,n_x)
+  135.      call cub_spline(r_p,csda_p,n_grid_exp,r_s,csda_s,n_x)
+  136.    
+  137.      do is=1,n_spec
+  138.         call cub_spline(r_p,dlntdr_p(is,:),n_grid_exp,r_s,dlntdr_s(is,:),n_x)
+                                           ^                                         
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 138, Column = 34 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                         ^           
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 138, Column = 64 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  139.         call cub_spline(r_p,dlnndr_p(is,:),n_grid_exp,r_s,dlnndr_s(is,:),n_x)
+                                           ^                                         
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 139, Column = 34 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                         ^           
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 139, Column = 64 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  140.      enddo
+  141.      call cub_spline(r_p,dlnptotdr_p,n_grid_exp,r_s,dlnptotdr_s,n_x)
+  142.    
+  143.      call cub_spline(r_p,gamma_e_exp,n_grid_exp,r_s,gamma_e_s,n_x)
+  144.      call cub_spline(r_p,gamma_p_exp,n_grid_exp,r_s,gamma_p_s,n_x)
+  145.      call cub_spline(r_p,mach_exp,n_grid_exp,r_s,mach_s,n_x)
+  146.      call cub_spline(r_p,w0_exp,n_grid_exp,r_s,w0_s,n_x)
+  147.      call cub_spline(r_p,w0p_exp,n_grid_exp,r_s,w0p_s,n_x)
+  148.    
+  149.      call cub_spline(r_p,beta_unit_p,n_grid_exp,r_s,beta_unit_s,n_x)
+  150.      call cub_spline(r_p,beta_unit_ptot_p,n_grid_exp,r_s,beta_unit_ptot_s,n_x)
+  151.    
+  152.      if (num_equil_flag == 1) then
+  153.         do j1=1,8
+  154.            do j2=0,n_fourier_geo
+  155.               call cub_spline(r_p,geo_p(j1,j2,:),n_grid_exp,r_s,a_fourier_geo_s(j1,j2,:),n_x)
+                                              ^                                                      
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 155, Column = 37 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                                      ^              
+ftn-1438 ftn: CAUTION GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 155, Column = 77 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  156.            enddo
+  157.         enddo
+  158.      else
+  159.         a_fourier_geo_s(:,:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_MAP_EXPERIMENTAL_PROFILES, File = gyro_map_experimental_profiles.f90, Line = 159 
+  A loop starting at line 159 was not vectorized because it contains a reference to a non-vector intrinsic on line 159.
+
+  160.      endif
+  161.      !------------------------------------------------------------------
+  162.    
+  163.      if (debug_flag == 1 .and. i_proc == 0) then
+  164.         print *,'[map_exp_profiles done]'
+  165.      endif
+  166.    
+  167.    end subroutine gyro_map_experimental_profiles
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 65, file gyro_map_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CUB_SPLINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 111, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 113, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 114, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 115, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 116, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 117, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 118, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 119, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 120, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 121, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 122, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 123, file gyro_map_experimental_profiles.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 124, file gyro_map_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_MAP_EXPERIMENTAL_PROFILES
+
+Name  Messages
+----  --------
+GYRO_MAP_EXPERIMENTAL_PROFILES
+      Defined as:  Subroutine (line 19, file gyro_map_experimental_profiles.f90)
+
+      Interface:   None
+
+      Calls:       CATCH_ERROR (Line 65, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 111, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 113, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 114, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 115, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 116, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 117, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 118, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 119, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 120, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 121, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 122, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 123, file gyro_map_experimental_profiles.f90)
+                   CUB_SPLINE (Line 124, file gyro_map_experimental_profiles.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_PROFILE_EXP
+
+Name  Messages
+----  --------
+GYRO_PROFILE_EXP
+      Defined as:  No definitions.
+
+      Used By:     GYRO_MAP_EXPERIMENTAL_PROFILES
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

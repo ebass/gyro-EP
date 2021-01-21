@@ -1,0 +1,498 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/erf.f
+Compiled : 01/19/21  14:38:38
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -eD -Ktrap=fp -m1 -Rbcdps
+           -c erf.f
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : CALERF
+          DERF
+          DERFC
+          DERFCX
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/erf.f
+Date     : 01/19/2021  14:38:38
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.          SUBROUTINE CALERF(ARG,RESULT,JINT)
+    2.    C------------------------------------------------------------------
+    3.    C
+    4.    C This packet evaluates  erf(x),  erfc(x),  and  exp(x*x)*erfc(x)
+    5.    C   for a real argument  x.  It contains three FUNCTION type
+    6.    C   subprograms: ERF, ERFC, and ERFCX (or DERF, DERFC, and DERFCX),
+    7.    C   and one SUBROUTINE type subprogram, CALERF.  The calling
+    8.    C   statements for the primary entries are:
+    9.    C
+   10.    C                   Y=ERF(X)     (or   Y=DERF(X)),
+   11.    C
+   12.    C                   Y=ERFC(X)    (or   Y=DERFC(X)),
+   13.    C   and
+   14.    C                   Y=ERFCX(X)   (or   Y=DERFCX(X)).
+   15.    C
+   16.    C   The routine  CALERF  is intended for internal packet use only,
+   17.    C   all computations within the packet being concentrated in this
+   18.    C   routine.  The function subprograms invoke  CALERF  with the
+   19.    C   statement
+   20.    C
+   21.    C          CALL CALERF(ARG,RESULT,JINT)
+   22.    C
+   23.    C   where the parameter usage is as follows
+   24.    C
+   25.    C      Function                     Parameters for CALERF
+   26.    C       call              ARG                  Result          JINT
+   27.    C
+   28.    C     ERF(ARG)      ANY REAL ARGUMENT         ERF(ARG)          0
+   29.    C     ERFC(ARG)     ABS(ARG) .LT. XBIG        ERFC(ARG)         1
+   30.    C     ERFCX(ARG)    XNEG .LT. ARG .LT. XMAX   ERFCX(ARG)        2
+   31.    C
+   32.    C   The main computation evaluates near-minimax approximations
+   33.    C   from "Rational Chebyshev approximations for the error function"
+   34.    C   by W. J. Cody, Math. Comp., 1969, PP. 631-638.  This
+   35.    C   transportable program uses rational functions that theoretically
+   36.    C   approximate  erf(x)  and  erfc(x)  to at least 18 significant
+   37.    C   decimal digits.  The accuracy achieved depends on the arithmetic
+   38.    C   system, the compiler, the intrinsic functions, and proper
+   39.    C   selection of the machine-dependent constants.
+   40.    C
+   41.    C*******************************************************************
+   42.    C*******************************************************************
+   43.    C
+   44.    C Explanation of machine-dependent constants
+   45.    C
+   46.    C   XMIN   = the smallest positive floating-point number.
+   47.    C   XINF   = the largest positive finite floating-point number.
+   48.    C   XNEG   = the largest negative argument acceptable to ERFCX;
+   49.    C            the negative of the solution to the equation
+   50.    C            2*exp(x*x) = XINF.
+   51.    C   XSMALL = argument below which erf(x) may be represented by
+   52.    C            2*x/sqrt(pi)  and above which  x*x  will not underflow.
+   53.    C            A conservative value is the largest machine number X
+   54.    C            such that   1.0 + X = 1.0   to machine precision.
+   55.    C   XBIG   = largest argument acceptable to ERFC;  solution to
+   56.    C            the equation:  W(x) * (1-0.5/x**2) = XMIN,  where
+   57.    C            W(x) = exp(-x*x)/[x*sqrt(pi)].
+   58.    C   XHUGE  = argument above which  1.0 - 1/(2*x*x) = 1.0  to
+   59.    C            machine precision.  A conservative value is
+   60.    C            1/[2*sqrt(XSMALL)]
+   61.    C   XMAX   = largest acceptable argument to ERFCX; the minimum
+   62.    C            of XINF and 1/[sqrt(pi)*XMIN].
+   63.    C
+   64.    C   Approximate values for some important machines are:
+   65.    C
+   66.    C                          XMIN       XINF        XNEG     XSMALL
+   67.    C
+   68.    C  CDC 7600      (S.P.)  3.13E-294   1.26E+322   -27.220  7.11E-15
+   69.    C  CRAY-1        (S.P.)  4.58E-2467  5.45E+2465  -75.345  7.11E-15
+   70.    C  IEEE (IBM/XT,
+   71.    C    SUN, etc.)  (S.P.)  1.18E-38    3.40E+38     -9.382  5.96E-8
+   72.    C  IEEE (IBM/XT,
+   73.    C    SUN, etc.)  (D.P.)  2.23D-308   1.79D+308   -26.628  1.11D-16
+   74.    C  IBM 195       (D.P.)  5.40D-79    7.23E+75    -13.190  1.39D-17
+   75.    C  UNIVAC 1108   (D.P.)  2.78D-309   8.98D+307   -26.615  1.73D-18
+   76.    C  VAX D-Format  (D.P.)  2.94D-39    1.70D+38     -9.345  1.39D-17
+   77.    C  VAX G-Format  (D.P.)  5.56D-309   8.98D+307   -26.615  1.11D-16
+   78.    C
+   79.    C
+   80.    C                          XBIG       XHUGE       XMAX
+   81.    C
+   82.    C  CDC 7600      (S.P.)  25.922      8.39E+6     1.80X+293
+   83.    C  CRAY-1        (S.P.)  75.326      8.39E+6     5.45E+2465
+   84.    C  IEEE (IBM/XT,
+   85.    C    SUN, etc.)  (S.P.)   9.194      2.90E+3     4.79E+37
+   86.    C  IEEE (IBM/XT,
+   87.    C    SUN, etc.)  (D.P.)  26.543      6.71D+7     2.53D+307
+   88.    C  IBM 195       (D.P.)  13.306      1.90D+8     7.23E+75
+   89.    C  UNIVAC 1108   (D.P.)  26.582      5.37D+8     8.98D+307
+   90.    C  VAX D-Format  (D.P.)   9.269      1.90D+8     1.70D+38
+   91.    C  VAX G-Format  (D.P.)  26.569      6.71D+7     8.98D+307
+   92.    C
+   93.    C*******************************************************************
+   94.    C*******************************************************************
+   95.    C
+   96.    C Error returns
+   97.    C
+   98.    C  The program returns  ERFC = 0      for  ARG .GE. XBIG;
+   99.    C
+  100.    C                       ERFCX = XINF  for  ARG .LT. XNEG;
+  101.    C      and
+  102.    C                       ERFCX = 0     for  ARG .GE. XMAX.
+  103.    C
+  104.    C
+  105.    C Intrinsic functions required are:
+  106.    C
+  107.    C     ABS, AINT, EXP
+  108.    C
+  109.    C
+  110.    C  Author: W. J. Cody
+  111.    C          Mathematics and Computer Science Division
+  112.    C          Argonne National Laboratory
+  113.    C          Argonne, IL 60439
+  114.    C
+  115.    C  Latest modification: March 19, 1990
+  116.    C
+  117.    C------------------------------------------------------------------
+  118.          INTEGER I,JINT
+  119.    C      REAL
+  120.          DOUBLE PRECISION
+  121.         1     A,ARG,B,C,D,DEL,FOUR,HALF,P,ONE,Q,RESULT,SIXTEN,SQRPI,
+  122.         2     TWO,THRESH,X,XBIG,XDEN,XHUGE,XINF,XMAX,XNEG,XNUM,XSMALL,
+  123.         3     Y,YSQ,ZERO
+  124.          DIMENSION A(5),B(4),C(9),D(8),P(6),Q(5)
+  125.    C------------------------------------------------------------------
+  126.    C  Mathematical constants
+  127.    C------------------------------------------------------------------
+  128.    C      DATA FOUR,ONE,HALF,TWO,ZERO/4.0E0,1.0E0,0.5E0,2.0E0,0.0E0/,
+  129.    C     1     SQRPI/5.6418958354775628695E-1/,THRESH/0.46875E0/,
+  130.    C     2     SIXTEN/16.0E0/
+  131.          DATA FOUR,ONE,HALF,TWO,ZERO/4.0D0,1.0D0,0.5D0,2.0D0,0.0D0/,
+  132.         1     SQRPI/5.6418958354775628695D-1/,THRESH/0.46875D0/,
+  133.         2     SIXTEN/16.0D0/
+  134.    C------------------------------------------------------------------
+  135.    C  Machine-dependent constants
+  136.    C------------------------------------------------------------------
+  137.    C      DATA XINF,XNEG,XSMALL/3.40E+38,-9.382E0,5.96E-8/,
+  138.    C     1     XBIG,XHUGE,XMAX/9.194E0,2.90E3,4.79E37/
+  139.          DATA XINF,XNEG,XSMALL/1.79D308,-26.628D0,1.11D-16/,
+  140.         1     XBIG,XHUGE,XMAX/26.543D0,6.71D7,2.53D307/
+  141.    C------------------------------------------------------------------
+  142.    C  Coefficients for approximation to  erf  in first interval
+  143.    C------------------------------------------------------------------
+  144.    C      DATA A/3.16112374387056560E00,1.13864154151050156E02,
+  145.    C     1       3.77485237685302021E02,3.20937758913846947E03,
+  146.    C     2       1.85777706184603153E-1/
+  147.    C      DATA B/2.36012909523441209E01,2.44024637934444173E02,
+  148.    C     1       1.28261652607737228E03,2.84423683343917062E03/
+  149.          DATA A/3.16112374387056560D00,1.13864154151050156D02,
+  150.         1       3.77485237685302021D02,3.20937758913846947D03,
+  151.         2       1.85777706184603153D-1/
+  152.          DATA B/2.36012909523441209D01,2.44024637934444173D02,
+  153.         1       1.28261652607737228D03,2.84423683343917062D03/
+  154.    C------------------------------------------------------------------
+  155.    C  Coefficients for approximation to  erfc  in second interval
+  156.    C------------------------------------------------------------------
+  157.    C      DATA C/5.64188496988670089E-1,8.88314979438837594E0,
+  158.    C     1       6.61191906371416295E01,2.98635138197400131E02,
+  159.    C     2       8.81952221241769090E02,1.71204761263407058E03,
+  160.    C     3       2.05107837782607147E03,1.23033935479799725E03,
+  161.    C     4       2.15311535474403846E-8/
+  162.    C      DATA D/1.57449261107098347E01,1.17693950891312499E02,
+  163.    C     1       5.37181101862009858E02,1.62138957456669019E03,
+  164.    C     2       3.29079923573345963E03,4.36261909014324716E03,
+  165.    C     3       3.43936767414372164E03,1.23033935480374942E03/
+  166.          DATA C/5.64188496988670089D-1,8.88314979438837594D0,
+  167.         1       6.61191906371416295D01,2.98635138197400131D02,
+  168.         2       8.81952221241769090D02,1.71204761263407058D03,
+  169.         3       2.05107837782607147D03,1.23033935479799725D03,
+  170.         4       2.15311535474403846D-8/
+  171.          DATA D/1.57449261107098347D01,1.17693950891312499D02,
+  172.         1       5.37181101862009858D02,1.62138957456669019D03,
+  173.         2       3.29079923573345963D03,4.36261909014324716D03,
+  174.         3       3.43936767414372164D03,1.23033935480374942D03/
+  175.    C------------------------------------------------------------------
+  176.    C  Coefficients for approximation to  erfc  in third interval
+  177.    C------------------------------------------------------------------
+  178.    C      DATA P/3.05326634961232344E-1,3.60344899949804439E-1,
+  179.    C     1       1.25781726111229246E-1,1.60837851487422766E-2,
+  180.    C     2       6.58749161529837803E-4,1.63153871373020978E-2/
+  181.    C      DATA Q/2.56852019228982242E00,1.87295284992346047E00,
+  182.    C     1       5.27905102951428412E-1,6.05183413124413191E-2,
+  183.    C     2       2.33520497626869185E-3/
+  184.          DATA P/3.05326634961232344D-1,3.60344899949804439D-1,
+  185.         1       1.25781726111229246D-1,1.60837851487422766D-2,
+  186.         2       6.58749161529837803D-4,1.63153871373020978D-2/
+  187.          DATA Q/2.56852019228982242D00,1.87295284992346047D00,
+  188.         1       5.27905102951428412D-1,6.05183413124413191D-2,
+  189.         2       2.33520497626869185D-3/
+  190.    C------------------------------------------------------------------
+  191.          X = ARG
+  192.          Y = ABS(X)
+  193.          IF (Y .LE. THRESH) THEN
+  194.    C------------------------------------------------------------------
+  195.    C  Evaluate  erf  for  |X| <= 0.46875
+  196.    C------------------------------------------------------------------
+  197.                YSQ = ZERO
+  198.                IF (Y .GT. XSMALL) YSQ = Y * Y
+  199.                XNUM = A(5)*YSQ
+  200.                XDEN = YSQ
+  201.                DO 20 I = 1, 3
+  202.                   XNUM = (XNUM + A(I)) * YSQ
+  203.                   XDEN = (XDEN + B(I)) * YSQ
+  204.       20       CONTINUE
+  205.                RESULT = X * (XNUM + A(4)) / (XDEN + B(4))
+  206.                IF (JINT .NE. 0) RESULT = ONE - RESULT
+  207.                IF (JINT .EQ. 2) RESULT = EXP(YSQ) * RESULT
+  208.                GO TO 800
+  209.    C------------------------------------------------------------------
+  210.    C  Evaluate  erfc  for 0.46875 <= |X| <= 4.0
+  211.    C------------------------------------------------------------------
+  212.             ELSE IF (Y .LE. FOUR) THEN
+  213.                XNUM = C(9)*Y
+  214.                XDEN = Y
+  215.                DO 120 I = 1, 7
+  216.                   XNUM = (XNUM + C(I)) * Y
+  217.                   XDEN = (XDEN + D(I)) * Y
+  218.      120       CONTINUE
+  219.                RESULT = (XNUM + C(8)) / (XDEN + D(8))
+  220.                IF (JINT .NE. 2) THEN
+  221.                   YSQ = AINT(Y*SIXTEN)/SIXTEN
+  222.                   DEL = (Y-YSQ)*(Y+YSQ)
+  223.                   RESULT = EXP(-YSQ*YSQ) * EXP(-DEL) * RESULT
+  224.                END IF
+  225.    C------------------------------------------------------------------
+  226.    C  Evaluate  erfc  for |X| > 4.0
+  227.    C------------------------------------------------------------------
+  228.             ELSE
+  229.                RESULT = ZERO
+  230.                IF (Y .GE. XBIG) THEN
+  231.                   IF ((JINT .NE. 2) .OR. (Y .GE. XMAX)) GO TO 300
+  232.                   IF (Y .GE. XHUGE) THEN
+  233.                      RESULT = SQRPI / Y
+  234.                      GO TO 300
+  235.                   END IF
+  236.                END IF
+  237.                YSQ = ONE / (Y * Y)
+  238.                XNUM = P(6)*YSQ
+  239.                XDEN = YSQ
+  240.                DO 240 I = 1, 4
+  241.                   XNUM = (XNUM + P(I)) * YSQ
+  242.                   XDEN = (XDEN + Q(I)) * YSQ
+  243.      240       CONTINUE
+  244.                RESULT = YSQ *(XNUM + P(5)) / (XDEN + Q(5))
+  245.                RESULT = (SQRPI -  RESULT) / Y
+  246.                IF (JINT .NE. 2) THEN
+  247.                   YSQ = AINT(Y*SIXTEN)/SIXTEN
+  248.                   DEL = (Y-YSQ)*(Y+YSQ)
+  249.                   RESULT = EXP(-YSQ*YSQ) * EXP(-DEL) * RESULT
+  250.                END IF
+  251.          END IF
+  252.    C------------------------------------------------------------------
+  253.    C  Fix up for negative argument, erf, etc.
+  254.    C------------------------------------------------------------------
+  255.      300 IF (JINT .EQ. 0) THEN
+  256.                RESULT = (HALF - RESULT) + HALF
+  257.                IF (X .LT. ZERO) RESULT = -RESULT
+  258.             ELSE IF (JINT .EQ. 1) THEN
+  259.                IF (X .LT. ZERO) RESULT = TWO - RESULT
+  260.             ELSE
+  261.                IF (X .LT. ZERO) THEN
+  262.                   IF (X .LT. XNEG) THEN
+  263.                         RESULT = XINF
+  264.                      ELSE
+  265.                         YSQ = AINT(X*SIXTEN)/SIXTEN
+  266.                         DEL = (X-YSQ)*(X+YSQ)
+  267.                         Y = EXP(YSQ*YSQ) * EXP(DEL)
+  268.                         RESULT = (Y+Y) - RESULT
+  269.                   END IF
+  270.                END IF
+  271.          END IF
+  272.      800 RETURN
+  273.    C---------- Last card of CALERF ----------
+  274.          END
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  275.    C      REAL FUNCTION ERF(X)
+  276.          DOUBLE PRECISION FUNCTION DERF(X)
+  277.    C--------------------------------------------------------------------
+  278.    C
+  279.    C This subprogram computes approximate values for erf(x).
+  280.    C   (see comments heading CALERF).
+  281.    C
+  282.    C   Author/date: W. J. Cody, January 8, 1985
+  283.    C
+  284.    C--------------------------------------------------------------------
+  285.          INTEGER JINT
+  286.    C      REAL             X, RESULT
+  287.          DOUBLE PRECISION X, RESULT
+  288.    C------------------------------------------------------------------
+  289.          JINT = 0
+  290.          CALL CALERF(X,RESULT,JINT)
+  291.    C      ERF = RESULT
+  292.          DERF = RESULT
+  293.          RETURN
+  294.    C---------- Last card of DERF ----------
+  295.          END
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  296.    C      REAL FUNCTION ERFC(X)
+  297.          DOUBLE PRECISION FUNCTION DERFC(X)
+  298.    C--------------------------------------------------------------------
+  299.    C
+  300.    C This subprogram computes approximate values for erfc(x).
+  301.    C   (see comments heading CALERF).
+  302.    C
+  303.    C   Author/date: W. J. Cody, January 8, 1985
+  304.    C
+  305.    C--------------------------------------------------------------------
+  306.          INTEGER JINT
+  307.    C      REAL             X, RESULT
+  308.          DOUBLE PRECISION X, RESULT
+  309.    C------------------------------------------------------------------
+  310.          JINT = 1
+  311.          CALL CALERF(X,RESULT,JINT)
+  312.    C      ERFC = RESULT
+  313.          DERFC = RESULT
+  314.          RETURN
+  315.    C---------- Last card of DERFC ----------
+  316.          END
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  317.    C      REAL FUNCTION ERFCX(X)
+  318.          DOUBLE PRECISION FUNCTION DERFCX(X)
+  319.    C------------------------------------------------------------------
+  320.    C
+  321.    C This subprogram computes approximate values for exp(x*x) * erfc(x).
+  322.    C   (see comments heading CALERF).
+  323.    C
+  324.    C   Author/date: W. J. Cody, March 30, 1987
+  325.    C
+  326.    C------------------------------------------------------------------
+  327.          INTEGER JINT
+  328.    C      REAL             X, RESULT
+  329.          DOUBLE PRECISION X, RESULT
+  330.    C------------------------------------------------------------------
+  331.          JINT = 2
+  332.          CALL CALERF(X,RESULT,JINT)
+  333.    C      ERFCX = RESULT
+  334.          DERFCX = RESULT
+  335.          RETURN
+  336.    C---------- Last card of DERFCX ----------
+  337.          END
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CALERF (Line 192, file erf.f)
+
+Name  Messages
+----  --------
+AINT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CALERF (Line 221, file erf.f)
+                   CALERF (Line 247, file erf.f)
+                   CALERF (Line 265, file erf.f)
+
+Name  Messages
+----  --------
+CALERF
+      Defined as:  Subroutine (line 1, file erf.f)
+
+      Interface:   None
+
+      Called By:   DERFC (Line 290, file erf.f)
+                   DERFCX (Line 311, file erf.f)
+                   EXP(Intrinsic) (Line 332, file erf.f)
+
+      Calls:       ABS(Intrinsic) (Line 192, file erf.f)
+                   EXP(Intrinsic) (Line 207, file erf.f)
+                   EXP(Intrinsic) (Line 223, file erf.f)
+                   EXP(Intrinsic) (Line 223, file erf.f)
+                   EXP(Intrinsic) (Line 249, file erf.f)
+                   EXP(Intrinsic) (Line 249, file erf.f)
+                   EXP(Intrinsic) (Line 267, file erf.f)
+                   EXP(Intrinsic) (Line 267, file erf.f)
+                   AINT(Intrinsic) (Line 221, file erf.f)
+                   AINT(Intrinsic) (Line 247, file erf.f)
+                   AINT(Intrinsic) (Line 265, file erf.f)
+
+Name  Messages
+----  --------
+DERF
+      Defined as:  Function (line 276, file erf.f)
+
+      Interface:   None
+
+      Calls:       CALERF (Line 290, file erf.f)
+
+Name  Messages
+----  --------
+DERFC
+      Defined as:  Function (line 297, file erf.f)
+
+      Interface:   None
+
+      Calls:       CALERF (Line 311, file erf.f)
+
+Name  Messages
+----  --------
+DERFCX
+      Defined as:  Function (line 318, file erf.f)
+
+      Interface:   None
+
+      Calls:       CALERF (Line 332, file erf.f)
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CALERF (Line 207, file erf.f)
+                   CALERF (Line 223, file erf.f)
+                   CALERF (Line 223, file erf.f)
+                   CALERF (Line 249, file erf.f)
+                   CALERF (Line 249, file erf.f)
+                   CALERF (Line 267, file erf.f)
+                   CALERF (Line 267, file erf.f)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

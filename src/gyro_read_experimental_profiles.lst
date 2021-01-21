@@ -1,0 +1,599 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_read_experimental_profiles.f90
+Compiled : 01/19/21  15:35:49
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_read_experimental_profiles.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_READ_EXPERIMENTAL_PROFILES
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_read_experimental_profiles.f90
+Date     : 01/19/2021  15:35:50
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !----------------------------------------------------------------
+    2.    ! gyro_read_experimental_profiles.f90 [caller gyro_profile_init]
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Read experimental profiles using EXPRO library.
+    6.    !
+    7.    ! NOTES: 
+    8.    !  See http://fusion.gat.com/theory/input.profiles for a 
+    9.    !  complete description of the input.profiles file structure.
+   10.    !----------------------------------------------------------------
+   11.    
+   12.    subroutine gyro_read_experimental_profiles
+   13.    
+   14.      use gyro_globals
+   15.      use gyro_profile_exp
+   16.      use EXPRO_interface
+   17.    
+   18.      !---------------------------------------------------
+   19.      implicit none
+   20.      !
+   21.      real :: p_total
+   22.      !---------------------------------------------------
+   23.    
+   24.      !---------------------------------------------------------------------
+   25.      ! Read experimental profiles using EXPRO library.
+   26.      !
+   27.      EXPRO_ctrl_quasineutral_flag = density_method-1
+   28.      EXPRO_ctrl_z(1:5) = z_vec(1:5)
+ftn-6204 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 28 
+  A loop starting at line 28 was vectorized.
+
+   29.      EXPRO_ctrl_numeq_flag = num_equil_flag
+   30.      EXPRO_ctrl_n_ion = n_spec-1
+   31.      !
+   32.      ! Kludge 
+   33.      if (n_vec(2) == 0.0) EXPRO_ctrl_z(2) = 0.0
+   34.      if (n_vec(3) == 0.0) EXPRO_ctrl_z(3) = 0.0
+   35.      if (n_vec(4) == 0.0) EXPRO_ctrl_z(4) = 0.0
+   36.      if (n_vec(5) == 0.0) EXPRO_ctrl_z(5) = 0.0
+   37.    
+   38.      call EXPRO_palloc(GYRO_COMM_WORLD,path,1) 
+   39.      call EXPRO_pread
+   40.      !---------------------------------------------------------------------
+   41.    
+   42.      !---------------------------------------------------------------------
+   43.      n_grid_exp = EXPRO_n_exp
+   44.      if (EXPRO_nfourier < 0) then
+   45.         n_fourier_geo = 0
+   46.         if (num_equil_flag == 1) then
+   47.            call catch_error('ERROR: (GYRO) Geometry coefficients missing.')
+   48.         endif
+   49.      else
+   50.         n_fourier_geo = EXPRO_nfourier
+   51.      endif
+   52.      !
+   53.      call gyro_alloc_profile_exp
+   54.      !
+   55.      ! Transfer data from read arrays to individual arrays:
+   56.      !
+   57.      bt_exp   = EXPRO_b_ref
+   58.      arho_exp = EXPRO_arho
+   59.      !
+   60.      btccw = -EXPRO_signb
+   61.      ipccw = -EXPRO_signq*EXPRO_signb
+   62.      !
+   63.      call send_message('INFO: (GYRO) Resetting IPCCW and BTCCW based on input.profiles.')
+   64.      !
+   65.      rhogrid_exp(:)    = EXPRO_rho(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 65 
+  A loop starting at line 65 was not vectorized because it contains a call to a subroutine or function on line 65.
+
+   66.      rmin_exp(:)       = EXPRO_rmin(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 66 
+  A loop starting at line 66 was not vectorized because it contains a call to a subroutine or function on line 66.
+
+   67.      rmaj_exp(:)       = EXPRO_rmaj(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 67 
+  A loop starting at line 67 was not vectorized because it contains a call to a subroutine or function on line 67.
+
+   68.      zmag_exp(:)       = EXPRO_zmag(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 68 
+  A loop starting at line 68 was not vectorized because it contains a call to a subroutine or function on line 68.
+
+   69.      ptot_exp(:)       = EXPRO_ptot(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 69 
+  A loop starting at line 69 was not vectorized because it contains a call to a subroutine or function on line 69.
+
+   70.      q_exp(:)          = EXPRO_q(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 70 
+  A loop starting at line 70 was not vectorized because it contains a call to a subroutine or function on line 70.
+
+   71.      kappa_exp(:)      = EXPRO_kappa(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 71 
+  A loop starting at line 71 was not vectorized because it contains a call to a subroutine or function on line 71.
+
+   72.      delta_exp(:)      = EXPRO_delta(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 72 
+  A loop starting at line 72 was not vectorized because it contains a call to a subroutine or function on line 72.
+
+   73.      zeta_exp(:)       = EXPRO_zeta(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 73 
+  A loop starting at line 73 was not vectorized because it contains a call to a subroutine or function on line 73.
+
+   74.      tem_exp(n_spec,:) = EXPRO_te(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 74 
+  A loop starting at line 74 was not vectorized because it contains a call to a subroutine or function on line 74.
+
+   75.      den_exp(n_spec,:) = EXPRO_ne(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 75 
+  A loop starting at line 75 was not vectorized because it contains a call to a subroutine or function on line 75.
+
+   76.      z_eff_exp(:)      = EXPRO_z_eff(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 76 
+  A loop starting at line 76 was not vectorized because it contains a call to a subroutine or function on line 76.
+
+   77.      w0_exp(:)         = EXPRO_w0(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 77 
+  A loop starting at line 77 was not vectorized because it contains a call to a subroutine or function on line 77.
+
+   78.      w0p_exp(:)        = EXPRO_w0p(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 78 
+  A loop starting at line 78 was not vectorized because it contains a call to a subroutine or function on line 78.
+
+   79.      gamma_e_exp(:)    = EXPRO_gamma_e(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 79 
+  A loop starting at line 79 was not vectorized because it contains a call to a subroutine or function on line 79.
+
+   80.      gamma_p_exp(:)    = EXPRO_gamma_p(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 80 
+  A loop starting at line 80 was not vectorized because it contains a call to a subroutine or function on line 80.
+
+   81.      mach_exp(:)       = EXPRO_mach(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 81 
+  A loop starting at line 81 was not vectorized because it contains a call to a subroutine or function on line 81.
+
+   82.      !
+   83.      do is=1,n_spec-1
+   84.         den_exp(is,:)  = EXPRO_ni(is,:)*n_vec(is)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 84 
+  A loop starting at line 84 was not vectorized because it contains a call to a subroutine or function on line 84.
+
+   85.         tem_exp(is,:)  = EXPRO_ti(is,:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 85 
+  A loop starting at line 85 was not vectorized because it contains a call to a subroutine or function on line 85.
+
+   86.         if (n_vec(is) /= 1.0) then
+   87.            call send_message_real(&
+   88.                 'INFO: ni'//achar(is-1+iachar("1"))//' rescaled by: ',&
+   89.                 n_vec(is))
+   90.         endif
+   91.      enddo
+   92.    
+   93.      !--------------------------------------------------------
+   94.      ! Minor radius, a, in meters:
+   95.      !
+   96.      a_meters = rmin_exp(n_grid_exp)
+   97.      !--------------------------------------------------------
+   98.    
+   99.      ! Fill in computed profile quantities:
+  100.    
+  101.      b_unit_p(:)    = EXPRO_bunit(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 101 
+  A loop starting at line 101 was not vectorized because it contains a call to a subroutine or function on line 101.
+
+  102.      shat_p(:)      = EXPRO_s(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 102 
+  A loop starting at line 102 was not vectorized because it contains a call to a subroutine or function on line 102.
+
+  103.      s_kappa_p(:)   = EXPRO_skappa(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 103 
+  A loop starting at line 103 was not vectorized because it contains a call to a subroutine or function on line 103.
+
+  104.      drmaj_p(:)     = EXPRO_drmaj(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 104 
+  A loop starting at line 104 was not vectorized because it contains a call to a subroutine or function on line 104.
+
+  105.      s_delta_p(:)   = EXPRO_sdelta(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 105 
+  A loop starting at line 105 was not vectorized because it contains a call to a subroutine or function on line 105.
+
+  106.      s_zeta_p(:)    = EXPRO_szeta(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 106 
+  A loop starting at line 106 was not vectorized because it contains a call to a subroutine or function on line 106.
+
+  107.      dzmag_p(:)     = EXPRO_dzmag(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 107 
+  A loop starting at line 107 was not vectorized because it contains a call to a subroutine or function on line 107.
+
+  108.    
+  109.      ! The case is=1 may be reset below.
+  110.    
+  111.      do is=1,n_spec-1
+  112.         dlntdr_p(is,:) = a_meters*EXPRO_dlntidr(is,:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 112 
+  A loop starting at line 112 was not vectorized because it contains a call to a subroutine or function on line 112.
+
+  113.         dlnndr_p(is,:) = a_meters*EXPRO_dlnnidr(is,:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 113 
+  A loop starting at line 113 was not vectorized because it contains a call to a subroutine or function on line 113.
+
+  114.      enddo
+  115.      dlntdr_p(n_spec,:) = a_meters*EXPRO_dlntedr(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 115 
+  A loop starting at line 115 was not vectorized because it contains a call to a subroutine or function on line 115.
+
+  116.      dlnndr_p(n_spec,:) = a_meters*EXPRO_dlnnedr(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 116 
+  A loop starting at line 116 was not vectorized because it contains a call to a subroutine or function on line 116.
+
+  117.      dlnptotdr_p(:)     = a_meters*EXPRO_dlnptotdr(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 117 
+  A loop starting at line 117 was not vectorized because it contains a call to a subroutine or function on line 117.
+
+  118.      !
+  119.      dlnndr_p(:,1)  = 0.0
+ftn-6263 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 119 
+  A loop starting at line 119 was not vectorized because it contains a reference to a non-vector intrinsic on line 119.
+
+  120.      dlntdr_p(:,1)  = 0.0
+ftn-6263 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 120 
+  A loop starting at line 120 was not vectorized because it contains a reference to a non-vector intrinsic on line 120.
+
+  121.      dlnptotdr_p(1) = 0.0
+  122.      !----------------------------------------------------------------------------
+  123.    
+  124.      ! Retain up-down asymmetry from elevation in the case of Miller shape
+  125.      if (num_equil_flag == 0 .and. udsymmetry_flag == 1) then
+  126.         zmag_exp(:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 126 
+  A loop starting at line 126 was not vectorized because it contains a reference to a non-vector intrinsic on line 126.
+
+  127.         dzmag_p(:)  = 0.0
+ftn-6263 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 127 
+  A loop starting at line 127 was not vectorized because it contains a reference to a non-vector intrinsic on line 127.
+
+  128.      endif
+  129.    
+  130.      ! Fill in general geometry parameters if they exist
+  131.      if (num_equil_flag == 1) then
+  132.    
+  133.         ! Fill in geometry arrays with original data from 
+  134.         ! EXPRO routine.  Note that EXPRO_geo is in m, 
+  135.         ! and EXPRO_dgeo is dimensionless.  All geo_p are 
+  136.         ! dimensionless:
+  137.    
+  138.         geo_p(1:4,:,:) = EXPRO_geo(:,:,:)/a_meters
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 138 
+  A loop starting at line 138 was not vectorized because it contains a call to a subroutine or function on line 138.
+
+  139.         geo_p(5:8,:,:) = EXPRO_dgeo(:,:,:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 139 
+  A loop starting at line 139 was not vectorized because it contains a call to a subroutine or function on line 139.
+
+  140.    
+  141.      endif
+  142.    
+  143.      ! rhos_deuterium/a (dimensionless)
+  144.      rhosda_p(:) = EXPRO_rhos(:)/a_meters
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 144 
+  A loop starting at line 144 was not vectorized because it contains a call to a subroutine or function on line 144.
+
+  145.    
+  146.      ! cs_deuterium/a (1/s)
+  147.      csda_p(:)   = EXPRO_cs(:)/a_meters
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 147 
+  A loop starting at line 147 was not vectorized because it contains a call to a subroutine or function on line 147.
+
+  148.    
+  149.      !--------------------------------------------------------------
+  150.      ! Management of multiple ion densities:
+  151.      !
+  152.      select case (density_method)
+  153.    
+  154.      case (1)
+  155.    
+  156.         call send_message('INFO: (GYRO) Taking densities directly from input.profiles')
+  157.    
+  158.      case (2) 
+  159.    
+  160.         call send_message('INFO: (GYRO) Offsetting main ions to force sum(ni) = ne')
+  161.         den_exp(1,:) = EXPRO_ni_new(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 161 
+  A loop starting at line 161 was not vectorized because it contains a call to a subroutine or function on line 161.
+
+  162.         dlnndr_p(1,:) = a_meters*EXPRO_dlnnidr_new(:)
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 162 
+  A loop starting at line 162 was not vectorized because it contains a call to a subroutine or function on line 162.
+
+  163.    
+  164.      case default
+  165.    
+  166.         call catch_error('ERROR: (GYRO) density_method')
+  167.    
+  168.      end select
+  169.      !--------------------------------------------------------------
+  170.    
+  171.      !-------------------------------------------------------------------
+  172.      ! Sanity check for densities
+  173.      !
+  174.      do is=1,n_spec
+  175.         if (minval(den_exp(is,:)) <= 0.0) then
+ftn-6263 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 175 
+  A loop starting at line 175 was not vectorized because it contains a reference to a non-vector intrinsic on line 175.
+
+  176.            print *,is,den_exp(is,:)
+  177.            call catch_error(&
+  178.                 'ERROR: (GYRO) Nonpositive in density profile '//achar(is-1+iachar("1")))  
+  179.         endif
+  180.      enddo
+  181.    
+  182.      do i_exp=1,n_grid_exp
+  183.    
+  184.         r_p(i_exp) = rmin_exp(i_exp)/rmin_exp(n_grid_exp)
+  185.         q_p(i_exp) = q_exp(i_exp)
+  186.    
+  187.         if (q_scale /= 1.0) then
+  188.            q_p(i_exp) = q_exp(i_exp)*q_scale
+  189.         endif
+  190.    
+  191.         !-------------------------------------------------------------
+  192.         ! Specification of beta_unit (beta in terms of b_unit).
+  193.         !
+  194.         ! beta_unit is defined with respect to b_unit, as required 
+  195.         ! by GEO.  For comparison with DIII-D, beta should be 
+  196.         ! defined with respect to bt_exp.
+  197.         !
+  198.         ! den_s  -> 1/m^3
+  199.         ! tem_s  -> keV
+  200.         ! b_unit -> T
+  201.         !
+  202.         ! beta calculation in CGS:
+  203.         !
+  204.         !         8*pi ( n[1e19/m^3]*1e-6*1e19 )( T[keV]*1.6022*1e-9 )
+  205.         ! beta = ------------------------------------------------------
+  206.         !                           ( 1e4*B[T] )^2
+  207.         !
+  208.         !      = 4.027e-3 n[1e19/m^3]*T[keV]/B[T]^2
+  209.         !
+  210.         p_total = sum(den_exp(:,i_exp)*tem_exp(:,i_exp))
+ftn-6262 ftn: VECTOR GYRO_READ_EXPERIMENTAL_PROFILES, File = gyro_read_experimental_profiles.f90, Line = 210 
+  A loop starting at line 210 was not vectorized because it contains a call to a subroutine or function on line 210.
+
+  211.         !
+  212.         beta_unit_p(i_exp) = 4.027e-3*p_total/b_unit_p(i_exp)**2
+  213.         !
+  214.         ! Here, ptot_exp is in Pa:
+  215.         !
+  216.         !  beta = 8*pi ( 10 ptot[Pa] )/( 1e4*B[T] )^2 = 2.513e-6 ptot[Pa]/B[T]^2
+  217.         !
+  218.         beta_unit_ptot_p(i_exp) = 2.513e-6*ptot_exp(i_exp)/b_unit_p(i_exp)**2
+  219.         !-------------------------------------------------------------
+  220.    
+  221.      enddo
+  222.    
+  223.      if (ampere_scale /= 1.0) then
+  224.         call send_message_real('INFO: (GYRO) betae in Ampere Eq. scaled by ',ampere_scale)
+  225.      endif
+  226.    
+  227.      ! Deallocate EXPRO arrays
+  228.      call EXPRO_palloc(GYRO_COMM_WORLD,path,0)
+  229.    
+  230.      if (debug_flag == 1 .and. i_proc == 0) then
+  231.         print *,'[gyro_read_experimental_profiles done]'
+  232.      endif
+  233.      !---------------------------------------------------------------------
+  234.    
+  235.    end subroutine gyro_read_experimental_profiles
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ACHAR(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 88, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 178, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 47, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 166, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 177, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_READ_EXPERIMENTAL_PROFILES
+
+Name  Messages
+----  --------
+EXPRO_PALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 38, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 228, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+EXPRO_PREAD
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 39, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_PROFILE_EXP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 53, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_READ_EXPERIMENTAL_PROFILES
+
+Name  Messages
+----  --------
+GYRO_PROFILE_EXP
+      Defined as:  No definitions.
+
+      Used By:     GYRO_READ_EXPERIMENTAL_PROFILES
+
+Name  Messages
+----  --------
+GYRO_READ_EXPERIMENTAL_PROFILES
+      Defined as:  Subroutine (line 12, file gyro_read_experimental_profiles.f90)
+
+      Interface:   None
+
+      Calls:       EXPRO_PALLOC (Line 38, file gyro_read_experimental_profiles.f90)
+                   EXPRO_PALLOC (Line 228, file gyro_read_experimental_profiles.f90)
+                   EXPRO_PREAD (Line 39, file gyro_read_experimental_profiles.f90)
+                   CATCH_ERROR (Line 47, file gyro_read_experimental_profiles.f90)
+                   CATCH_ERROR (Line 166, file gyro_read_experimental_profiles.f90)
+                   CATCH_ERROR (Line 177, file gyro_read_experimental_profiles.f90)
+                   GYRO_ALLOC_PROFILE_EXP (Line 53, file gyro_read_experimental_profiles.f90)
+                   SEND_MESSAGE (Line 63, file gyro_read_experimental_profiles.f90)
+                   SEND_MESSAGE (Line 156, file gyro_read_experimental_profiles.f90)
+                   SEND_MESSAGE (Line 160, file gyro_read_experimental_profiles.f90)
+                   IACHAR(Intrinsic) (Line 88, file gyro_read_experimental_profiles.f90)
+                   IACHAR(Intrinsic) (Line 178, file gyro_read_experimental_profiles.f90)
+                   ACHAR(Intrinsic) (Line 88, file gyro_read_experimental_profiles.f90)
+                   ACHAR(Intrinsic) (Line 178, file gyro_read_experimental_profiles.f90)
+                   SEND_MESSAGE_REAL (Line 87, file gyro_read_experimental_profiles.f90)
+                   SEND_MESSAGE_REAL (Line 224, file gyro_read_experimental_profiles.f90)
+                   MINVAL(Intrinsic) (Line 175, file gyro_read_experimental_profiles.f90)
+                   SUM(Intrinsic) (Line 210, file gyro_read_experimental_profiles.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_PROFILE_EXP
+                   EXPRO_INTERFACE
+
+Name  Messages
+----  --------
+IACHAR(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 88, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 178, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 175, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+SEND_MESSAGE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 63, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 156, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 160, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+SEND_MESSAGE_REAL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 87, file gyro_read_experimental_profiles.f90)
+                   GYRO_READ_EXPERIMENTAL_PROFILES (Line 224, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_READ_EXPERIMENTAL_PROFILES (Line 210, file gyro_read_experimental_profiles.f90)
+
+Name  Messages
+----  --------
+__MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

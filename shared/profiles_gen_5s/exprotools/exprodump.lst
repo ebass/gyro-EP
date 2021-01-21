@@ -1,0 +1,303 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/exprodump.f90
+Compiled : 06/09/16  13:25:52
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include exprodump.f90
+Program
+  Units  : EXPRODUMP
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/exprodump.f90
+Date     : 06/09/2016  13:25:53
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! exprodump.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Dump a given EXPRO interface variable as a function of 
+    6.    !  rmin and rho.
+    7.    !------------------------------------------------------------
+    8.    
+    9.    program exprodump
+ftn-7413 ftn: CAUTION File = exprodump.f90, Line = 9 
+  Due to the large size of this routine, use before definition analysis will be restricted to simple unaliased scalar variables.
+
+   10.    
+   11.      use EXPRO_interface
+   12.    
+   13.      implicit none
+   14.    
+   15.      character(len=20) :: var,x
+   16.      integer :: i
+   17.      real, dimension(3) :: z
+   18.    
+   19.    
+   20.      open(unit=1,file='input.exprodump',status='old')
+   21.      read(1,*) var
+   22.      read(1,*) x
+   23.      read(1,*) z(1)
+   24.      read(1,*) z(2)
+   25.      read(1,*) z(3)
+   26.      close(1)
+   27.    
+   28.      EXPRO_ctrl_density_method = 1
+   29.      EXPRO_ctrl_z(1:3) = z(1:3)
+ftn-6204 ftn: VECTOR File = exprodump.f90, Line = 29 
+  A loop starting at line 29 was vectorized.
+
+   30.      EXPRO_ctrl_numeq_flag = 0 
+   31.      EXPRO_ctrl_signq = (-1)*(-1)
+   32.      EXPRO_ctrl_signb = -(-1)
+   33.      EXPRO_ctrl_rotation_method = 1
+   34.    
+   35.      call EXPRO_alloc('./',1) 
+   36.      call EXPRO_read
+   37.    
+   38.      if (trim(var) == 'list') then
+   39.    
+   40.         print *,'rho'
+   41.         print *,'rmin'
+   42.         print *,'rmaj'
+   43.         print *,'q'
+   44.         print *,'kappa'
+   45.    
+   46.         print *,'delta'
+   47.         print *,'te'
+   48.         print *,'ne'
+   49.         print *,'z_eff'
+   50.         print *,'w0'
+   51.    
+   52.         print *,'flow_mom'
+   53.         print *,'pow_e'
+   54.         print *,'pow_i'
+   55.         print *,'pow_ei'
+   56.         print *,'zeta'
+   57.    
+   58.         print *,'flow_beam'
+   59.         print *,'flow_wall'
+   60.         print *,'zmag'
+   61.         print *,'ptot'
+   62.         print *,'poloidalfluxpver2pi'
+   63.    
+   64.         print *,'bunit'
+   65.         print *,'s'
+   66.         print *,'drmaj'
+   67.         print *,'dzmag'
+   68.         print *,'sdelta'
+   69.    
+   70.         print *,'vol'
+   71.         print *,'volp'
+   72.         print *,'cs'
+   73.         print *,'rhos'
+   74.         print *,'drdrho'
+   75.    
+   76.         print *,'grad_r0'
+   77.         print *,'ave_grad_r'
+   78.    
+   79.         print *,'THIS LIST IS INCOMPLETE.  PLEASE SEND EMAIL TO candy@fusion.gat.com'
+   80.         print *,'if you want me to finish the coding.'
+   81.    
+   82.      else   
+   83.    
+   84.        
+   85.    
+   86.    
+   87.         do i=1,EXPRO_n_exp
+   88.    
+   89.            ! Column 1
+   90.            select case (trim(x)) 
+   91.            case ('none')
+   92.               write(*,'(a)',advance='no') ' ' 
+   93.            case ('r')
+   94.               write(*,10,advance='no') EXPRO_rmin(i)/EXPRO_rmin(EXPRO_n_exp)
+   95.            case ('rho')
+   96.               write(*,10,advance='no') EXPRO_rho(i)
+   97.            case ('psi')
+   98.               write(*,10,advance='no') EXPRO_poloidalfluxover2pi(i)/EXPRO_poloidalfluxover2pi(EXPRO_n_exp)
+   99.            end select
+  100.    
+  101.            ! Column 2
+  102.            select case (trim(var))
+  103.    
+  104.            case ('rho')
+  105.               print 20,EXPRO_rho(i)
+  106.            case ('rmin')
+  107.               print 20,EXPRO_rmin(i)
+  108.            case ('rmaj')
+  109.               print 20,EXPRO_rmaj(i)
+  110.            case ('q')
+  111.               print 20,EXPRO_q(i)
+  112.            case ('kappa')
+  113.               print 20,EXPRO_kappa(i)
+  114.            case ('delta')
+  115.               print 20,EXPRO_delta(i)
+  116.            case ('te')
+  117.               print 20,EXPRO_te(i)
+  118.            case ('ne')
+  119.               print 20,EXPRO_ne(i)
+  120.            case ('z_eff')
+  121.               print 20,EXPRO_z_eff(i)
+  122.            case ('w0')
+  123.               print 20,EXPRO_w0(i)
+  124.            case ('flow_mom')
+  125.               print 20,EXPRO_flow_mom(i)
+  126.            case ('pow_e')
+  127.               print 20,EXPRO_pow_e(i)
+  128.            case ('pow_i')
+  129.               print 20,EXPRO_pow_i(i)
+  130.            case ('pow_ei')
+  131.               print 20,EXPRO_pow_ei(i)
+  132.            case ('zeta')
+  133.               print 20,EXPRO_zeta(i)
+  134.            case ('flow_beam')
+  135.               print 20,EXPRO_flow_beam(i)
+  136.            case ('flow_wall')
+  137.               print 20,EXPRO_flow_wall(i)
+  138.            case ('zmag')
+  139.               print 20,EXPRO_zmag(i)
+  140.            case ('ptot')
+  141.               print 20,EXPRO_ptot(i)
+  142.            case ('poloidalfluxover2pi')
+  143.               print 20,EXPRO_poloidalfluxover2pi(i)
+  144.            case ('bunit')
+  145.               print 20,EXPRO_bunit(i)
+  146.            case ('s')
+  147.               print 20,EXPRO_s(i)
+  148.            case ('drmaj')
+  149.               print 20,EXPRO_drmaj(i)
+  150.            case ('dzmag')
+  151.               print 20,EXPRO_dzmag(i)
+  152.            case ('sdelta')
+  153.               print 20,EXPRO_sdelta(i)
+  154.            case ('vol')
+  155.               print 20,EXPRO_vol(i)
+  156.            case ('volp')
+  157.               print 20,EXPRO_volp(i)
+  158.            case ('cs')
+  159.               print 20,EXPRO_cs(i)
+  160.            case ('rhos')
+  161.               print 20,EXPRO_rhos(i)
+  162.            case ('drdrho')
+  163.               print 20,EXPRO_drdrho(i)
+  164.            case ('grad_r0')
+  165.               print 20,EXPRO_grad_r0(i)
+  166.            case ('ave_grad_r')
+  167.               print 20,EXPRO_ave_grad_r(i)
+  168.            case default
+  169.               print 20,0.0
+  170.            end select
+  171.    
+  172.         enddo
+  173.    
+  174.      endif
+  175.    
+  176.      call EXPRO_alloc('./',0) 
+  177.    
+  178.    10 format(t2,1pe12.5)
+  179.    20 format(1x,1pe12.5)
+  180.    
+  181.    end program exprodump
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXPRODUMP
+      Defined as:  Program (line 9, file exprodump.f90)
+
+      Calls:       EXPRO_ALLOC (Line 35, file exprodump.f90)
+                   EXPRO_ALLOC (Line 176, file exprodump.f90)
+                   EXPRO_READ (Line 36, file exprodump.f90)
+                   TRIM(Intrinsic) (Line 38, file exprodump.f90)
+                   TRIM(Intrinsic) (Line 90, file exprodump.f90)
+                   TRIM(Intrinsic) (Line 102, file exprodump.f90)
+
+Name  Messages
+----  --------
+EXPRO_ALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRODUMP (Line 35, file exprodump.f90)
+                   EXPRODUMP (Line 176, file exprodump.f90)
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+Name  Messages
+----  --------
+EXPRO_READ
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRODUMP (Line 36, file exprodump.f90)
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRODUMP (Line 38, file exprodump.f90)
+                   EXPRODUMP (Line 90, file exprodump.f90)
+                   EXPRODUMP (Line 102, file exprodump.f90)
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

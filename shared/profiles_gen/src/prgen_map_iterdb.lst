@@ -1,0 +1,822 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_iterdb.f90
+Compiled : 01/19/21  15:34:54
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/netcdf/4.6.3.2/CRAYCLANG/9.0/include
+           -c prgen_map_iterdb.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : PRGEN_MAP_ITERDB
+          VOLINT
+          ONETWO_ION_ZMASS
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_iterdb.f90
+Date     : 01/19/2021  15:34:55
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! prgen_map_iterdb.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Map native iterdb data onto input.profiles standard.
+    6.    !
+    7.    ! NOTES:
+    8.    !  - This routine is common to both text and NetCDF formats.
+    9.    !  - See map_plasmastate.f90 for analogous routine for
+   10.    !    plasmastate data.
+   11.    !------------------------------------------------------------
+   12.    
+   13.    subroutine prgen_map_iterdb
+   14.    
+   15.      use prgen_globals
+   16.      use EXPRO_interface
+   17.    
+   18.      implicit none
+   19.    
+   20.      integer :: i
+   21.      integer :: ip
+   22.      integer :: n0
+   23.    
+   24.      do i=1,nx
+   25.         rho(i) = (i-1)/(nx-1.0)
+   26.      enddo
+   27.    
+   28.      call volint(1e-6*onetwo_qbeame,pow_e_nb)
+                            ^                        
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 28, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   29.      call volint(1e-6*onetwo_qrfe,pow_e_rf)
+                            ^                      
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 29, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   30.      call volint(1e-6*onetwo_qohm,pow_e_ohm)
+                            ^                       
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 30, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   31.      call volint(1e-6*onetwo_qrad,pow_e_rad)
+                            ^                       
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 31, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   32.      call volint(1e-6*onetwo_qione,powe_ion_exp)
+                            ^                           
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 32, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   33.      call volint(1e-6*onetwo_dpedt,powe_wdot_exp)
+                            ^                            
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 33, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   34.      call volint(1e-6*onetwo_qfuse,pow_e_fus)
+                            ^                        
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 34, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   35.      call volint(1e-6*onetwo_qfusi,pow_i_fus)
+                            ^                        
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 35, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   36.      call volint(1e-6*onetwo_qbeami,pow_i_nb)
+                            ^                        
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 36, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   37.      call volint(1e-6*onetwo_qrfi,pow_i_rf)
+                            ^                      
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 37, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   38.      call volint(1e-6*onetwo_qioni,powi_ion_exp)
+                            ^                           
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 38, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   39.      call volint(1e-6*onetwo_qcx,powi_cx_exp)
+                            ^                        
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 39, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   40.      call volint(1e-6*onetwo_dpidt,powi_wdot_exp)
+                            ^                            
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 40, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+   41.      ! Note sign change to keep pow_ei_exp positive for te>ti
+   42.      call volint(-1e-6*onetwo_qdelt,pow_ei)
+                        ^                          
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 42, Column = 15 
+  This argument produces a copy in to a temporary variable.
+
+   43.    
+   44.      ! Wall ion flow (scale is undefined) (MW/KeV = Kamp)
+   45.      call volint(kevdsecpmw*sion_d,flow_wall_exp)
+                                  ^                      
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 45, Column = 25 
+  This argument produces a copy in to a temporary variable.
+
+   46.    
+   47.      ! Beam ion flow
+   48.      call volint(kevdsecpmw*(onetwo_sbeam+sbcx_d),flow_beam)
+                                  ^                                 
+ftn-1438 ftn: CAUTION PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 48, Column = 25 
+  This argument produces a copy in to a temporary variable.
+
+   49.    
+   50.      ! Torque (TAM flow) (nt-m)
+   51.      call volint(onetwo_storqueb,flow_mom)
+   52.      ! COORDINATES: -ipccw accounts for DIII-D toroidal angle convention
+   53.      flow_mom = -ipccw*flow_mom
+ftn-6204 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 53 
+  A loop starting at line 53 was vectorized.
+
+   54.    
+   55.      ! Total transport power (MW) to electrons: pow_e
+   56.    
+   57.      ! pow_e_nb  (MW)     : NBI power to electrons
+   58.      ! pow_e_rf  (MW)     : RF power to electrons
+   59.      ! pow_e_ohm (MW)     : Ohmic power to electrons
+   60.      ! pow_e_rad (MW)     : [negative] Radiated power to electrons
+   61.      ! powe_ion_exp (MW)  : [negative] Neutral ionization power to electrons
+   62.      ! powe_wdot_exp (MW) : 
+   63.      ! pow_ei    (MW)     : Exchange power from electrons to ions 
+   64.      ! pow_e_fus (MW)     : Fusion power to electrons
+   65.    
+   66.      pow_e_aux(:) = &
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 66 
+  A loop starting at line 66 was not vectorized because it contains a call to a subroutine or function on line 66.
+
+   67.           +pow_e_nb(:) &
+   68.           +pow_e_rf(:) &
+   69.           +pow_e_ohm(:) &
+   70.           +powe_ion_exp(:) 
+   71.    
+   72.      pow_e(:) = &
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 72 
+  A loop starting at line 72 was not vectorized because it contains a call to a subroutine or function on line 72.
+
+   73.           -0.0*powe_wdot_exp(:) &
+   74.           +pow_e_aux(:) &
+   75.           +pow_e_rad(:) &
+   76.           -pow_ei(:) &
+   77.           +pow_e_fus(:)
+   78.    
+   79.      ! Total transport power (MW) to ions: pow_i
+   80.    
+   81.      ! pow_i_nb (MW)      : NBI power to ions
+   82.      ! pow_i_rf (MW)      : RF power to ions
+   83.      ! powi_ion_exp (MW)  : [positive] Neutral ionization power to ions
+   84.      ! powi_cx_exp (MW)   : [negative] Neutral charge exch power to ions
+   85.      ! powi_wdot_exp (MW) 
+   86.      ! pow_ei (MW)        : Exchange power to ions
+   87.      ! pow_i_fus (MW)     : Fusion power to ions
+   88.    
+   89.      pow_i_aux(:) = &
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 89 
+  A loop starting at line 89 was not vectorized because it contains a call to a subroutine or function on line 89.
+
+   90.           +pow_i_nb(:) &
+   91.           +pow_i_rf(:) &
+   92.           +powi_ion_exp(:) &
+   93.           +powi_cx_exp(:) 
+   94.    
+   95.      pow_i(:) = &
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 95 
+  A loop starting at line 95 was not vectorized because it contains a call to a subroutine or function on line 95.
+
+   96.           -0.0*powi_wdot_exp(:) &
+   97.           +pow_i_aux(:) &
+   98.           +pow_ei(:) &
+   99.           +pow_i_fus(:)
+  100.    
+  101.      !---------------------------------------------------------
+  102.      ! Map profile data into EXPRO interface variables
+  103.      !
+  104.      EXPRO_n_exp = nx
+  105.      call EXPRO_alloc('./',1)
+  106.      !
+  107.      EXPRO_rho  = rho
+ftn-6209 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 107 
+  A loop starting at line 107 was partially vectorized.
+
+  108.      EXPRO_rmin = rmin(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 108 
+  A loop starting at line 108 was not vectorized because it contains a call to a subroutine or function on line 108.
+
+  109.      EXPRO_rmaj = rmaj(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 109 
+  A loop starting at line 109 was not vectorized because it contains a call to a subroutine or function on line 109.
+
+  110.      ! COORDINATES: set sign of q
+  111.      EXPRO_q = abs(q(:))*ipccw*btccw
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 111 
+  A loop starting at line 111 was not vectorized because it contains a call to a subroutine or function on line 111.
+
+  112.      EXPRO_kappa = kappa(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 112 
+  A loop starting at line 112 was not vectorized because it contains a call to a subroutine or function on line 112.
+
+  113.      EXPRO_delta = delta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 113 
+  A loop starting at line 113 was not vectorized because it contains a call to a subroutine or function on line 113.
+
+  114.      EXPRO_te = onetwo_te(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 114 
+  A loop starting at line 114 was not vectorized because it contains a call to a subroutine or function on line 114.
+
+  115.      EXPRO_ne = onetwo_ene(:)*1e-19
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 115 
+  A loop starting at line 115 was not vectorized because it contains a call to a subroutine or function on line 115.
+
+  116.      EXPRO_z_eff = onetwo_zeff(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 116 
+  A loop starting at line 116 was not vectorized because it contains a call to a subroutine or function on line 116.
+
+  117.      EXPRO_flow_mom = flow_mom(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 117 
+  A loop starting at line 117 was not vectorized because it contains a call to a subroutine or function on line 117.
+
+  118.      EXPRO_pow_e = pow_e(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 118 
+  A loop starting at line 118 was not vectorized because it contains a call to a subroutine or function on line 118.
+
+  119.      EXPRO_pow_i = pow_i(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 119 
+  A loop starting at line 119 was not vectorized because it contains a call to a subroutine or function on line 119.
+
+  120.      EXPRO_pow_ei = pow_ei(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 120 
+  A loop starting at line 120 was not vectorized because it contains a call to a subroutine or function on line 120.
+
+  121.      EXPRO_zeta = zeta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 121 
+  A loop starting at line 121 was not vectorized because it contains a call to a subroutine or function on line 121.
+
+  122.      EXPRO_flow_beam = flow_beam(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 122 
+  A loop starting at line 122 was not vectorized because it contains a call to a subroutine or function on line 122.
+
+  123.      EXPRO_flow_wall = flow_wall_exp(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 123 
+  A loop starting at line 123 was not vectorized because it contains a call to a subroutine or function on line 123.
+
+  124.      EXPRO_sbeame = onetwo_sbeame(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 124 
+  A loop starting at line 124 was not vectorized because it contains a call to a subroutine or function on line 124.
+
+  125.      EXPRO_sbcx = sbcx_d(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 125 
+  A loop starting at line 125 was not vectorized because it contains a call to a subroutine or function on line 125.
+
+  126.      EXPRO_sscxl = onetwo_sscxl(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 126 
+  A loop starting at line 126 was not vectorized because it contains a call to a subroutine or function on line 126.
+
+  127.      EXPRO_zmag = zmag(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 127 
+  A loop starting at line 127 was not vectorized because it contains a call to a subroutine or function on line 127.
+
+  128.      EXPRO_ptot = p_tot(:) ! Total pressure
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 128 
+  A loop starting at line 128 was not vectorized because it contains a call to a subroutine or function on line 128.
+
+  129.      ! COORDINATES: set sign of poloidal flux
+  130.      EXPRO_polflux = abs(dpsi(:))*(-ipccw)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 130 
+  A loop starting at line 130 was not vectorized because it contains a call to a subroutine or function on line 130.
+
+  131.    
+  132.      !----------------------------------------------------------------------
+  133.      ! Construct ion densities and temperatures, manage naming and numbering
+  134.      !
+  135.      onetwo_enion_vec(:,:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 135 
+  A loop starting at line 135 was not vectorized because it contains a reference to a non-vector intrinsic on line 135.
+
+  136.      onetwo_tion_vec(:,:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 136 
+  A loop starting at line 136 was not vectorized because it contains a reference to a non-vector intrinsic on line 136.
+
+  137.      do i=1,onetwo_nion
+  138.         ! ni
+  139.         onetwo_enion_vec(i,:) = onetwo_enion(:,i)*1e-19
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 139 
+  A loop starting at line 139 was not vectorized because it contains a call to a subroutine or function on line 139.
+
+  140.         ! Ti
+  141.         onetwo_tion_vec(i,:) = onetwo_ti(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 141 
+  A loop starting at line 141 was not vectorized because it contains a call to a subroutine or function on line 141.
+
+  142.      enddo
+  143.    
+  144.      ! Primary ions
+  145.      onetwo_ion_name(1:onetwo_nprim) = onetwo_namep(1:onetwo_nprim)
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 145 
+  A loop starting at line 145 was not vectorized because it contains a reference to a non-vector intrinsic on line 145.
+
+  146.      n0 = onetwo_nprim
+  147.    
+  148.      ! Impurities
+  149.      onetwo_ion_name(1+n0:onetwo_nimp+n0) = onetwo_namei(1:onetwo_nimp)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 149 
+  A loop starting at line 149 was not vectorized because it contains a call to a subroutine or function on line 149.
+
+  150.      n0 = n0+onetwo_nimp
+  151.    
+  152.      ! Beams
+  153.      do i=1,onetwo_nbion
+  154.         ! Only accept beams if density is everywhere positive
+  155.         if (minval(onetwo_enbeam(:,i)) > epsilon(0.0)) then
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 155 
+  A loop starting at line 155 was not vectorized because it contains a reference to a non-vector intrinsic on line 155.
+
+  156.    
+  157.            print '(a)',"INFO: (prgen) Found fast ion beam species"
+  158.            print '(a)',"INFO: (prgen) Modifying fast ion beam temperature to satisfy beam pressure"
+  159.    
+  160.            n0 = n0+1
+  161.    
+  162.            onetwo_enion_vec(n0,:) = onetwo_enbeam(:,i)*1e-19
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 162 
+  A loop starting at line 162 was not vectorized because it contains a call to a subroutine or function on line 162.
+
+  163.    
+  164.            ! Ti: T[keV] = (p/n)[J]/1.6022e-16[J/keV]
+  165.            onetwo_tion_vec(n0,:) = onetwo_pressb(:,i)/onetwo_enbeam(:,i)/1.6022e-16
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 165 
+  A loop starting at line 165 was not vectorized because it contains a call to a subroutine or function on line 165.
+
+  166.    
+  167.            onetwo_ion_name(n0) = onetwo_nameb(i)
+  168.    
+  169.         endif
+  170.      enddo
+  171.    
+  172.      ! Fast alphas
+  173.      if (minval(onetwo_enalp(:)) > epsilon(0.0)) then
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 173 
+  A loop starting at line 173 was not vectorized because it contains a reference to a non-vector intrinsic on line 173.
+
+  174.    
+  175.         print '(a)',"INFO: (prgen) Found fast alpha species"
+  176.         print '(a)',"INFO: (prgen) Modifying fast alpha temperature to satisfy total pressure"
+  177.    
+  178.         n0 = n0+1
+  179.    
+  180.         onetwo_enion_vec(n0,:) = onetwo_enalp(:)*1e-19
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 180 
+  A loop starting at line 180 was not vectorized because it contains a call to a subroutine or function on line 180.
+
+  181.    
+  182.         onetwo_tion_vec(n0,:) = (p_tot(:)-&
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 182 
+  A loop starting at line 182 was not vectorized because it contains a call to a subroutine or function on line 182.
+
+  183.              (sum(onetwo_enion_vec(1:n0-1,:)*&
+  184.              onetwo_tion_vec(1:n0-1,:),dim=1)*1e19+&
+  185.              onetwo_ene(:)*onetwo_te(:))*1.6022e-16)/(onetwo_enalp(:))/1.6022e-16
+  186.    
+  187.         onetwo_ion_name(n0) = 'he'
+  188.    
+  189.      endif
+  190.    
+  191.      onetwo_nion_tot = n0
+  192.      if (n0 > 10) then
+  193.         print '(a)',"ERROR: (prgen) Too many ions; report to GACODE developers."
+  194.         stop
+  195.      endif
+  196.    
+  197.      ! reorder
+  198.      do i=1,10
+  199.         ip = reorder_vec(i)
+  200.         EXPRO_ni(i,:) = onetwo_enion_vec(ip,:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 200 
+  A loop starting at line 200 was not vectorized because it contains a call to a subroutine or function on line 200.
+
+  201.         EXPRO_ti(i,:) = onetwo_tion_vec(ip,:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 201 
+  A loop starting at line 201 was not vectorized because it contains a call to a subroutine or function on line 201.
+
+  202.      enddo
+  203.    
+  204.      ! velocities
+  205.      EXPRO_vpol = 0.0
+ftn-6209 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 205 
+  A loop starting at line 205 was partially vectorized.
+
+  206.      EXPRO_vtor = 0.0
+ftn-6209 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 206 
+  A loop starting at line 206 was partially vectorized.
+
+  207.    
+  208.      ! Look for carbon as first impurity, and insert toroidal velocity at theta=0
+  209.    
+  210.      allocate(vphi_carbon(nx))
+  211.    
+  212.      if (trim(onetwo_namei(1)) == 'c') then
+  213.         ! COORDINATES: -ipccw accounts for DIII-D toroidal angle convention
+  214.         vphi_carbon(:) = -ipccw*onetwo_angrot(:)*(rmaj(:)+rmin(:))
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 214 
+  A loop starting at line 214 was not vectorized because it contains a call to a subroutine or function on line 214.
+
+  215.      else
+  216.         vphi_carbon(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 216 
+  A loop starting at line 216 was not vectorized because it contains a reference to a non-vector intrinsic on line 216.
+
+  217.      endif
+  218.    
+  219.      ! Insert carbon toroidal velocity
+  220.      do i=1,10
+  221.         if (reorder_vec(i) == onetwo_nprim+1) then
+  222.            EXPRO_vtor(i,:) = vphi_carbon(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 222 
+  A loop starting at line 222 was not vectorized because it contains a call to a subroutine or function on line 222.
+
+  223.         endif
+  224.      enddo
+  225.    
+  226.      ! Additional powers (fusion and radiation)
+  227.      ! * for iterdb, put all radiated power in pow_e_line
+  228.      EXPRO_pow_e_fus  = pow_e_fus(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 228 
+  A loop starting at line 228 was not vectorized because it contains a call to a subroutine or function on line 228.
+
+  229.      EXPRO_pow_i_fus  = pow_i_fus(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 229 
+  A loop starting at line 229 was not vectorized because it contains a call to a subroutine or function on line 229.
+
+  230.      EXPRO_pow_e_line = pow_e_rad(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 230 
+  A loop starting at line 230 was not vectorized because it contains a call to a subroutine or function on line 230.
+
+  231.    
+  232.      ! Additional powers (external heating)
+  233.      EXPRO_pow_e_aux = pow_e_aux(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 233 
+  A loop starting at line 233 was not vectorized because it contains a call to a subroutine or function on line 233.
+
+  234.      EXPRO_pow_i_aux = pow_i_aux(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 234 
+  A loop starting at line 234 was not vectorized because it contains a call to a subroutine or function on line 234.
+
+  235.      !---------------------------------------------------------
+  236.    
+  237.      !---------------------------------------------------------
+  238.      ! Read the cer file and overlay
+  239.      !
+  240.      if (cer_file /= "null") then
+  241.         allocate(vpolc_exp(nx))
+  242.         allocate(vtorc_exp(nx))
+  243.         call prgen_read_cer
+  244.         EXPRO_w0 = omega0(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 244 
+  A loop starting at line 244 was not vectorized because it contains a call to a subroutine or function on line 244.
+
+  245.         do i=1,10
+  246.            if (reorder_vec(i) == onetwo_nprim+1) then
+  247.               EXPRO_vtor(i,:) = vtorc_exp(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 247 
+  A loop starting at line 247 was not vectorized because it contains a call to a subroutine or function on line 247.
+
+  248.               EXPRO_vpol(i,:) = vpolc_exp(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_ITERDB, File = prgen_map_iterdb.f90, Line = 248 
+  A loop starting at line 248 was not vectorized because it contains a call to a subroutine or function on line 248.
+
+  249.            endif
+  250.         enddo
+  251.      endif
+  252.      !---------------------------------------------------------
+  253.    
+  254.      !---------------------------------------------------------
+  255.      ! Ion name association
+  256.      !
+  257.      print '(a)','INFO: (prgen) Found these ion species:'
+  258.      do i=1,onetwo_nion_tot
+  259.         call onetwo_ion_zmass(onetwo_ion_name(i),onetwo_z(i),onetwo_m(i))
+  260.         print '(t6,i2,1x,a)',i,trim(onetwo_ion_name(i))
+  261.      enddo
+  262.    
+  263.      !
+  264.      ! Reordering
+  265.      !
+  266.    
+  267.      print '(a)','INFO: (prgen) Created these species'
+  268.      do i=1,n_ion_max
+  269.    
+  270.         ip = reorder_vec(i)
+  271.    
+  272.         if (ip > onetwo_nion_tot) then
+  273.            print '(t6,i2,1x,a)',i,'[null]'
+  274.         else
+  275.            if (ip > onetwo_nion) then
+  276.               ion_type(i) = type_fast
+  277.            else
+  278.               ion_type(i) = type_therm
+  279.            endif
+  280.            print '(t6,i2,1x,a,1x,a)',i,trim(onetwo_ion_name(ip)),ion_type(i)
+  281.            ion_mass(i) = onetwo_m(ip)             
+  282.            ion_z(i)    = onetwo_z(ip)             
+  283.    
+  284.            call prgen_ion_name(nint(ion_mass(i)),ion_z(i),ion_name(i))     
+  285.        
+  286.         endif
+  287.      enddo
+  288.      !---------------------------------------------------------
+  289.    
+  290.    end subroutine prgen_map_iterdb
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  291.    
+  292.    !------------------------------------------------------------------
+  293.    ! Routine to perform Volume integration
+  294.    !------------------------------------------------------------------
+  295.    
+  296.    subroutine volint(f,fdv)
+  297.    
+  298.      use prgen_globals, &
+  299.           only : onetwo_rho_grid,pi,onetwo_R0,onetwo_hcap,nx
+  300.    
+  301.      implicit none
+  302.    
+  303.      integer :: i
+  304.      real, intent(in) :: f(nx)
+  305.      real, intent(out) :: fdv(nx)
+  306.      real :: drho
+  307.      real :: dvoldr_p,dvoldr_m
+  308.    
+  309.      fdv(1) = 0.0
+  310.    
+  311.      do i=2,nx
+  312.    
+  313.         drho = onetwo_rho_grid(i)-onetwo_rho_grid(i-1)
+  314.    
+  315.         dvoldr_p = 2.0*pi*onetwo_rho_grid(i)*2.0*pi*onetwo_R0*onetwo_hcap(i)
+  316.         dvoldr_m = 2.0*pi*onetwo_rho_grid(i-1)*2.0*pi*onetwo_R0*onetwo_hcap(i-1)
+  317.    
+  318.         fdv(i) = fdv(i-1)+0.5*(dvoldr_p*f(i)+dvoldr_m*f(i-1))*drho
+  319.    
+  320.      enddo
+  321.    
+  322.    end subroutine volint
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  323.    
+  324.    subroutine onetwo_ion_zmass(iname,z,m)
+  325.    
+  326.      implicit none
+  327.      
+  328.      character(len=2) :: iname
+  329.      integer :: z
+  330.      real :: m
+  331.      
+  332.      select case (iname)
+  333.      case ('h')
+  334.         z = 1
+  335.         m = 1.0
+  336.      case ('d')
+  337.         z = 1
+  338.         m = 2.0
+  339.      case ('t')
+  340.         z = 1
+  341.         m = 3.0
+  342.      case ('he')
+  343.         z = 2
+  344.         m = 4.0
+  345.      case ('c')
+  346.         z = 6
+  347.         m = 12.0
+  348.      case ('ar')
+  349.         z = 18
+  350.         m = 40.0
+  351.      case default
+  352.         z = 0
+  353.         m = 0.0
+  354.      end select
+  355.    
+  356.    end subroutine onetwo_ion_zmass
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 111, file prgen_map_iterdb.f90)
+                   PRGEN_MAP_ITERDB (Line 130, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+EPSILON(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 155, file prgen_map_iterdb.f90)
+                   PRGEN_MAP_ITERDB (Line 173, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+EXPRO_ALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 105, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_ITERDB
+
+Name  Messages
+----  --------
+MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 155, file prgen_map_iterdb.f90)
+                   PRGEN_MAP_ITERDB (Line 173, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+NINT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 284, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+ONETWO_ION_ZMASS
+      Defined as:  Subroutine (line 324, file prgen_map_iterdb.f90)
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+PRGEN_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_ITERDB
+                   VOLINT
+
+Name  Messages
+----  --------
+PRGEN_ION_NAME
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 284, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+PRGEN_MAP_ITERDB
+      Defined as:  Subroutine (line 13, file prgen_map_iterdb.f90)
+
+      Interface:   None
+
+      Calls:       EXPRO_ALLOC (Line 105, file prgen_map_iterdb.f90)
+                   ABS(Intrinsic) (Line 111, file prgen_map_iterdb.f90)
+                   ABS(Intrinsic) (Line 130, file prgen_map_iterdb.f90)
+                   MINVAL(Intrinsic) (Line 155, file prgen_map_iterdb.f90)
+                   MINVAL(Intrinsic) (Line 173, file prgen_map_iterdb.f90)
+                   EPSILON(Intrinsic) (Line 155, file prgen_map_iterdb.f90)
+                   EPSILON(Intrinsic) (Line 173, file prgen_map_iterdb.f90)
+                   SUM(Intrinsic) (Line 183, file prgen_map_iterdb.f90)
+                   TRIM(Intrinsic) (Line 212, file prgen_map_iterdb.f90)
+                   TRIM(Intrinsic) (Line 260, file prgen_map_iterdb.f90)
+                   TRIM(Intrinsic) (Line 280, file prgen_map_iterdb.f90)
+                   NINT(Intrinsic) (Line 284, file prgen_map_iterdb.f90)
+                   PRGEN_ION_NAME (Line 284, file prgen_map_iterdb.f90)
+
+        Uses:      PRGEN_GLOBALS
+                   EXPRO_INTERFACE
+
+Name  Messages
+----  --------
+PRGEN_READ_CER
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 183, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_ITERDB (Line 212, file prgen_map_iterdb.f90)
+                   PRGEN_MAP_ITERDB (Line 260, file prgen_map_iterdb.f90)
+                   PRGEN_MAP_ITERDB (Line 280, file prgen_map_iterdb.f90)
+
+Name  Messages
+----  --------
+VOLINT
+      Defined as:  Subroutine (line 296, file prgen_map_iterdb.f90)
+
+      Interface:   None
+
+        Uses:      PRGEN_GLOBALS
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

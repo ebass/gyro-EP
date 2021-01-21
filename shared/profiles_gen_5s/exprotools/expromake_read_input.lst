@@ -1,0 +1,138 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_read_input.f90
+Compiled : 06/09/16  13:25:53
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include expromake_read_input.f90
+Program
+  Units  : EXPROMAKE_READ_INPUT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_read_input.f90
+Date     : 06/09/2016  13:25:53
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    subroutine expromake_read_input
+    2.    
+    3.      use expromake_globals
+    4.    
+    5.      implicit none
+    6.    
+    7.      integer :: i
+    8.    
+    9.      open(unit=1,file='input.expromake.gen',status='old')
+   10.      read(1,*) nx
+   11.      read(1,*) exm_b_ref
+   12.      read(1,*) exm_arho
+   13.      read(1,*) exm_a_meters
+   14.      read(1,*) exm_rmaj
+   15.      read(1,*) exm_q
+   16.      read(1,*) exm_kappa
+   17.      read(1,*) exm_delta
+   18.      read(1,*) exm_te_axis
+   19.      read(1,*) exm_ne_axis
+   20.      read(1,*) exm_mu_e
+   21.      read(1,*) exm_z_eff
+   22.      read(1,*) exm_w0
+   23.      read(1,*) exm_zeta
+   24.      read(1,*) exm_zmag
+   25.      do i=1,nions_max
+   26.         read(1,*) exm_ni_axis(i)
+   27.         read(1,*) exm_ti_axis(i)
+   28.         read(1,*) exm_z(i)
+   29.         read(1,*) exm_mu(i)
+   30.      enddo
+   31.    
+   32.      read(1,*) set_exm_b_ref
+   33.      read(1,*) set_exm_arho
+   34.      read(1,*) set_exm_rho
+   35.      read(1,*) set_exm_rmin
+   36.      read(1,*) set_exm_rmaj
+   37.      read(1,*) set_exm_q
+   38.      read(1,*) set_exm_kappa
+   39.      read(1,*) set_exm_delta
+   40.      read(1,*) set_exm_te
+   41.      read(1,*) set_exm_ne
+   42.      read(1,*) set_exm_z_eff
+   43.      read(1,*) set_exm_w0
+   44.      read(1,*) set_exm_zeta
+   45.      read(1,*) set_exm_zmag
+   46.      do i=1,nions_max
+   47.         read(1,*) set_exm_ni(i)
+   48.         read(1,*) set_exm_ti(i)
+   49.      enddo
+   50.    
+   51.      read(1,*) exm_te_model
+   52.      read(1,*) exm_alte
+   53.      read(1,*) exm_ne_model
+   54.      read(1,*) exm_alne
+   55.      do i=1,nions_max
+   56.         read(1,*) exm_ti_model(i)
+   57.         read(1,*) exm_alti(i)
+   58.         read(1,*) exm_ni_model(i)
+   59.         read(1,*) exm_alni(i)
+   60.      enddo
+   61.    
+   62.      close(1)
+   63.    
+   64.    end subroutine expromake_read_input
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXPROMAKE_GLOBALS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+Name  Messages
+----  --------
+EXPROMAKE_READ_INPUT
+      Defined as:  Subroutine (line 1, file expromake_read_input.f90)
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

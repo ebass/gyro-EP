@@ -1,0 +1,238 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_initialize_timestep.f90
+Compiled : 01/19/21  15:35:40
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_initialize_timestep.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_INITIALIZE_TIMESTEP
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_initialize_timestep.f90
+Date     : 01/19/2021  15:35:40
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-------------------------------------------------------------
+    2.    ! gyro_initialize_timestep.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Set number of steps based on maximum simulation time
+    6.    !  (time_max).  For single-mode runs, the run will be
+    7.    !  terminated early if freq_err drops below a given 
+    8.    !  criteria (freq_tol).
+    9.    !
+   10.    !  Also, set integrator parameters and initialize timers.
+   11.    !-------------------------------------------------------------
+   12.    
+   13.    subroutine gyro_initialize_timestep
+   14.    
+   15.      use gyro_globals
+   16.    
+   17.      !------------------------
+   18.      implicit none
+   19.      !
+   20.      real :: new_max
+   21.      !------------------------
+   22.    
+   23.      !----------------------------------------------------
+   24.      ! Mikkelsen's time-step tolerance function
+   25.      !
+   26.      ! Note: freq_err is updated, and freq_err test 
+   27.      ! executed, ONLY for single-mode runs.
+   28.      !
+   29.      if (time_max < 0.0) then
+   30.    
+   31.         ! Initialize status 'good' but unconverged.
+   32.    
+   33.         call gyro_set_exit_status('unconverged',0)
+   34.    
+   35.         if (abs(time_max) > 1.0) then
+   36.    
+   37.            ! Example:
+   38.            !
+   39.            ! time_max=-1000.001 then error tolerance is 
+   40.            ! 0.001 and time_max -> 1000.0
+   41.    
+   42.            new_max  = int(abs(time_max))
+   43.            freq_tol = abs(time_max) - new_max
+   44.            time_max = real(new_max)
+   45.            freq_err = 1.0
+   46.    
+   47.    
+   48.         else
+   49.    
+   50.            ! Example:
+   51.            !
+   52.            ! time_max=-0.001 then error tolerance is 
+   53.            ! 0.001 and time_max -> 50.0
+   54.    
+   55.            freq_tol = abs(time_max)
+   56.            freq_err = 1.0
+   57.            time_max = 50.0
+   58.    
+   59.         endif
+   60.    
+   61.      else
+   62.    
+   63.         ! Initialize status:
+   64.    
+   65.         call gyro_set_exit_status('clean exit',0)
+   66.    
+   67.         freq_tol = 1e-10
+   68.         freq_err = 1.0
+   69.    
+   70.      endif
+   71.    
+   72.      nstep = nint(time_max/dt)
+   73.      !----------------------------------------------------
+   74.    
+   75.      !----------------------------------------------------
+   76.      ! Compute integrator substep parameter:
+   77.      !
+   78.      if (integrator_method > 1 .and. electron_method == 2) then
+   79.    
+   80.         n_substep = integrator_method-1
+   81.    
+   82.      else 
+   83.    
+   84.         ! We will always have n_substep=0 for explicit 
+   85.         ! integration.
+   86.    
+   87.         n_substep = 0
+   88.    
+   89.      endif
+   90.    
+   91.      a_SDIRK = 0.5
+   92.      !----------------------------------------------------
+   93.    
+   94.      if (debug_flag == 1 .and. i_proc == 0) then
+   95.         print *,'[gyro_initialize_timestep done]'
+   96.      endif
+   97.    
+   98.    end subroutine gyro_initialize_timestep
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INITIALIZE_TIMESTEP (Line 35, file gyro_initialize_timestep.f90)
+                   GYRO_INITIALIZE_TIMESTEP (Line 42, file gyro_initialize_timestep.f90)
+                   GYRO_INITIALIZE_TIMESTEP (Line 43, file gyro_initialize_timestep.f90)
+                   GYRO_INITIALIZE_TIMESTEP (Line 55, file gyro_initialize_timestep.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INITIALIZE_TIMESTEP
+
+Name  Messages
+----  --------
+GYRO_INITIALIZE_TIMESTEP
+      Defined as:  Subroutine (line 13, file gyro_initialize_timestep.f90)
+
+      Interface:   None
+
+      Calls:       GYRO_SET_EXIT_STATUS (Line 33, file gyro_initialize_timestep.f90)
+                   GYRO_SET_EXIT_STATUS (Line 65, file gyro_initialize_timestep.f90)
+                   ABS(Intrinsic) (Line 35, file gyro_initialize_timestep.f90)
+                   ABS(Intrinsic) (Line 42, file gyro_initialize_timestep.f90)
+                   ABS(Intrinsic) (Line 43, file gyro_initialize_timestep.f90)
+                   ABS(Intrinsic) (Line 55, file gyro_initialize_timestep.f90)
+                   INT(Intrinsic) (Line 42, file gyro_initialize_timestep.f90)
+                   REAL(Intrinsic) (Line 44, file gyro_initialize_timestep.f90)
+                   NINT(Intrinsic) (Line 72, file gyro_initialize_timestep.f90)
+
+        Uses:      GYRO_GLOBALS
+
+Name  Messages
+----  --------
+GYRO_SET_EXIT_STATUS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INITIALIZE_TIMESTEP (Line 33, file gyro_initialize_timestep.f90)
+                   GYRO_INITIALIZE_TIMESTEP (Line 65, file gyro_initialize_timestep.f90)
+
+Name  Messages
+----  --------
+INT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INITIALIZE_TIMESTEP (Line 42, file gyro_initialize_timestep.f90)
+
+Name  Messages
+----  --------
+NINT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INITIALIZE_TIMESTEP (Line 72, file gyro_initialize_timestep.f90)
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INITIALIZE_TIMESTEP (Line 44, file gyro_initialize_timestep.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

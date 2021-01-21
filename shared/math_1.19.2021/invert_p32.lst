@@ -1,0 +1,150 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/invert_p32.f90
+Compiled : 01/19/21  14:38:38
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -c invert_p32.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : INVERT_P32
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/invert_p32.f90
+Date     : 01/19/2021  14:38:38
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------
+    2.    ! invert_p32.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Calculate x given s, where:
+    6.    !
+    7.    !                         x
+    8.    !                  2      /          -t
+    9.    ! s = p32(x) = --------   | sqrt(t) e   dt
+   10.    !              sqrt(pi)   /
+   11.    !                         0
+   12.    !
+   13.    ! Speed is not esential, so we use bisection 
+   14.    ! for robsutness.
+   15.    !
+   16.    ! REVISIONS:
+   17.    ! 26 Sept 01: jc 
+   18.    !  Documented
+   19.    ! 25 May 05: jc
+   20.    !  Moved into gyro/math subdir and renamed.
+   21.    !------------------------------------------------
+   22.    
+   23.    subroutine invert_p32(s,x,x_max)
+   24.    
+   25.      implicit none
+   26.    
+   27.      real, parameter :: eps_x = 1e-10
+   28.    
+   29.      real, intent(in) :: s
+   30.      real, intent(in) :: x_max
+   31.      real, intent(inout) :: x
+   32.    
+   33.      real :: dx
+   34.      real :: s1
+   35.      real :: s2
+   36.      real :: residual
+   37.    
+   38.      real, external :: p32
+   39.    
+   40.    
+   41.      residual = 1.0
+   42.    
+   43.      dx = x_max/2.0-eps_x
+   44.      x  = x_max/2.0
+   45.    
+   46.      do while (residual > eps_x)
+   47.    
+   48.         s1 = p32(x)
+   49.         s2 = p32(x+dx)
+   50.    
+   51.         dx = 0.5*dx
+   52.    
+   53.         if (s1 <= s .and. s2 >= s) then
+   54.            x = x+dx
+   55.         else
+   56.            x = x-dx
+   57.         endif
+   58.    
+   59.         residual = abs(s2-s1)
+   60.    
+   61.      enddo
+   62.    
+   63.    end subroutine invert_p32
+   64.    
+   65.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   INVERT_P32 (Line 59, file invert_p32.f90)
+
+Name  Messages
+----  --------
+INVERT_P32
+      Defined as:  Subroutine (line 23, file invert_p32.f90)
+
+      Interface:   None
+
+      Calls:       P32 (Line 48, file invert_p32.f90)
+                   P32 (Line 49, file invert_p32.f90)
+                   ABS(Intrinsic) (Line 59, file invert_p32.f90)
+
+Name  Messages
+----  --------
+P32
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   INVERT_P32 (Line 48, file invert_p32.f90)
+                   INVERT_P32 (Line 49, file invert_p32.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

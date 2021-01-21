@@ -1,0 +1,1756 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_write_timedata.f90
+Compiled : 01/19/21  15:35:57
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_write_timedata.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_WRITE_TIMEDATA
+          WRITE_DISTRIBUTED_REAL
+          WRITE_DISTRIBUTED_COMPLEX
+          WRITE_LOCAL_REAL
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_write_timedata.f90
+Date     : 01/19/2021  15:35:57
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------
+    2.    ! gyro_write_timedata.F90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  This is the master file controlling output of
+    6.    !  data on a per-timestep basis.  This file also 
+    7.    !  contains the MPI IO routines 
+    8.    !
+    9.    !  - write_distributed_real
+   10.    !  - write_distributed_complex
+   11.    !  - write_local_real
+   12.    !-----------------------------------------------------
+   13.    
+   14.    subroutine gyro_write_timedata
+   15.    
+   16.      use gyro_globals
+   17.      use mpi
+   18.    
+   19.      !---------------------------------------------------
+   20.      implicit none
+   21.      !
+   22.      real, dimension(:,:,:), allocatable :: a3
+   23.      !
+   24.      complex, dimension(n_theta_plot,n_x,n_kinetic) :: n_plot
+   25.      complex, dimension(n_theta_plot,n_x,n_kinetic) :: e_plot
+   26.      complex, dimension(n_theta_plot,n_x,n_kinetic) :: v_plot
+   27.      !---------------------------------------------------
+   28.    
+   29.      !---------------------------------------------------
+   30.      ! Timestep data:
+   31.      !
+   32.      if (i_proc == 0) then
+   33.         call gyro_write_step(trim(path)//'out.gyro.t',1)
+   34.      endif
+   35.      !---------------------------------------------------
+   36.    
+   37.      !--------------------------------------------------
+   38.      ! Output of field-like quantities:
+   39.      !
+   40.      if (plot_n_flag+plot_e_flag+plot_v_flag > 0) then
+   41.         n_plot(:,:,:) = moments_plot(:,:,:,1)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 41 
+  A loop starting at line 41 was not vectorized because it contains a call to a subroutine or function on line 41.
+
+   42.         e_plot(:,:,:) = moments_plot(:,:,:,2)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 42 
+  A loop starting at line 42 was not vectorized because it contains a call to a subroutine or function on line 42.
+
+   43.         v_plot(:,:,:) = moments_plot(:,:,:,3)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 43 
+  A loop starting at line 43 was not vectorized because it contains a call to a subroutine or function on line 43.
+
+   44.      endif
+   45.      !
+   46.      if (plot_u_flag == 1) then
+   47.    
+   48.         ! POTENTIALS
+   49.    
+   50.         call write_distributed_complex(&
+   51.              trim(path)//'out.gyro.moment_u',&
+   52.              10,&
+   53.              size(phi_plot(:,:,1:n_field)),&
+   54.              phi_plot(:,:,1:n_field))
+   55.    
+   56.      endif !u_flag==1
+   57.    
+   58.      if (plot_epar_flag == 1) then
+   59.    
+   60.         ! PARALLEL ELECTRIC FIELD
+   61.    
+   62.         call write_distributed_complex(&
+   63.              trim(path)//'out.gyro.moment_epar',&
+   64.              10,&
+   65.              size(phi_plot(:,:,n_field+1)),&
+   66.              phi_plot(:,:,n_field+1))
+   67.    
+   68.      endif !epar_flag==1
+   69.    
+   70.      if (plot_n_flag == 1) then
+   71.    
+   72.         ! DENSITY
+   73.    
+   74.         call write_distributed_complex(&
+   75.              trim(path)//'out.gyro.moment_n',&
+   76.              10,&
+   77.              size(n_plot),&
+   78.              n_plot)
+   79.    
+   80.      endif !n_flag ==1 
+   81.    
+   82.      if (plot_e_flag == 1) then
+   83.    
+   84.         ! ENERGY
+   85.    
+   86.         call write_distributed_complex(&
+   87.              trim(path)//'out.gyro.moment_e',&
+   88.              10,&
+   89.              size(e_plot),&
+   90.              e_plot)
+   91.    
+   92.      endif !e_flag==1
+   93.    
+   94.      if (plot_v_flag == 1) then
+   95.    
+   96.         ! PARALLEL VELOCITY
+   97.    
+   98.         call write_distributed_complex(&
+   99.              trim(path)//'out.gyro.moment_v',&
+  100.              10,&
+  101.              size(v_plot),&
+  102.              v_plot)
+  103.    
+  104.      endif !v_flag==1
+  105.    
+  106.      !--------------------------------------------------
+  107.    
+  108.      call gyro_kxky_spectrum
+  109.    
+  110.      call write_distributed_real(&
+  111.           trim(path)//'out.gyro.kxkyspec',&
+  112.           10,&
+  113.           size(kxkyspec),&
+  114.           kxkyspec)
+  115.    
+  116.      if (i_proc == 0) then
+  117.         call write_local_real(&
+  118.              trim(path)//'out.gyro.k_perp_squared',&
+  119.              10,&
+  120.              size(k_perp_squared),&
+  121.              k_perp_squared)
+  122.      endif
+  123.    
+  124.      call gyro_field_fluxave
+  125.    
+  126.      !-------------------------------------------------------------------
+  127.      ! Calculation of fundamental nonlinear fluxes
+  128.      !
+  129.      call gyro_nonlinear_flux
+  130.      call gyro_gbflux
+  131.      !-------------------------------------------------------------------
+  132.    
+  133.      !-------------------------------------------------------------------
+  134.      ! Output specific to linear/nonlinear operation:
+  135.      !
+  136.      if (nonlinear_flag == 0) then
+  137.    
+  138.         !=============
+  139.         ! BEGIN LINEAR 
+  140.         !=============
+  141.    
+  142.         call gyro_write_freq(trim(path)//'out.gyro.freq',10)
+  143.    
+  144.         if (plot_u_flag == 1) then        
+  145.    
+  146.            ! PHI
+  147.            call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_phi',10,1,0)
+  148.    
+  149.            if (n_field > 1) then
+  150.               ! A_PARALLEL 
+  151.    
+  152.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_a',10,2,0)
+  153.    
+  154.            endif
+  155.    
+  156.            if (n_field > 2) then
+  157.               ! B_PARALLEL 
+  158.    
+  159.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_aperp',10,3,0)
+  160.    
+  161.            endif
+  162.    
+  163.            ! E_PARALLEL
+  164.            if (eparallel_plot_flag == 1) then
+  165.    
+  166.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_epar',10,n_field+1,0)
+  167.    
+  168.            endif
+  169.    
+  170.         endif
+  171.    
+  172.         if (plot_n_flag == 1) then
+  173.    
+  174.            ! DENSITY
+  175.            if (electron_method /= 3) then
+  176.    
+  177.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_n_ion',10,5,1)
+  178.    
+  179.            endif
+  180.            if (electron_method > 1) then 
+  181.    
+  182.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_n_elec',10,5,indx_e)
+  183.    
+  184.            endif
+  185.         endif
+  186.    
+  187.         if (plot_e_flag == 1) then
+  188.    
+  189.            ! ENERGY
+  190.            if (electron_method /= 3) then
+  191.    
+  192.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_e_ion',10,6,1)
+  193.    
+  194.            endif
+  195.            if (electron_method > 1) then 
+  196.    
+  197.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_e_elec',10,6,indx_e)
+  198.    
+  199.            endif
+  200.         endif
+  201.    
+  202.         if (plot_v_flag == 1) then
+  203.    
+  204.            ! ENERGY
+  205.            if (electron_method /= 3) then
+  206.    
+  207.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_v_ion',10,7,1)
+  208.    
+  209.            endif
+  210.            if (electron_method > 1) then 
+  211.    
+  212.               call gyro_ballooning_mode(trim(path)//'out.gyro.balloon_v_elec',10,7,indx_e)
+  213.    
+  214.            endif
+  215.         endif
+  216.    
+  217.         !-----------------------------------------------------------------
+  218.         ! Distribution function data:
+  219.         !
+  220.         if (n_proc == 1 .and. n_n == 1 .and. dist_print == 1) then
+  221.            call gyro_write_h(trim(path)//'out.gyro.hp',trim(path)//'out.gyro.ht',10,11)
+  222.         endif
+  223.         !-----------------------------------------------------------------
+  224.    
+  225.         if (i_proc == 0 .and. lindiff_method > 1) then
+  226.    
+  227.            call write_local_real( &
+  228.                 trim(path)//'out.gyro.gbflux',10,size(gbflux),gbflux)
+  229.            call write_local_real( &
+  230.                 trim(path)//'out.gyro.gbflux_mom',10,size(gbflux_mom),gbflux_mom)
+  231.            call write_local_real( &
+  232.                 trim(path)//'out.gyro.gbflux_i',10,size(gbflux_i),gbflux_i)
+  233.    
+  234.            if (trapdiff_flag == 1) then
+  235.               call write_local_real( &
+  236.                    trim(path)//'out.gyro.gbflux_trapped',&
+  237.                    10,size(gbflux_trapped),gbflux_trapped)
+  238.               call write_local_real( &
+  239.                    trim(path)//'out.gyro.gbflux_i_trapped',&
+  240.                    10,size(gbflux_i_trapped),gbflux_i_trapped)
+  241.            endif
+  242.    
+  243.         endif !i_proc ==0 and lindiff >1 
+  244.    
+  245.         !=============
+  246.         ! END LINEAR 
+  247.         !=============
+  248.    
+  249.      else
+  250.    
+  251.         !================
+  252.         ! BEGIN NONLINEAR 
+  253.         !================
+  254.    
+  255.         call write_distributed_real(&
+  256.              trim(path)//'out.gyro.gbflux_n',&
+  257.              10,&
+  258.              size(gbflux_n),&
+  259.              gbflux_n)
+  260.    
+  261.         if (nonlinear_transfer_flag == 1) then
+  262.            call write_distributed_real(&
+  263.                 trim(path)//'out.gyro.nl_transfer',&
+  264.                 10,&
+  265.                 size(nl_transfer),&
+  266.                 nl_transfer)
+  267.         endif !nonlinear_transfer_flag ==1 
+  268.    
+  269.         if (i_proc == 0) then
+  270.    
+  271.            call write_local_real(trim(path)//'out.gyro.field_rms',10,size(ave_phi),ave_phi)
+  272.    
+  273.            call write_local_real( &
+  274.                 trim(path)//'out.gyro.gbflux',10,size(gbflux),gbflux)
+  275.            call write_local_real( &
+  276.                 trim(path)//'out.gyro.gbflux_i',10,size(gbflux_i),gbflux_i)
+  277.    
+  278.            call write_local_real( &
+  279.                 trim(path)//'out.gyro.gbflux_mom',10,size(gbflux_mom),gbflux_mom)
+  280.            call write_local_real( &
+  281.                 trim(path)//'out.gyro.gbflux_exc',10,size(gbflux_exc),gbflux_exc)
+  282.    
+  283.            if (trapdiff_flag == 1) then
+  284.               call write_local_real( &
+  285.                    trim(path)//'out.gyro.gbflux_trapped',10,&
+  286.                    size(gbflux_trapped),gbflux_trapped)
+  287.               call write_local_real( &
+  288.                    trim(path)//'out.gyro.gbflux_i_trapped',10,&
+  289.                    size(gbflux_i_trapped),gbflux_i_trapped)
+  290.            endif !trapdiff_flag == 1
+  291.    
+  292.            call write_local_real( &
+  293.                 trim(path)//'out.gyro.zerobar',10,&
+  294.                 size(field_fluxave),transpose(field_fluxave))
+                                           ^                         
+ftn-1438 ftn: CAUTION GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 294, Column = 34 
+  This argument produces a copy in to a temporary variable.
+
+  295.    
+  296.    
+  297.            allocate(a3(n_kinetic,4,n_x))
+  298.            do i=1,n_x
+  299.               a3(:,1,i) = h0_n(:,i)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 299 
+  A loop starting at line 299 was not vectorized because it contains a call to a subroutine or function on line 299.
+
+  300.               a3(:,2,i) = h0_e(:,i)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 300 
+  A loop starting at line 300 was not vectorized because it contains a call to a subroutine or function on line 300.
+
+  301.               a3(:,3,i) = source_n(:,i)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 301 
+  A loop starting at line 301 was not vectorized because it contains a call to a subroutine or function on line 301.
+
+  302.               a3(:,4,i) = source_e(:,i)
+ftn-6262 ftn: VECTOR GYRO_WRITE_TIMEDATA, File = gyro_write_timedata.f90, Line = 302 
+  A loop starting at line 302 was not vectorized because it contains a call to a subroutine or function on line 302.
+
+  303.            enddo
+  304.    
+  305.            call write_local_real( &
+  306.                 trim(path)//'out.gyro.source',10,size(a3),a3)
+  307.    
+  308.            call write_local_real( &
+  309.                 trim(path)//'out.gyro.moment_zero',10,&
+  310.                 size(moments_zero_plot),moments_zero_plot)
+  311.    
+  312.            deallocate(a3)
+  313.    
+  314.         endif! i_proc ==0
+  315.    
+  316.         !================
+  317.         ! END NONLINEAR 
+  318.         !================
+  319.    
+  320.      endif
+  321.      !-------------------------------------------------------------------
+  322.    
+  323.      call gyro_write_error(trim(path)//'out.gyro.error',10)
+  324.    
+  325.      !------------------------------------------------------------
+  326.      ! Entropy diagnostics
+  327.      !
+  328.      if (entropy_flag == 1) then
+  329.         call gyro_entropy 
+  330.         if (i_proc == 0) then 
+  331.            call write_local_real(&
+  332.                 trim(path)//'out.gyro.entropy.out',10,size(entropy),entropy)
+  333.         endif
+  334.      endif
+  335.      !------------------------------------------------------------
+  336.    
+  337.      !------------------------------------------------------------
+  338.      ! Velocity-space diagnostics
+  339.      !
+  340.      if (velocity_output_flag == 1) then
+  341.         call gyro_nonlinear_flux_velocity
+  342.         call write_distributed_real(&
+  343.              trim(path)//'out.gyro.flux_velocity',&
+  344.              10,&
+  345.              size(nonlinear_flux_velocity),&
+  346.              nonlinear_flux_velocity)
+  347.      endif
+  348.      !
+  349.      !------------------------------------------------------------
+  350.    
+  351.      !------------------------------------------------------------
+  352.      ! Write precision-monitoring data
+  353.      !
+  354.      call gyro_write_precision(10,sum(abs(gbflux)))
+  355.      !------------------------------------------------------------
+  356.    
+  357.      !------------------------------------------------------------
+  358.      call gyro_write_timers(trim(path)//'out.gyro.timing',10)
+  359.      !------------------------------------------------------------
+  360.    
+  361.      if (i_proc == 0 .and. debug_flag == 1) print *,'[gyro_write_timedata done]'
+  362.    
+  363.    end subroutine gyro_write_timedata
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  364.    
+  365.    !===========================================================================
+  366.    !------------------------------------------------------
+  367.    ! write_distributed_real.f90
+  368.    !
+  369.    ! PURPOSE:
+  370.    !  Control merged output of distributed real array.
+  371.    !------------------------------------------------------
+  372.    
+  373.    subroutine write_distributed_real(datafile,io,n_fn,fn)
+  374.    
+  375.      use mpi
+  376.      use gyro_globals, only : &
+  377.           n_n,&
+  378.           n_n_1,&
+  379.           n_proc_1,&
+  380.           recv_status,&
+  381.           data_step,&
+  382.           GYRO_COMM_WORLD,&
+  383.           i_proc,&
+  384.           i_err,&
+  385.           io_control, &
+  386.           fmtstr
+  387.    
+  388.      !------------------------------------------------------
+  389.      implicit none
+  390.      !
+  391.      character (len=*), intent(in) :: datafile
+  392.      integer, intent(in) :: io
+  393.      integer, intent(in) :: n_fn
+  394.      real, intent(in) :: fn(n_fn)
+  395.      !
+  396.      integer :: data_loop
+  397.      integer :: i_group_send
+  398.      integer :: i_send
+  399.      integer :: in
+  400.      !
+  401.      real :: fn_recv(n_fn)
+  402.      !------------------------------------------------------
+  403.    
+  404.      select case (io_control)
+  405.    
+  406.      case(0)
+  407.    
+  408.         return 
+  409.    
+  410.      case(1)
+  411.    
+  412.         ! Initial open
+  413.    
+  414.         if (i_proc == 0) then
+  415.            open(unit=io,file=datafile,status='replace')
+  416.            close(io)
+  417.         endif
+  418.    
+  419.      case(2)
+  420.    
+  421.         ! Output
+  422.    
+  423.         if (i_proc == 0) &
+  424.              open(unit=io,file=datafile,status='old',position='append')
+  425.    
+  426.         do in=1,n_n
+  427.    
+  428.            !-----------------------------------------
+  429.            ! Subgroup collector:
+  430.            !
+  431.            i_group_send = (in-1)/n_n_1
+  432.    
+  433.            if (i_group_send /= 0) then
+  434.    
+  435.               i_send = i_group_send*n_proc_1
+  436.    
+  437.               if (i_proc == 0) then
+  438.    
+  439.                  call MPI_RECV(fn_recv,&
+  440.                       n_fn,&
+  441.                       MPI_DOUBLE_PRECISION,&
+  442.                       i_send,&
+  443.                       in,&
+  444.                       GYRO_COMM_WORLD,&
+  445.                       recv_status,&
+  446.                       i_err)
+  447.    
+  448.               else if (i_proc == i_send) then
+  449.    
+  450.                  call MPI_SEND(fn,&
+  451.                       n_fn,&
+  452.                       MPI_DOUBLE_PRECISION,&
+  453.                       0,&
+  454.                       in,&
+  455.                       GYRO_COMM_WORLD,&
+  456.                       i_err)
+  457.    
+  458.               endif
+  459.    
+  460.            else
+  461.    
+  462.               fn_recv(:) = fn(:)
+ftn-6263 ftn: VECTOR WRITE_DISTRIBUTED_REAL, File = gyro_write_timedata.f90, Line = 462 
+  A loop starting at line 462 was not vectorized because it contains a reference to a non-vector intrinsic on line 462.
+
+  463.    
+  464.            endif
+  465.            !
+  466.            !-----------------------------------------
+  467.    
+  468.            if (i_proc == 0) then
+  469.    
+  470.               write(io,fmtstr) fn_recv(:)
+  471.    
+  472.            endif
+  473.    
+  474.         enddo ! in
+  475.    
+  476.         if (i_proc == 0) close(io)
+  477.    
+  478.      case(3)
+  479.    
+  480.         ! Reposition after restart
+  481.    
+  482.         if (i_proc == 0) then
+  483.    
+  484.            open(unit=io,file=datafile,status='old')
+  485.            do data_loop=0,data_step
+  486.    
+  487.               do in=1,n_n
+  488.                  read(io,fmtstr) fn_recv(:)
+  489.               enddo
+  490.    
+  491.            enddo ! data_loop
+  492.    
+  493.            endfile(io)
+  494.            close(io)
+  495.    
+  496.         endif
+  497.    
+  498.      end select
+  499.    
+  500.    end subroutine write_distributed_real
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  501.    
+  502.    !------------------------------------------------------
+  503.    ! write_distributed_complex.f90
+  504.    !
+  505.    ! PURPOSE:
+  506.    !  Control merged output of complex distributed array.
+  507.    !------------------------------------------------------
+  508.    
+  509.    subroutine write_distributed_complex(datafile,io,n_fn,fn)
+  510.    
+  511.      use mpi
+  512.      use gyro_globals, only : &
+  513.           n_n,&
+  514.           n_n_1,&
+  515.           n_proc_1,&
+  516.           recv_status,&
+  517.           data_step,&
+  518.           GYRO_COMM_WORLD,&
+  519.           i_proc,&
+  520.           i_err, &
+  521.           io_control, &
+  522.           fmtstr
+  523.    
+  524.      !------------------------------------------------------
+  525.      implicit none
+  526.      !
+  527.      character (len=*), intent(in) :: datafile
+  528.      integer, intent(in) :: io
+  529.      integer, intent(in) :: n_fn
+  530.      complex, intent(in) :: fn(n_fn)
+  531.      !
+  532.      integer :: data_loop
+  533.      integer :: i_group_send
+  534.      integer :: i_send
+  535.      integer :: in
+  536.      !
+  537.      complex :: fn_recv(n_fn)
+  538.      !------------------------------------------------------
+  539.    
+  540.    
+  541.      select case (io_control)
+  542.    
+  543.      case(0)
+  544.    
+  545.         return
+  546.    
+  547.      case(1)
+  548.    
+  549.         ! Open
+  550.    
+  551.         if (i_proc == 0) then
+  552.            open(unit=io,file=datafile,status='replace')
+  553.            close(io)
+  554.         endif
+  555.    
+  556.      case(2)
+  557.    
+  558.         ! Append
+  559.    
+  560.         if (i_proc == 0) &
+  561.              open(unit=io,file=datafile,status='old',position='append')
+  562.    
+  563.         do in=1,n_n
+  564.    
+  565.            !-----------------------------------------
+  566.            ! Subgroup collector:
+  567.            !
+  568.            i_group_send = (in-1)/n_n_1
+  569.    
+  570.            if (i_group_send /= 0) then
+  571.    
+  572.               i_send = i_group_send*n_proc_1
+  573.    
+  574.               if (i_proc == 0) then
+  575.    
+  576.                  call MPI_RECV(fn_recv,&
+  577.                       n_fn,&
+  578.                       MPI_DOUBLE_COMPLEX,&
+  579.                       i_send,&
+  580.                       in,&
+  581.                       GYRO_COMM_WORLD,&
+  582.                       recv_status,&
+  583.                       i_err)
+  584.    
+  585.               else if (i_proc == i_send) then
+  586.    
+  587.                  call MPI_SEND(fn,&
+  588.                       n_fn,&
+  589.                       MPI_DOUBLE_COMPLEX,&
+  590.                       0,&
+  591.                       in,&
+  592.                       GYRO_COMM_WORLD,&
+  593.                       i_err)
+  594.    
+  595.               endif
+  596.    
+  597.            else
+  598.    
+  599.               fn_recv(:) = fn(:)
+ftn-6263 ftn: VECTOR WRITE_DISTRIBUTED_COMPLEX, File = gyro_write_timedata.f90, Line = 599 
+  A loop starting at line 599 was not vectorized because it contains a reference to a non-vector intrinsic on line 599.
+
+  600.    
+  601.            endif
+  602.            !
+  603.            !-----------------------------------------
+  604.    
+  605.            if (i_proc == 0) then
+  606.    
+  607.               write(io,fmtstr) fn_recv(:)
+  608.    
+  609.            endif
+  610.    
+  611.         enddo ! in
+  612.    
+  613.         if (i_proc == 0) close(io)
+  614.    
+  615.      case(3)
+  616.    
+  617.         ! Rewind
+  618.    
+  619.         if (i_proc == 0) then
+  620.    
+  621.            open(unit=io,file=datafile,status='old')
+  622.            do data_loop=0,data_step
+  623.    
+  624.               do in=1,n_n
+  625.                  read(io,fmtstr) fn_recv(:)
+  626.               enddo
+  627.    
+  628.            enddo ! data_loop
+  629.    
+  630.            endfile(io)
+  631.            close(io)
+  632.    
+  633.         endif
+  634.    
+  635.      end select
+  636.    
+  637.    end subroutine write_distributed_complex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  638.    
+  639.    !------------------------------------------------------
+  640.    ! write_local_real.f90
+  641.    !
+  642.    ! PURPOSE:
+  643.    !  This routine write a vector of nondistributed reals.
+  644.    !------------------------------------------------------
+  645.    
+  646.    subroutine write_local_real(datafile,io,n_fn,fn)
+  647.    
+  648.      use gyro_globals, only : &
+  649.           data_step, &
+  650.           io_control, &
+  651.           fmtstr
+  652.    
+  653.      !---------------------------------------------------
+  654.      implicit none
+  655.      !
+  656.      character (len=*), intent(in) :: datafile
+  657.      integer, intent(in) :: io
+  658.      integer, intent(in) :: n_fn
+  659.      real, intent(in) :: fn(n_fn)
+  660.      !
+  661.      integer :: data_loop
+  662.      real :: dummy(n_fn)
+  663.      !---------------------------------------------------
+  664.    
+  665.      select case (io_control)
+  666.    
+  667.      case(0)
+  668.    
+  669.         return
+  670.    
+  671.      case(1)
+  672.    
+  673.         ! Open
+  674.    
+  675.         open(unit=io,file=datafile,status='replace')
+  676.         close(io)
+  677.    
+  678.      case(2)
+  679.    
+  680.         ! Append
+  681.    
+  682.         open(unit=io,file=datafile,status='old',position='append')
+  683.         write(io,fmtstr)  fn(:)
+  684.         close(io)
+  685.    
+  686.      case(3)
+  687.    
+  688.         ! Rewind
+  689.    
+  690.         open(unit=io,file=datafile,status='old')
+  691.    
+  692.         do data_loop=0,data_step
+  693.            read(io,fmtstr) dummy(:)
+  694.         enddo
+  695.    
+  696.         endfile(io)
+  697.         close(io)
+  698.    
+  699.      end select
+  700.    
+  701.    end subroutine write_local_real
+  702.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_WRITE_TIMEDATA              Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_COMPLEX        Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_REAL           Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_WRITE_TIMEDATA              Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_COMPLEX        Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_REAL           Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_WRITE_TIMEDATA              Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_COMPLEX        Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_REAL           Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_WRITE_TIMEDATA              Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_COMPLEX        Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_REAL           Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_WRITE_TIMEDATA              Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_COMPLEX        Block is used from MPI_CONSTANTS
+     WRITE_DISTRIBUTED_REAL           Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 354, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_BALLOONING_MODE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 147, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 152, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 159, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 166, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 177, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 182, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 192, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 197, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 207, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 212, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_ENTROPY
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 329, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_FIELD_FLUXAVE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 124, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_GBFLUX
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 130, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_TIMEDATA
+                   WRITE_DISTRIBUTED_REAL
+                   WRITE_DISTRIBUTED_COMPLEX
+                   WRITE_LOCAL_REAL
+
+Name  Messages
+----  --------
+GYRO_KXKY_SPECTRUM
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 108, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_NONLINEAR_FLUX
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 129, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_NONLINEAR_FLUX_VELOCITY
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 341, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 323, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_FREQ
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 142, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_H
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 221, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_PRECISION
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 354, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_STEP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 33, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+GYRO_WRITE_TIMEDATA
+      Defined as:  Subroutine (line 14, file gyro_write_timedata.f90)
+
+      Interface:   None
+
+      Calls:       TRIM(Intrinsic) (Line 33, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 51, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 63, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 75, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 87, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 99, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 111, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 118, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 142, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 147, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 152, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 159, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 166, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 177, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 182, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 192, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 197, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 207, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 212, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 221, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 221, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 228, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 230, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 232, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 236, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 239, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 256, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 263, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 271, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 274, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 276, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 279, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 281, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 285, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 288, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 293, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 323, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 332, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 343, file gyro_write_timedata.f90)
+                   TRIM(Intrinsic) (Line 358, file gyro_write_timedata.f90)
+                   GYRO_WRITE_STEP (Line 33, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 53, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 65, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 77, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 89, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 101, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 113, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 120, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 228, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 230, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 232, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 237, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 240, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 258, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 265, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 271, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 274, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 276, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 279, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 281, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 286, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 289, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 294, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 332, file gyro_write_timedata.f90)
+                   SIZE(Intrinsic) (Line 345, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_COMPLEX (Line 50, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_COMPLEX (Line 62, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_COMPLEX (Line 74, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_COMPLEX (Line 86, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_COMPLEX (Line 98, file gyro_write_timedata.f90)
+                   GYRO_KXKY_SPECTRUM (Line 108, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_REAL (Line 110, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_REAL (Line 255, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_REAL (Line 262, file gyro_write_timedata.f90)
+                   WRITE_DISTRIBUTED_REAL (Line 342, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 117, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 227, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 229, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 231, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 235, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 238, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 271, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 273, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 275, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 278, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 280, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 284, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 287, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 292, file gyro_write_timedata.f90)
+                   WRITE_LOCAL_REAL (Line 331, file gyro_write_timedata.f90)
+                   GYRO_FIELD_FLUXAVE (Line 124, file gyro_write_timedata.f90)
+                   GYRO_NONLINEAR_FLUX (Line 129, file gyro_write_timedata.f90)
+                   GYRO_GBFLUX (Line 130, file gyro_write_timedata.f90)
+                   GYRO_WRITE_FREQ (Line 142, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 147, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 152, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 159, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 166, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 177, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 182, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 192, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 197, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 207, file gyro_write_timedata.f90)
+                   GYRO_BALLOONING_MODE (Line 212, file gyro_write_timedata.f90)
+                   GYRO_WRITE_H (Line 221, file gyro_write_timedata.f90)
+                   TRANSPOSE(Intrinsic) (Line 294, file gyro_write_timedata.f90)
+                   GYRO_WRITE_ERROR (Line 323, file gyro_write_timedata.f90)
+                   GYRO_ENTROPY (Line 329, file gyro_write_timedata.f90)
+                   GYRO_NONLINEAR_FLUX_VELOCITY (Line 341, file gyro_write_timedata.f90)
+                   ABS(Intrinsic) (Line 354, file gyro_write_timedata.f90)
+                   SUM(Intrinsic) (Line 354, file gyro_write_timedata.f90)
+                   GYRO_WRITE_PRECISION (Line 354, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMERS (Line 358, file gyro_write_timedata.f90)
+
+        Uses:      GYRO_GLOBALS
+                   MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+
+Name  Messages
+----  --------
+GYRO_WRITE_TIMERS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 358, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_TIMEDATA
+                   WRITE_DISTRIBUTED_REAL
+                   WRITE_DISTRIBUTED_COMPLEX
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_TIMEDATA  (indirectly)
+                   WRITE_DISTRIBUTED_REAL  (indirectly)
+                   WRITE_DISTRIBUTED_COMPLEX  (indirectly)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_TIMEDATA  (indirectly)
+                   WRITE_DISTRIBUTED_REAL  (indirectly)
+                   WRITE_DISTRIBUTED_COMPLEX  (indirectly)
+
+Name  Messages
+----  --------
+MPI_RECV
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   WINNEQ in MPI_CONSTANTS (Line 439, file gyro_write_timedata.f90)
+                   WINEQ in MPI_CONSTANTS (Line 576, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+MPI_SEND
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   WINNEQ in MPI_CONSTANTS (Line 450, file gyro_write_timedata.f90)
+                   WINEQ in MPI_CONSTANTS (Line 587, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_TIMEDATA  (indirectly)
+                   WRITE_DISTRIBUTED_REAL  (indirectly)
+                   WRITE_DISTRIBUTED_COMPLEX  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SIZE(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 53, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 65, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 77, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 89, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 101, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 113, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 120, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 228, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 230, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 232, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 237, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 240, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 258, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 265, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 271, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 274, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 276, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 279, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 281, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 286, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 289, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 294, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 332, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 345, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 354, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+TRANSPOSE(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 294, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 33, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 51, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 63, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 75, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 87, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 99, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 111, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 118, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 142, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 147, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 152, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 159, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 166, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 177, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 182, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 192, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 197, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 207, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 212, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 221, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 221, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 228, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 230, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 232, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 236, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 239, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 256, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 263, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 271, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 274, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 276, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 279, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 281, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 285, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 288, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 293, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 323, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 332, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 343, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 358, file gyro_write_timedata.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WRITE_DISTRIBUTED_COMPLEX
+      Defined as:  Subroutine (line 509, file gyro_write_timedata.f90)
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 50, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 62, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 74, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 86, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 98, file gyro_write_timedata.f90)
+
+      Calls:       MPI_RECV (Line 576, file gyro_write_timedata.f90)
+                   MPI_SEND (Line 587, file gyro_write_timedata.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+WRITE_DISTRIBUTED_REAL
+      Defined as:  Subroutine (line 373, file gyro_write_timedata.f90)
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 110, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 255, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 262, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 342, file gyro_write_timedata.f90)
+
+      Calls:       MPI_RECV (Line 439, file gyro_write_timedata.f90)
+                   MPI_SEND (Line 450, file gyro_write_timedata.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+WRITE_LOCAL_REAL
+      Defined as:  Subroutine (line 646, file gyro_write_timedata.f90)
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_TIMEDATA (Line 117, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 227, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 229, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 231, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 235, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 238, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 271, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 273, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 275, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 278, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 280, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 284, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 287, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 292, file gyro_write_timedata.f90)
+                   GYRO_WRITE_TIMEDATA (Line 331, file gyro_write_timedata.f90)
+
+        Uses:      GYRO_GLOBALS
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_TRANS(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SIZE(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

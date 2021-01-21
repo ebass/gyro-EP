@@ -1,0 +1,936 @@
+#!/bin/bash
+#=============================================================
+# profiles_gen
+#
+# PURPOSE:
+#  Top-level script for conversion of raw data into GYRO 
+#  format (input.profiles).
+#
+# RECOGNIZED FORMATS:
+#  - ITERDB (legacy text)
+#  - ITERDB (NetCDF)
+#  - Plasma State (NetCDF)
+#  - Corsica
+#  - ASTRA (also requires mapping file).
+#  - PEQDSK (ELITE pfile)
+#  - ITPA UFILES
+#============================================================= 
+
+#=============================================================
+# EXECUTABLE AND CONFIG FILE LOCATIONS:
+#
+# GYRO directory
+GYRO_DIR=${GYROEP_ROOT}
+# VGEN inputs directory
+VGEN_DIR=${GYROEP_ROOT}/neo/tools/input/vgen
+# VGEN exec directory
+VGEN_EXE=${GYROEP_ROOT}/neo/tools/vgen
+# - profiles_gen converter executable
+EXEC=${GYROEP_ROOT}/shared/profiles_gen/src/prgen
+# - GATO executable
+GATO=${GYROEP_ROOT}/gato/gato
+# - locpargen executable
+LOCPARGEN=${GYROEP_ROOT}/shared/profiles_gen/locpargen/locpargen
+# - exprodump executable
+EXPRODUMP=${GYROEP_ROOT}/shared/profiles_gen/exprotools/exprodump
+# - expromake executable
+EXPROMAKE=${GYROEP_ROOT}/shared/profiles_gen/exprotools/expromake
+# - ASTRA converter
+ASTRA=${GYROEP_ROOT}/shared/profiles_gen/astra/astra2gyro.py
+# - ASTRA default map file
+ASTRAMAP=${GYROEP_ROOT}/shared/profiles_gen/astra/astra_map_gyro
+# - TRANSP converter
+TRANSP=${GYROEP_ROOT}/shared/profiles_gen/transp/transp2gyro.py
+#=============================================================
+
+#=============================================================
+# Syntax validity check and help message
+#
+n=$#
+
+if [ $n -eq 0 ]
+then
+   echo "Usage:       profiles_gen [options]"
+   echo 
+   echo "Recognized types of input data files:"
+   echo 
+   echo "              *              : ITERDB text file (default)"
+   echo "              *.nc           : ITERDB NetCDF file"
+   echo "              *.cdf          : Plasma State NetCDF file"
+   echo "              *.astra        : ASTRA text file"
+   echo "              *.corsica      : CORSICA text file"
+   echo "              *.peq          : PEQDSK/ELITE text file"
+   echo "              UFILE          : UFILE mode"
+   echo "              null           : gfile only"
+   echo "              input.profiles : vgen, locpargen or gfilemerge mode"
+   echo 
+   echo "             -p <path>"
+   echo "             Set optional path to simulation directory."
+   echo "             [The default path is the current directory]"
+   echo
+   echo "             -e <workdir>"
+   echo "             Working directory (default is present directory)"
+   echo 
+   echo "             -V"
+   echo "             Verbose (for debugging; use this if you get an error)."
+   echo 
+   echo "ITERDB Options"
+   echo 
+   echo "             -i <data> or <data.nc>"
+   echo "             Specify text or NetCDF data file."
+   echo 
+   echo "             -g <gfile>"
+   echo "             Merge EFIT gfile for high-precision geometry data."
+   echo 
+   echo "             -nogq"
+   echo "             Do not use q from GATO (by default, if gfile is specified q is from GATO)."
+   echo 
+   echo "             -cer <vpol>"
+   echo "             Merge data Er and velocity data from Solomon's cer datafile."
+   echo 
+   echo "             -ver <version>"
+   echo "             Version number (0=basic, 1=extra powers)."
+   echo 
+   echo "PLASMA STATE Options"
+   echo
+   echo "             -i <data.cdf>"
+   echo "             Specify text or NetCDF data file."
+   echo
+   echo "             -g <gfile>"
+   echo "             Merge EFIT gfile for high-precision geometry data."
+   echo 
+   echo "             -nogq"
+   echo "             Do not use q from GATO (by default, if gfile is specified q is from GATO)."
+   echo 
+   echo "             -r <reorder sequence>"
+   echo "             Reorder ions."
+   echo
+   echo "CORSICA Options"
+   echo
+   echo "             -i <data.corsica>"
+   echo "             Specify Corsica data file."
+   echo
+   echo "             -g <gfile>"
+   echo "             Merge EFIT gfile for high-precision geometry data."
+   echo 
+   echo "             -nogq"
+   echo "             Do not use q from GATO (by default, if gfile is specified q is from GATO)."
+   echo 
+   echo "             -r <reorder sequence>"
+   echo "             Reorder ions."
+   echo
+   echo "UFILE Options"
+   echo
+   echo "             -i UFILE"
+   echo "             Toggle UFILE mode."
+   echo
+   echo "             -t <time>"
+   echo "             Time for averaging."
+   echo
+   echo "             -r <reorder sequence>"
+   echo "             Reorder ions."
+   echo
+   echo
+   echo "             Example: To invoke UFILE mode, ensure the *d.dat files exist in the"
+   echo "                      current directory, then type:"
+   echo
+   echo "                       $ profiles_gen -i UFILE -t <time>"
+   echo                   
+   echo "                      Leaving out the -t option will print time window"
+   echo
+   echo "PEQDSK/PFILE Options"
+   echo
+   echo "             -i <data.peq>"
+   echo "             Specify ELITE pfile data file."
+   echo
+   echo "             -g <gfile>"
+   echo "             Merge EFIT gfile for high-precision geometry data."
+   echo "             [This is required for pfiles]"
+   echo 
+   echo "             -pZ2 <Z2>"
+   echo "             Creation impurity ion with given charge to make"
+   echo "             input.profile quasineutral"
+   echo
+   echo "ASTRA Options"
+   echo
+   echo "             -i <data.astra>"
+   echo "             Specify ASTRA data file."
+   echo
+   echo "             -m <map file>"
+   echo "             Use <map file> to map Astra data to GYRO input.profiles headers"
+   echo "             NOTE: uses 'astra_map_gyro' in current directory by default."
+   echo
+   echo "             -n <note text>"
+   echo "             Include <note text> in the input.profiles header."
+   echo
+   echo
+   echo "GATO mapper control options"
+   echo 
+   echo "             -gato <parameter=val,parameter=val,...>"
+   echo 
+   echo "             Important parameters and defaults"
+   echo
+   echo "              dpsidl=0.0   [DEFINE]"    
+   echo "              npfit=150    [DEFINE]"   
+   echo
+   echo "             -Z1 <ion1 charge>"
+   echo "             Default: 1 (Hydrogen isotope)"
+   echo "             -Z2 <ion2 charge>"
+   echo "             Default: 6 (Carbon)"
+   echo "             -Z3 <ion3 charge>"
+   echo "             Default: 2 (Helium)"
+   echo
+   echo "GFILE MERGE MODE"
+   echo
+   echo "             -i <data>"
+   echo "             Data in input.profiles format."
+   echo
+   echo "             -g <gfile>"
+   echo "             EFIT gfile."
+   echo
+   echo "             -gmerge"
+   echo "             Toggle gmerge mode."
+   echo
+   echo "VELOCITY GENERATION MODE"
+   echo
+   echo "             -vgen"
+   echo "             Toggle vgen mode."
+   echo
+   echo "             -vgen_in <ion string> " 
+   echo "             Choices: DC, DC.revip, DCD, DHCD, HDC"
+   echo "             If this is blank, input.vgen must exist."
+   echo
+   echo "             -vgen_e <flag>" 
+   echo "             Method to compute Er."
+   echo "             1=Force balance, 2=NEO (weak rot), 3=NEO (strong rot), 4=Return given"
+   echo
+   echo "             -vgen_v <flag>" 
+   echo "             Method to compute velocities."
+   echo "             1=NEO (weak rot), 2=NEO (strong rot), 3=Return given"
+   echo
+   echo "             -vgen_x <ion index>" 
+   echo "             Index of ion species to match NEO and given velocities."
+   echo
+   echo "TRANSP MODE"
+   echo
+   echo "             -transp"
+   echo "             Generate data from TRANSP servers via prompt."
+   echo
+   echo "             -tok <TRANSP tokamak name>"
+   echo "             TRANSP machine identification, eg ITER."
+   echo
+   echo "             -year <shot year>"
+   echo "             Two-digit year of the experimental shot, eg 07."
+   echo
+   echo "             -shot <TRANSP shot id>"
+   echo "             Examine this TRANSP run listing, eg 123456A01."
+   echo
+   echo "             -time <time of interest>"
+   echo "             Specify time of interest in ms."
+   echo
+   echo "             -avg <smoothing time>"
+   echo "             Smooth data over interval in ms."
+   echo
+   echo "             -trout <TRANSP output directory>"
+   echo "             Specify a non-default directory name for transp2gyro output."
+   echo
+   echo "             -trhelp"
+   echo "             Detailed help message on transp2gyro."
+   echo
+   echo "LOCAL PARAMETER MODE"
+   echo 
+   echo "             -loc_rad <r/a>"
+   echo "             Reference radius, r/a."
+   echo 
+   echo "             -loc_rho <rho>"
+   echo "             Reference rho=sqrt[chi/chi(a)]"
+   echo 
+   echo "             -loc_psi <psi_N>"
+   echo "             Reference psi_N=psi/psi(a)"
+   echo
+   echo "      NOTE: control ion charges with Z1,Z2,Z3 as in GATO options"
+   echo
+   echo "DUMP MODE"
+   echo 
+   echo "             -dump <EXPRO variable>"
+   echo "             Dump any variable in EXPRO interface."
+   echo
+   echo "             -dump list"
+   echo "             Print list of available variables."
+   echo
+   echo "             -x <arg>"
+   echo "              <arg>=none: omit independent variable column."
+   echo "              <arg>=r:    r/a is first column."
+   echo "              <arg>=rho:  rho=sqrt[chi/chi(a)] is first column. [DEFAULT]"
+   echo "              <arg>=psi:  psi_N=psi/psi(a) is first column."
+   echo
+   echo "      NOTE: control ion charges with Z1,Z2,Z3 as in GATO options"
+   echo
+   echo "PROFILE CREATION MODE"
+   echo 
+   echo "             -create"
+   echo "              Create input.profiles using parameters in input.expromake"
+   echo 
+   echo "             -create help"
+   echo "              Print detailed help information"
+   echo
+   echo "             -i <input.profiles file>"
+   echo "              Specify a file to modify.  If unspecified, generate from scratch."
+   echo
+   echo
+   echo "EXAMPLES:"
+   echo " "
+   echo "    profiles_gen -i myfile" 
+   echo "    profiles_gen -i myfile.nc"
+   echo "    profiles_gen -i myfile.cdf -r 1,3,2,5,4"
+   echo "    profiles_gen -vgen -i input.profiles -vgen_e 2 -vgen_v 1 -vgen_in DC -vgen_x 2"
+   echo "    profiles_gen -vgen -i input.profiles -vgen_e 2 -vgen_v 1 -vgen_in HDC -vgen_x 3"
+   echo
+   echo "(1) Typical usage for DIII-D plasmas with iterdbfile only (2 steps)"
+   echo "    NEO will generate Er and all velocities:"
+   echo 
+   echo "    profiles_gen -i iterdb -g gfile"
+   echo "    profiles_gen -vgen -i input.profiles -vgen_e 2 -vgen_v 1 -vgen_in DC -vgen_x 2"
+   echo
+   echo "(2) Typical usage for DIII-D plasmas with CER file available (2 steps)"
+   echo "    NEO will take Er from CER file and generate all velocities:"
+   echo 
+   echo "    profiles_gen -i iterdb -g gfile -cer cerfile"
+   echo "    profiles_gen -vgen -i input.profiles -vgen_e 4 -vgen_v 2 -vgen_in DC -vgen_x 2"
+   echo 
+
+   exit 1
+fi
+#=============================================================
+
+#=============================================================
+# Define variables for flag capture
+#
+# Default working root 
+SIMROOT=$PWD
+
+CONFIG=.config
+
+FILE_FLAG=0
+G_FLAG=0
+GATO_DPSISL=0.0
+VERBOSE_FLAG=0
+ORDER_FLAG=0
+TRANSP_FLAG=0
+GMERGE_FLAG=0
+
+#GATO variables
+NOGQ_FLAG=0
+GATO_ARGS=
+
+# CER file 
+CER_FILE=null
+
+# VGEN mode variables
+VGEN_IN=null
+VGEN_E=1
+VGEN_V=2
+VGEN_X=2
+VGEN_FLAG=0
+
+# UFILE 
+UFILETIME=null
+
+# LOCAL PARAMETER MODE variables
+LOC_RAD=0
+LOC_RHO=0
+LOC_PSI=0
+Z1=1.0
+Z2=6.0
+Z3=2.0
+
+# DUMP MODE variables
+DUMP_FLAG=0
+DUMP_VAR=null
+X=rho
+
+# PFILE variables
+PZ2=0
+
+# CREATE MODE variables
+CREATE_FLAG=0
+#=============================================================
+
+#=============================================================
+# Default ion order vector
+#
+ord_vec[0]=1
+ord_vec[1]=2
+ord_vec[2]=3
+ord_vec[3]=4
+ord_vec[4]=5
+#=============================================================
+ 
+#=============================================================
+# Parse command line options
+#
+while [ $# -gt 0 ] ; do
+  case "$1" in 
+
+  -p) shift ; SIMROOT=$1 ;;
+
+  -e) shift ; LOCDIR=$1 ;;
+
+  -h) echo "1" > $CONFIG ; submit ; exit 0 ;;
+
+  -i) shift ; FILE_FLAG=1 ; FILE="$1" ;;
+
+  -m) shift ; ASTRA_ARG="$ASTRA_ARG -m $1" ;;
+
+  -n) shift ; ASTRA_ARG="$ASTRA_ARG -n $1" ;;
+
+  -cer) shift ; 
+        echo "INFO: (profiles_gen) Will merge data from $CER_FILE" ; 
+        CER_FILE="$1" ; ITERDB_ARGS="${ITERDB_ARGS};-cer;$1" ;;
+   
+  -g) shift ; G_FLAG=1 ; GFILE="$1" ; ITERDB_ARGS="${ITERDB_ARGS};-g;$1" ;;
+
+  -gato) shift ; GATO_ARGS="$1" ; ITERDB_ARGS="${ITERDB_ARGS};-gato_dpsisl;$1" ;;
+
+  -V) shift ; VERBOSE_FLAG=1 ; ITERDB_ARGS="${ITERDB_ARGS};-V";;
+
+  -nogq) shift ; NOGQ_FLAG=1 ; ITERDB_ARGS="${ITERDB_ARGS};-nogq";;
+
+  -r) shift ; ORDER="$1" ; ORDER_FLAG=1 ; ITERDB_ARGS="${ITERDB_ARGS};-r;$1";;
+
+  -ver) shift ; VERSION="$1" ; ITERDB_ARGS="${ITERDB_ARGS};-ver;$1";;
+
+  -vgen) VGEN_FLAG=1 ;;
+
+  -vgen_in) shift ; VGEN_IN=$1 ;;
+
+  -vgen_e) shift ; VGEN_E=$1 ;;
+
+  -vgen_v) shift ; VGEN_V=$1 ;;
+
+  -vgen_x) shift ; VGEN_X=$1 ;;
+
+  -t) shift ; UFILETIME="$1" ;;
+
+  -transp) TRANSP_FLAG=1 ;;
+
+  -tok) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS -k $1" ;;
+
+  -year) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS -y $1" ;;
+
+  -shot) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS --shot $1" ;;
+
+  -time) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS --time $1" ;;
+
+  -avg) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS -a $1" ;;
+
+  -trout) shift ; TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS -o $1" ;;
+
+  -trhelp) TRANSP_FLAG=1 ; TRANSP_ARGS="$TRANSP_ARGS -h" ;;
+  
+  -create) CREATE_FLAG=1 ;;
+   
+  -Z1) shift ; Z1=$1 ;;  
+  
+  -Z2) shift ; Z2=$1 ;;  
+  
+  -Z3) shift ; Z3=$1 ;;  
+  
+  -loc_rad) shift ; LOC_RAD=$1 ;;
+  -loc_rho) shift ; LOC_RHO=$1 ;;
+  -loc_psi) shift ; LOC_PSI=$1 ;;
+
+  -dump) shift ; DUMP_FLAG=1 ; DUMP_VAR=$1 ;;
+  -x) shift ; X=$1 ;;
+
+  -pZ2) shift ; PZ2=$1 ;;  
+
+  -gmerge) GMERGE_FLAG=1 ;;  
+  
+  esac
+  shift
+done
+
+#=============================================================
+
+if [ "$LOCDIR" == "." ]
+then
+   LOCDIR=`basename $PWD`
+   cd .. ; SIMROOT=$PWD
+fi
+SIMDIR=$SIMROOT/$LOCDIR
+
+cd $SIMDIR
+
+#=============================================================
+# Call transp2gyro if specified and pass it the iterdb args
+# for later
+if [ $TRANSP_FLAG -eq 1 ] 
+then
+   # Run transp2gyro
+   if [ ${ITERDB_ARGS} ]
+   then
+       TRANSP_ARGS="${TRANSP_ARGS} --iterdb $ITERDB_ARGS"
+   fi
+   $PYTHON_COMMAND $TRANSP $TRANSP_ARGS
+   exit 0
+fi
+#=============================================================
+
+#=============================================================
+# Manage CREATE MODE
+#
+if [ $CREATE_FLAG -eq 1 ]
+then
+   if [ $FILE_FLAG -eq 1 ]
+   then
+      cp $FILE input.profiles
+      python $GYROEP_ROOT/shared/bin/profile_parse.py input.profiles
+   else
+      rm -f input.profiles input.profiles.gen
+   fi
+   touch input.expromake
+   python $GYROEP_ROOT/shared/bin/expromake_parse.py input.expromake   
+   $EXPROMAKE   
+   exit 0
+fi
+#=============================================================
+
+#=============================================================
+# Managing input file (also catches UFILE mode)
+
+if [ $FILE_FLAG -eq 0 ] ; then
+
+  # No file!
+  echo "ERROR: (profiles_gen) Please specify an input file with -i <file>"
+  exit 1 
+
+elif [ "$FILE" == "UFILE" ] ; then
+
+   #-----------------------------------------------
+   # UFILE mode
+   #-----------------------------------------------
+
+   echo "INFO: (profiles_gen) Extracting UFILE com data."
+   python ${GYROEP_ROOT}/shared/bin/gacode_ufile_tool.py *com.dat $UFILETIME > out.ufile.log
+   echo "INFO: (profiles_gen) Extracting and averaging UFILE 1d data."
+   python ${GYROEP_ROOT}/shared/bin/gacode_ufile_tool.py *1d.dat $UFILETIME >> out.ufile.log
+   echo "INFO: (profiles_gen) Extracting and averaging UFILE 2d data."
+   python ${GYROEP_ROOT}/shared/bin/gacode_ufile_tool.py *2d.dat $UFILETIME >> out.ufile.log
+   if [ "$UFILETIME" == "null" ]
+   then
+      cat out.ufile.log
+      exit 1
+   fi
+
+elif [ "$FILE" == "null" ] ; then
+
+   # gfile-only mode
+   echo "INFO: (profiles_gen) Parsing gfile only"
+
+elif [ ! -f $FILE ] ; then
+
+   # bad filename
+   echo "ERROR: (profiles_gen) $FILE not found"
+   exit 1 
+
+else
+
+   echo "INFO: (profiles_gen) $FILE found"
+
+fi
+#=============================================================
+
+#=============================================================
+# Manage execution of dump
+if  [ $DUMP_FLAG -eq 1 ]
+then
+  if [ ! -f $EXPRODUMP ]
+  then
+     echo "ERROR: (profiles_gen) You need to build the exprodump executable."
+     exit 1
+  fi
+  python $GYROEP_ROOT/shared/bin/profile_parse.py $FILE
+  if [ "$DUMP_VAR" == "" ]
+  then
+     DUMP_VAR=list
+  fi
+  echo $DUMP_VAR > input.exprodump
+  echo $X >> input.exprodump
+  echo $Z1 >> input.exprodump
+  echo $Z2 >> input.exprodump
+  echo $Z3 >> input.exprodump
+  $EXPRODUMP
+  rm input.exprodump
+  exit 0
+fi   
+#=============================================================
+
+#=============================================================
+# Manage execution of locpargen
+
+if [ "$LOC_RAD" != "0" ] || [ "$LOC_RHO" != "0" ] || [ "$LOC_PSI" != "0" ]
+then
+  if [ ! -f $LOCPARGEN ]
+  then
+     echo "ERROR: (profiles_gen) You need to build the locpargen executable."
+     exit 1
+  fi
+  python $GYROEP_ROOT/shared/bin/profile_parse.py $FILE
+  cp $FILE.gen temp
+  mv temp input.profiles.gen
+  echo $LOC_RAD > input.locpargen
+  echo $LOC_RHO >> input.locpargen
+  echo $LOC_PSI >> input.locpargen
+  echo $Z1 >> input.locpargen
+  echo $Z2 >> input.locpargen
+  echo $Z3 >> input.locpargen
+  $LOCPARGEN
+  rm input.locpargen
+  exit 0
+fi   
+#=============================================================
+
+#=============================================================
+# Manage execution of vgen
+#
+if [ $VGEN_FLAG -eq 1 ]
+then
+
+   NEO_DIR=$GYROEP_ROOT/neo
+
+   # Create vgen work directory
+
+   rm -rf vgen
+   mkdir vgen
+   cd vgen
+
+   # Check for input.vgen file
+
+   if [ -f $VGEN_DIR/input.vgen.$VGEN_IN ]
+   then
+     cp $VGEN_DIR/input.vgen.$VGEN_IN input.neo
+   else 
+      if [ -f ../input.vgen ]
+      then
+         cp ../input.vgen input.neo
+      else
+         echo "ERROR: (profiles_gen) Specify ion string with -vgen_in, or create input.vgen"
+         exit 1
+      fi
+   fi
+ 
+   cp ../$FILE input.profiles
+   if [ -f "../$FILE.geo" ]
+       then
+       cp ../$FILE.geo input.profiles.geo
+   else
+       echo "Warning: $FILE.geo not found."
+   fi
+
+   python $NEO_DIR/bin/neo_parse.py
+   python $GYROEP_ROOT/shared/bin/profile_parse.py input.profiles 
+   echo "$VGEN_E"   > vgen.dat
+   echo "$VGEN_V"  >> vgen.dat
+   echo "$VGEN_X" >>  vgen.dat
+   echo `pwd`
+   echo `ls $VGEN_EXE/vgen`
+   $VGEN_EXE/vgen
+
+   if [ -f "input.profiles.new" ]
+   then
+       cp input.profiles.new ..
+   fi
+
+   exit 0
+fi
+#=============================================================
+
+#=============================================================
+# Manage execution of gmerge
+#
+if [ $GMERGE_FLAG -eq 1 ] 
+then
+   rm -f input.profiles.gen
+   python $GYROEP_ROOT/shared/bin/profile_parse.py $FILE      
+   if [ "$FILE" != "input.profiles" ] ; then
+      mv $FILE.gen input.profiles.gen
+   fi
+   a=`grep IONS $FILE`
+   CER_FILE=${a:25} 
+   a=`grep INPUT $FILE`
+   FILE=${a:25}
+fi   
+#=============================================================
+
+#=============================================================
+# If we make it here, its time for cleanup
+#
+echo "INFO: (profiles_gen) Removing old input.profiles* files"
+rm -f input.profiles input.profiles.geo input.profiles.extra
+#=============================================================
+
+#=============================================================
+# Jump to ASTRA parsing if *.astra is specified
+# 
+if [ "${FILE: -6}" == ".astra" ] 
+then
+   # Only last occurrence of "-m" option is used
+   $ASTRA -o input.profiles -m $ASTRAMAP $ASTRA_ARG $FILE
+   exit
+fi
+#=============================================================
+
+#=============================================================
+# Check for executable
+#
+if [ ! -f $EXEC ]
+then
+   echo "You must first build the executable:"
+   echo " "
+   echo "> cd $GYRO_DIR/tools ; make" 
+   exit 1
+fi
+#=============================================================
+
+#=============================================================
+# Construct prgen input file ($CONFIG)
+#
+date > $CONFIG
+
+# Required data file (ITERDB, PLASMASTATE, etc)
+echo $FILE >> $CONFIG
+
+# Optional CER file
+echo $CER_FILE >> $CONFIG
+
+# EFIT G-file
+echo $G_FLAG >> $CONFIG
+
+# Don't use gato q (-nogq) flag
+echo $NOGQ_FLAG >> $CONFIG
+
+# Verbosity
+echo $VERBOSE_FLAG >> $CONFIG
+
+# PFILE Z2 value
+echo $PZ2 >> $CONFIG
+
+# GFILE MERGE
+echo $GMERGE_FLAG >> $CONFIG
+
+# NOTE: reorder flags will be appended later.
+#=============================================================
+
+#==============================================================
+# Run GATO here
+#
+if [ $G_FLAG -eq 1 ]
+then
+   if [ ! -f $GATO ]
+   then
+      echo "ERROR: (profiles_gen) You need to build the GATO executable: $ cd gato ; make"
+      exit 1
+   fi
+   echo "INFO: (profiles_gen) Spawning GATO mapper to generate flux surfaces from $GFILE."
+
+   # GATO requires gfile as "eqgta"
+   cp $GFILE eqgta
+
+   # Clear any stale error files
+   rm -f gato_error
+
+   # Create entire GATO "ingta" namelist
+   echo "GATO template" > ingta
+   echo "129x129 200x400  ncase=0" >> ingta
+   echo "n  = 1  ncorr=+1  Wall on the Plasma" >> ingta
+   echo " &inputd" >> ingta
+   echo " ntor     = 1" >> ingta
+   echo " ncase    = 0" >> ingta
+   echo " norm     = 0" >> ingta
+   echo " nmap     = 0" >> ingta
+   echo " neqtyp   = 0" >> ingta
+   echo " jpsi     = 100" >> ingta
+   echo " itht     = 200" >> ingta
+   echo " isym     = 0" >> ingta
+   echo " igrid    = 0" >> ingta
+   echo " ncorr    = +1" >> ingta
+   echo " corrfac  = 1.0000" >> ingta
+   echo " nmesh    = 2" >> ingta
+   echo " nedge    = +4" >> ingta
+   echo " sedg0    = 0.0" >> ingta
+   echo " sedg1    = 0.0" >> ingta
+   echo " maptrace = 0" >> ingta
+   echo " npak     = 0" >> ingta
+   echo " nrat     = 0" >> ingta
+   echo " nppack   = 0" >> ingta
+   echo " nqpack   = 0" >> ingta
+   echo " pkfrac   = 0.3333333333333333" >> ingta
+   echo " qpfrac   = 0.3333333333333333" >> ingta
+   echo " cspak    = 0.5" >> ingta
+   echo " npfit    = 150" >> ingta
+   echo " dpsisl   = 0.0" >> ingta
+   echo " dpsisd   = +0.10e-04" >> ingta
+   echo " psipak   = 1.0" >> ingta
+   echo " delac    = 0.10e-02" >> ingta
+   echo " tolspln  = 0.10e-02" >> ingta
+   echo " ntrymx   = 10" >> ingta
+   echo " nccellr  = +1" >> ingta
+   echo " nqaxis   =  0" >> ingta
+   echo " qxin     = 0.0" >> ingta
+   echo " idnsty   = 0" >> ingta
+   echo " ifastp   = 0" >> ingta
+   echo " ndnxp0   = 0" >> ingta
+   echo " ndnxp1   = 2" >> ingta
+   echo " ndnxp2   = 2" >> ingta
+   echo " iwal     = 0" >> ingta
+   echo " nwall    = 60" >> ingta
+   echo " irext    = 0" >> ingta
+   echo " rext     = 1.000" >> ingta
+   echo " nrestrt  = 0" >> ingta
+   echo " ndsktim  = +1" >> ingta
+   echo " nev      = 1" >> ingta
+   echo " nreslv   = 0" >> ingta
+   echo " nbrmax   = 10" >> ingta
+   echo " nismax   = 10" >> ingta
+   echo " ncymax   = 1" >> ingta
+   echo " nitmax   = 20" >> ingta
+   echo " ncyfin   = 1" >> ingta
+   echo " al0      = -0.100000e-04" >> ingta
+   echo " dal0     = 10.0" >> ingta
+   echo " al0bas   = +0.00" >> ingta
+   echo " al0min   = -0.10e+00" >> ingta
+   echo " al0max   = -0.10e-11" >> ingta
+   echo " epschy   = 0.00001" >> ingta
+   echo " epscon   = 0.00001" >> ingta
+   echo " njplot   = +200" >> ingta
+   echo " niplot   = 1" >> ingta
+   echo " nskpi    = +2" >> ingta
+   echo " nskpj    = +2" >> ingta
+   echo " ncont    = 10" >> ingta
+   echo " ncplot   = 10" >> ingta
+   echo " nxisgn   = +1" >> ingta
+   echo " nxuplt   = +3" >> ingta
+   echo " nxiplt   = +1" >> ingta
+   echo " nxrplt   =  0" >> ingta
+   echo " nxpplt   =  0" >> ingta
+   echo " nbuplt   = +1" >> ingta
+   echo " nbiplt   = +1" >> ingta
+   echo " nbrplt   =  0" >> ingta
+   echo " nbpplt   =  0" >> ingta
+   echo " nauplt   = +1" >> ingta
+   echo " naiplt   = +1" >> ingta
+   echo " narplt   =  0" >> ingta
+   echo " napplt   =  0" >> ingta
+   echo " ntphase  = -4" >> ingta
+   echo " mshpsi   = 12" >> ingta
+   echo " mshchi   = 3" >> ingta
+   echo " nvfft    = 0" >> ingta
+   echo " iplotm   = +10" >> ingta
+   echo " ioutm    = 1" >> ingta
+   echo " ioutw    = 1" >> ingta
+   echo " ioute    = 0" >> ingta
+   echo " ioutp    = +19" >> ingta
+   echo " iomshp   = -2" >> ingta
+   echo " ioeqlp   = -2" >> ingta
+   echo " ioeigp   = +2" >> ingta
+   echo " iodlbp   = +2" >> ingta
+   echo " iodlap   = +2" >> ingta
+   echo " iopsip   = -2" >> ingta
+   echo " iolinp   = +2" >> ingta
+   echo " iolnbp   = +2" >> ingta
+   echo " iolnap   = +2" >> ingta
+   echo " iofftp   = +2" >> ingta
+   echo " ioffbp   = -2" >> ingta
+   echo " ioffap   = -2" >> ingta
+   echo " ioconp   = -2" >> ingta
+   echo " iodlbp   = -2" >> ingta
+   echo " iodlap   = -2" >> ingta
+   echo " iodlwp   = +2" >> ingta
+   p=0
+   for i in $(echo $GATO_ARGS | tr "," "\n")
+   do
+      echo "$i" >> ingta
+      p=$(($p+1))
+   done
+   echo " &end" >> ingta
+
+   $GATO >& out.gato.stdout
+   if [ -f 'gato_error' ]
+   then
+      echo 'ERROR: (gato) Fatal error.'
+      exit 1 
+   else
+      echo 'INFO: (gato) Success.'
+   fi
+fi
+#==============================================================
+
+#==============================================================
+# Ion reordering: reset ion order if "-r" option present
+#
+if [ $ORDER_FLAG -eq 1 ]
+then
+   if [ ${#ORDER} -lt 8 ]
+   then
+      echo "ERROR: (profiles_gen) Incomplete order vector."
+      exit 1;
+   fi
+
+   p=0
+   for i in $(echo $ORDER | tr "," "\n")
+   do
+      ord_vec[$p]=$i
+      p=$(($p+1))
+   done
+fi
+
+echo ${ord_vec[0]} ${ord_vec[1]} ${ord_vec[2]} ${ord_vec[3]} ${ord_vec[4]} >> $CONFIG
+#==============================================================
+
+#==============================================================
+# MAIN: Run prgen here
+#
+$EXEC
+
+if [ -f "success" ]
+then
+   if [ $G_FLAG -eq 1 ]
+   then
+      echo "INFO: (profiles_gen) Fluxfit used to compute shape parameters from GATO mapping."
+      echo "DONE: (profiles_gen) Successfully wrote: input.profiles, input.profiles.geo."
+   else
+      echo "DONE: (profiles_gen) Successfully wrote: input.profiles." 
+   fi
+else
+   echo "ERROR: (profiles_gen) Something went wrong in creation of input.profiles :("
+   echo "       ** Try running with -V option **"
+fi
+#==============================================================
+
+#==============================================================
+# Final cleanup:
+#
+#  Remove configuration files, output files, etc.
+rm -f egta eqgta nova.*
+#  Remove stale files
+rm -f out.gato.* input.gato.*
+
+if [ $VERBOSE_FLAG -eq 0 ]
+then
+   rm -f $CONFIG fluxfit.* ingta o1gta grid.dat success
+   rm -f *.ave out.com out.dim out.ufile.log
+else
+   if [ -f "ingta" ] ; then 
+      mv ingta input.gato.ingta
+   fi
+   if [ -f "o1gta" ] ; then
+      mv o1gta out.gato.o1gta
+   fi
+   if [ -f "grid.dat" ] ; then
+      mv grid.dat out.gato.grid
+   fi
+fi
+#==============================================================
+
+cd $SIMROOT

@@ -1,0 +1,733 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_adaptive_source.f90
+Compiled : 01/19/21  15:35:25
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_adaptive_source.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_ADAPTIVE_SOURCE
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_adaptive_source.f90
+Date     : 01/19/2021  15:35:26
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! gyro_adaptive_source.f90 [caller: gyro_fulladvance]
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Compute long-wavelength adaptive source term,
+    6.    !  as used in gyro_rhs_total.  Also compute diagnostics.
+    7.    !-----------------------------------------------------------
+    8.    
+    9.    subroutine gyro_adaptive_source
+   10.    
+   11.      use mpi
+   12.      use gyro_globals
+   13.      use gyro_pointers
+   14.    
+   15.      !----------------------------------------------------
+   16.      implicit none
+   17.      !
+   18.      integer :: p
+   19.      !
+   20.      real, dimension(n_kinetic,n_energy,n_x) :: h0_loc
+   21.      real :: src_p(n_kinetic,n_energy,n_lump)
+   22.      !----------------------------------------------------
+   23.    
+   24.    
+   25.      !------------------
+   26.      ! Total RHS source
+   27.      !------------------
+   28.    
+   29.      h0_loc(:,:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 29 
+  A loop starting at line 29 was not vectorized because it contains a reference to a non-vector intrinsic on line 29.
+
+   30.    
+   31.      p_nek_loc = 0
+   32.    
+   33.      do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+   34.    
+   35.         p_nek_loc = p_nek_loc+1
+   36.    
+   37.         ie = nek_e(p_nek)  
+   38.         k  = nek_k(p_nek)   
+   39.    
+   40.         ck = class(k)
+   41.    
+   42.         if (n_1(in_1) == 0) then
+   43.            do i=1,n_x
+   44.               do m=1,n_stack
+   45.                  h0_loc(:,ie,i) = h0_loc(:,ie,i)+real(h(m,i,p_nek_loc,:))* &
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 45 
+  A loop starting at line 45 was not vectorized because it contains a call to a subroutine or function on line 45.
+
+   46.                       w_lambda(i,k)*d_tau(ck)
+   47.               enddo ! m
+   48.            enddo ! i
+   49.         endif
+   50.    
+   51.      enddo ! p_nek
+   52.    
+   53.      call MPI_ALLREDUCE(h0_loc,&
+   54.           h0_mod,&
+   55.           size(h0_mod),&
+   56.           MPI_DOUBLE_PRECISION,&
+   57.           MPI_SUM,&
+   58.           NEW_COMM_1,&
+   59.           i_err)
+   60.    
+   61.      call MPI_BCAST(h0_mod,&
+   62.           size(h0_mod),&
+   63.           MPI_DOUBLE_PRECISION,&
+   64.           0,&
+   65.           NEW_COMM_2,&
+   66.           i_err)
+   67.    
+   68.      !----------------------------------------------------------------
+   69.      ! Compute 'simple' density and energy moments from fluctuating h:
+   70.      !
+   71.      h0_n(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 71 
+  A loop starting at line 71 was not vectorized because it contains a reference to a non-vector intrinsic on line 71.
+
+   72.      h0_e(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 72 
+  A loop starting at line 72 was not vectorized because it contains a reference to a non-vector intrinsic on line 72.
+
+   73.      !
+   74.      do is = 1, n_kinetic
+   75.        do ie=1,n_energy
+   76.           h0_n(is,:) = h0_n(is,:)+h0_mod(is,ie,:)*w_energy(ie)
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 76 
+  A loop starting at line 76 was not vectorized because it contains a call to a subroutine or function on line 76.
+
+   77.           h0_e(is,:) = h0_e(is,:)+h0_mod(is,ie,:)*w_energy(ie)*energy(ie)
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 77 
+  A loop starting at line 77 was not vectorized because it contains a call to a subroutine or function on line 77.
+
+   78.        enddo
+   79.      enddo
+   80.      !----------------------------------------------------------------
+   81.    
+   82.      h0_eq(:,:,:)  = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 82 
+  A loop starting at line 82 was not vectorized because it contains a reference to a non-vector intrinsic on line 82.
+
+   83.      source_n(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 83 
+  A loop starting at line 83 was not vectorized because it contains a reference to a non-vector intrinsic on line 83.
+
+   84.      source_e(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 84 
+  A loop starting at line 84 was not vectorized because it contains a reference to a non-vector intrinsic on line 84.
+
+   85.    
+   86.      if (source_flag == 1) then
+   87.    
+   88.         !----------------------------------------------------------------
+   89.         ! Determine the (long-wavelength) finite-element amplitudes:
+   90.         !
+   91.         src_p(:,:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 91 
+  A loop starting at line 91 was not vectorized because it contains a reference to a non-vector intrinsic on line 91.
+
+   92.    
+   93.         do p=1,n_lump
+   94.            do i=1,n_x
+   95.               src_p(:,:,p) = src_p(:,:,p)+ &
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 95 
+  A loop starting at line 95 was not vectorized because it contains a call to a subroutine or function on line 95.
+
+   96.                    b_src(i,p)*h0_mod(:,:,i)/dr_eodr(i)
+   97.            enddo
+   98.         enddo
+   99.         !----------------------------------------------------------------
+  100.    
+  101.         !----------------------------------------------------------------
+  102.         ! Reconstruct h0_eq, the long-wavelength part of h0_mod.
+  103.         !
+  104.         do is=1,n_kinetic 
+  105.            do ie=1,n_energy
+  106.    
+  107.               call DGETRS('N',&
+  108.                    n_lump,&
+  109.                    1,&
+  110.                    m_src,&
+  111.                    n_lump,&
+  112.                    src_piv,&
+  113.                    src_p(is,ie,:),&
+                               ^           
+ftn-1438 ftn: CAUTION GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 113, Column = 22 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  114.                    n_lump,&
+  115.                    info)
+  116.    
+  117.            enddo
+  118.         enddo
+  119.    
+  120.         do p=1,n_lump
+  121.            do i=1,n_x
+  122.               h0_eq(:,:,i) = h0_eq(:,:,i)+src_p(:,:,p)*b_src(i,p)
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 122 
+  A loop starting at line 122 was not vectorized because it contains a call to a subroutine or function on line 122.
+
+  123.            enddo
+  124.         enddo
+  125.         !----------------------------------------------------------------
+  126.    
+  127.         do is=1,n_kinetic
+  128.           do ie=1,n_energy
+  129.              source_n(is,:) = source_n(is,:)-nu_source*h0_eq(is,ie,:)* &
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 129 
+  A loop starting at line 129 was not vectorized because it contains a call to a subroutine or function on line 129.
+
+  130.                   w_energy(ie)
+  131.              source_e(is,:) = source_e(is,:)-nu_source*h0_eq(is,ie,:)* &
+ftn-6262 ftn: VECTOR GYRO_ADAPTIVE_SOURCE, File = gyro_adaptive_source.f90, Line = 131 
+  A loop starting at line 131 was not vectorized because it contains a call to a subroutine or function on line 131.
+
+  132.                   w_energy(ie)*energy(ie)
+  133.           enddo
+  134.         enddo
+  135.    
+  136.      endif
+  137.    
+  138.      if (debug_flag == 1 .and. i_proc == 0) then
+  139.         print *,'[gyro_adaptive_source done]'
+  140.      endif
+  141.    
+  142.    end subroutine gyro_adaptive_source
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_ADAPTIVE_SOURCE             Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_ADAPTIVE_SOURCE             Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_ADAPTIVE_SOURCE             Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_ADAPTIVE_SOURCE             Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_ADAPTIVE_SOURCE             Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DGETRS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_ADAPTIVE_SOURCE
+      Defined as:  Subroutine (line 9, file gyro_adaptive_source.f90)
+
+      Interface:   None
+
+      Calls:       REAL(Intrinsic) (Line 45, file gyro_adaptive_source.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+                   GYRO_POINTERS
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE
+
+Name  Messages
+----  --------
+MPI_ALLREDUCE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE  (indirectly)
+
+Name  Messages
+----  --------
+MPI_BCAST
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ADAPTIVE_SOURCE  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_ADAPTIVE_SOURCE (Line 45, file gyro_adaptive_source.f90)
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SIZE(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

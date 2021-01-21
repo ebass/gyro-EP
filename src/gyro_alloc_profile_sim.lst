@@ -1,0 +1,737 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_alloc_profile_sim.f90
+Compiled : 01/19/21  15:35:27
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_alloc_profile_sim.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_ALLOC_PROFILE_SIM
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_alloc_profile_sim.f90
+Date     : 01/19/2021  15:35:27
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !----------------------------------------------------------
+    2.    ! gyro_alloc_profile_sim
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Create and destroy arrays which store profile
+    6.    !  data on the simulation grid.
+    7.    !
+    8.    ! NOTES:
+    9.    !  flag=0: deallocate
+   10.    !  flag=1: allocate
+   11.    !
+   12.    !  Need to know n_spec before this is called.
+   13.    !----------------------------------------------------------
+   14.    
+   15.    subroutine gyro_alloc_profile_sim(flag)
+   16.      
+   17.      use mpi
+   18.      use gyro_globals
+   19.    
+   20.      implicit none
+   21.    
+   22.      integer, intent(in) :: flag
+   23.    
+   24.    
+   25.      if (flag == 1 .and. allocated(r)) then
+   26.         if (i_proc == 0) then
+   27.            print *,'WARNING: already allocated arrays in gyro_alloc_profile_sim'
+   28.         endif
+   29.         return
+   30.      endif
+   31.      if (flag == 0 .and. .not.allocated(r)) then
+   32.         if (i_proc == 0) then
+   33.            print *,'WARNING: cannot deallocate arrays in gyro_alloc_profile_sim'
+   34.         endif
+   35.         return
+   36.      endif
+   37.    
+   38.      if (flag == 1) then
+   39.    
+   40.         allocate(r(n_x))
+   41.         allocate(q(n_x))
+   42.         allocate(q_s(n_x))
+   43.         allocate(r_s(n_x))
+   44.         allocate(rmaj_s(n_x))
+   45.         allocate(shat_s(n_x))
+   46.         allocate(rhogrid_s(n_x))
+   47.         allocate(kappa_s(n_x))
+   48.         allocate(s_kappa_s(n_x))
+   49.         allocate(delta_s(n_x))
+   50.         allocate(zeta_s(n_x))
+   51.         allocate(s_delta_s(n_x))
+   52.         allocate(s_zeta_s(n_x))
+   53.         allocate(z_eff_s(n_x))
+   54.         allocate(rhosda_s(n_x))
+   55.         allocate(csda_s(n_x))
+   56.         allocate(drmaj_s(n_x))
+   57.         allocate(dzmag_s(n_x))
+   58.         allocate(beta_unit_s(n_x))
+   59.         allocate(beta_unit_ptot_s(n_x))
+   60.         allocate(nu_s(n_spec,n_x))
+   61.         allocate(zmag_s(n_x))
+   62.         allocate(ptot_s(n_x))
+   63.         allocate(w0_s(n_x))
+   64.         allocate(w0p_s(n_x))
+   65.         allocate(gamma_e_s(n_x))
+   66.         allocate(gamma_p_s(n_x))
+   67.         allocate(mach_s(n_x))
+   68.         allocate(dlnpdr_s(n_x))
+   69.         allocate(dlnptotdr_s(n_x))
+   70.         allocate(beta_star_s(n_x))
+   71.         allocate(omega_eb_s(n_x))
+   72.    
+   73.         allocate(den_s(n_spec,n_x))
+   74.         allocate(tem_s(n_spec,n_x))
+   75.         allocate(b_unit_s(n_x))
+   76.    
+   77.         allocate(krho_i(n_n_1,n_x))
+   78.    
+   79.         allocate(a_fourier_geo_s(8,0:32,n_x))
+   80.    
+   81.         allocate(alpha_s(n_spec,n_x))
+   82.         allocate(dlnndr_s(n_spec,n_x))
+   83.         allocate(dlntdr_s(n_spec,n_x))
+   84.         allocate(pr_s(n_spec,n_x))
+   85.    
+   86.         allocate(phase(n_n_1,n_x))
+   87.         allocate(angp(n_x))
+   88.    
+   89.         allocate(r_e(n_x))
+   90.         allocate(dr_eodr(n_x))
+   91.    
+   92.         allocate(n(n_n))
+   93.         allocate(n_1(n_n_1))
+   94.         allocate(z(n_spec))
+   95.         allocate(mu(n_spec)) 
+   96.         allocate(krho_collect(n_n))
+   97.         allocate(c_map(n_spec))
+   98.    
+   99.         ! Energy grid
+  100.         allocate(energy(n_energy))
+  101.         allocate(w_energy(n_energy))
+  102.    
+  103.         ! Fourier coefficients
+  104.         allocate(cr(n_x,n_x))
+  105.         allocate(cri(n_x,n_x))
+  106.    
+  107.         ! Nondistributed radial operators
+  108.         allocate(gyro_trace(n_gk,-m_gyro:m_gyro-i_gyro))
+  109.         allocate(w_g0(-m_gyro:m_gyro-i_gyro))
+  110.         allocate(w_gd0(-mg_dx:mg_dx-ig_dx))
+  111.         allocate(w_d0(-m_dx:m_dx-i_dx))
+  112.         allocate(w_d1(-m_dx:m_dx-i_dx))
+  113.         allocate(w_d2(-m_dx:m_dx-i_dx))
+  114.         allocate(s_d1(-m_dx:m_dx))
+  115.         allocate(i_cyc(1-n_x:2*n_x))
+  116.         allocate(i_loop(1-n_x:2*n_x))
+  117.         allocate(explicit_damp_vec(n_kinetic,n_x))
+  118.    
+  119.         if (source_flag == 1) then
+  120.            ! Source arrays
+  121.            allocate(b_src(n_x,n_lump))
+  122.            allocate(m_src(n_lump,n_lump))
+  123.            allocate(src_piv(n_lump))
+  124.         endif
+  125.    
+  126.         ! Required in MPI_RECV
+  127.         allocate(recv_status(MPI_STATUS_SIZE))
+  128.    
+  129.      else 
+  130.    
+  131.         deallocate(r)
+  132.         deallocate(q)
+  133.         deallocate(q_s)
+  134.         deallocate(r_s)
+  135.         deallocate(rmaj_s)
+  136.         deallocate(shat_s)
+  137.         deallocate(rhogrid_s)
+  138.         deallocate(kappa_s)
+  139.         deallocate(s_kappa_s)
+  140.         deallocate(delta_s)
+  141.         deallocate(zeta_s)
+  142.         deallocate(s_delta_s)
+  143.         deallocate(s_zeta_s)
+  144.         deallocate(z_eff_s)
+  145.         deallocate(rhosda_s)
+  146.         deallocate(csda_s)
+  147.         deallocate(drmaj_s)
+  148.         deallocate(dzmag_s)
+  149.         deallocate(beta_unit_s)
+  150.         deallocate(beta_unit_ptot_s)
+  151.         deallocate(nu_s)
+  152.         deallocate(zmag_s)
+  153.         deallocate(ptot_s)
+  154.         deallocate(w0_s)
+  155.         deallocate(w0p_s)
+  156.         deallocate(gamma_e_s)
+  157.         deallocate(gamma_p_s)
+  158.         deallocate(mach_s)
+  159.         deallocate(dlnpdr_s)
+  160.         deallocate(dlnptotdr_s)
+  161.         deallocate(beta_star_s)
+  162.         deallocate(omega_eb_s)
+  163.    
+  164.         deallocate(den_s)
+  165.         deallocate(tem_s)
+  166.         deallocate(b_unit_s)
+  167.    
+  168.         deallocate(krho_i)
+  169.    
+  170.         deallocate(a_fourier_geo_s)
+  171.    
+  172.         deallocate(alpha_s)
+  173.         deallocate(dlnndr_s)
+  174.         deallocate(dlntdr_s)
+  175.         deallocate(pr_s)
+  176.    
+  177.         deallocate(phase)
+  178.         deallocate(angp)
+  179.    
+  180.         deallocate(r_e)
+  181.         deallocate(dr_eodr)
+  182.    
+  183.         deallocate(n)
+  184.         deallocate(n_1)
+  185.         deallocate(z)
+  186.         deallocate(mu) 
+  187.         deallocate(krho_collect)
+  188.         deallocate(c_map)
+  189.    
+  190.         deallocate(energy)
+  191.         deallocate(w_energy)
+  192.    
+  193.         deallocate(cr)
+  194.         deallocate(cri)
+  195.    
+  196.         deallocate(gyro_trace)
+  197.         deallocate(w_g0)
+  198.         deallocate(w_gd0)
+  199.         deallocate(w_d0)
+  200.         deallocate(w_d1)
+  201.         deallocate(w_d2)
+  202.         deallocate(s_d1)
+  203.         deallocate(i_cyc)
+  204.         deallocate(i_loop)
+  205.         deallocate(explicit_damp_vec)
+  206.    
+  207.         if (allocated(b_src)) deallocate(b_src)
+  208.         if (allocated(m_src)) deallocate(m_src)
+  209.         if (allocated(src_piv)) deallocate(src_piv)
+  210.    
+  211.         deallocate(recv_status)
+  212.    
+  213.      endif
+  214.    
+  215.      if (debug_flag == 1 .and. i_proc == 0) then
+  216.         print *,'[gyro_alloc_profile_sim done]'
+  217.      endif
+  218.    
+  219.    end subroutine gyro_alloc_profile_sim
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_ALLOC_PROFILE_SIM           Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_ALLOC_PROFILE_SIM           Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_ALLOC_PROFILE_SIM           Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_ALLOC_PROFILE_SIM           Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_ALLOC_PROFILE_SIM           Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_ALLOC_PROFILE_SIM (Line 25, file gyro_alloc_profile_sim.f90)
+                   GYRO_ALLOC_PROFILE_SIM (Line 31, file gyro_alloc_profile_sim.f90)
+                   GYRO_ALLOC_PROFILE_SIM (Line 207, file gyro_alloc_profile_sim.f90)
+                   GYRO_ALLOC_PROFILE_SIM (Line 208, file gyro_alloc_profile_sim.f90)
+                   GYRO_ALLOC_PROFILE_SIM (Line 209, file gyro_alloc_profile_sim.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_ALLOC_PROFILE_SIM
+      Defined as:  Subroutine (line 15, file gyro_alloc_profile_sim.f90)
+
+      Interface:   None
+
+      Calls:       ALLOCATED(Intrinsic) (Line 25, file gyro_alloc_profile_sim.f90)
+                   ALLOCATED(Intrinsic) (Line 31, file gyro_alloc_profile_sim.f90)
+                   ALLOCATED(Intrinsic) (Line 207, file gyro_alloc_profile_sim.f90)
+                   ALLOCATED(Intrinsic) (Line 208, file gyro_alloc_profile_sim.f90)
+                   ALLOCATED(Intrinsic) (Line 209, file gyro_alloc_profile_sim.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ALLOC_PROFILE_SIM
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ALLOC_PROFILE_SIM
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ALLOC_PROFILE_SIM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ALLOC_PROFILE_SIM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_ALLOC_PROFILE_SIM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,845 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_collect_routines.f90
+Compiled : 01/19/21  15:35:33
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_collect_routines.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : COLLECT_COMPLEX
+          COLLECT_REAL
+          COLLECT_INTEGER
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_collect_routines.f90
+Date     : 01/19/2021  15:35:33
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! collect_complex.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Merge a COMPLEX array which is distributed over 
+    6.    !  toroidal subgroups.
+    7.    !
+    8.    ! NOTES:
+    9.    !
+   10.    ! input:  v_distrib(n_n_1,n_v)
+   11.    ! output: v_collect(n_n,n_v)
+   12.    !
+   13.    ! n_v is the length of the array for each n.
+   14.    !-----------------------------------------------------------
+   15.    
+   16.    subroutine collect_complex(v_distrib,v_collect,n_v)
+   17.    
+   18.      use mpi
+   19.      use gyro_globals
+   20.    
+   21.      !-------------------------------------
+   22.      implicit none
+   23.      !
+   24.      integer, intent(in) :: n_v
+   25.      !
+   26.      complex, intent(in) :: v_distrib(n_v)
+   27.      complex, intent(inout) :: v_collect(n_n,n_v)
+   28.      !
+   29.      integer :: i_send
+   30.      integer :: i_group_send
+   31.      !
+   32.      complex, dimension(n_v) :: temp_n
+   33.      !-------------------------------------
+   34.    
+   35.      do in=1,n_n
+   36.    
+   37.         !-----------------------------------------
+   38.         ! Subgroup collector:
+   39.         !
+   40.         i_group_send = (in-1)/n_n_1
+   41.    
+   42.         if (i_group_send /= 0) then
+   43.    
+   44.            i_send = i_group_send*n_proc_1
+   45.    
+   46.            if (i_proc == 0) then
+   47.    
+   48.               call MPI_RECV(temp_n(:),&
+   49.                    n_v,&
+   50.                    MPI_DOUBLE_COMPLEX,&
+   51.                    i_send,&
+   52.                    in,&
+   53.                    GYRO_COMM_WORLD,&
+   54.                    recv_status,&
+   55.                    i_err)
+   56.    
+   57.            else if (i_proc == i_send) then
+   58.    
+   59.               call MPI_SEND(v_distrib(:),&
+   60.                    n_v,&
+   61.                    MPI_DOUBLE_COMPLEX,&
+   62.                    0,&
+   63.                    in,&
+   64.                    GYRO_COMM_WORLD,&
+   65.                    i_err)
+   66.    
+   67.            endif
+   68.    
+   69.         else
+   70.    
+   71.            temp_n(:) = v_distrib(:)
+ftn-6263 ftn: VECTOR COLLECT_COMPLEX, File = gyro_collect_routines.f90, Line = 71 
+  A loop starting at line 71 was not vectorized because it contains a reference to a non-vector intrinsic on line 71.
+
+   72.    
+   73.         endif
+   74.         !-----------------------------------------
+   75.    
+   76.         v_collect(in,:) = temp_n(:)
+ftn-6263 ftn: VECTOR COLLECT_COMPLEX, File = gyro_collect_routines.f90, Line = 76 
+  A loop starting at line 76 was not vectorized because it contains a reference to a non-vector intrinsic on line 76.
+
+   77.    
+   78.      enddo ! in
+   79.    
+   80.    end subroutine collect_complex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   81.    
+   82.    !-----------------------------------------------------------
+   83.    ! collect_real.f90
+   84.    !
+   85.    ! PURPOSE:
+   86.    !  Merge a REAL array which is distributed over 
+   87.    !  toroidal subgroups.
+   88.    !
+   89.    ! NOTES:
+   90.    !
+   91.    ! input:  v_distrib(n_n_1,n_v)
+   92.    ! output: v_collect(n_n,n_v)
+   93.    !
+   94.    ! n_v is the length of the array for each n.
+   95.    !-----------------------------------------------------------
+   96.    
+   97.    subroutine collect_real(v_distrib,v_collect)
+   98.    
+   99.      use mpi
+  100.      use gyro_globals
+  101.    
+  102.      !-------------------------------------
+  103.      implicit none
+  104.      !
+  105.      real, intent(in) :: v_distrib
+  106.      real, intent(inout) :: v_collect(n_n)
+  107.      !
+  108.      integer :: i_send
+  109.      integer :: i_group_send
+  110.      !
+  111.      real :: temp_n
+  112.      !-------------------------------------
+  113.    
+  114.      do in=1,n_n
+  115.    
+  116.         !-----------------------------------------
+  117.         ! Subgroup collector:
+  118.         !
+  119.         i_group_send = (in-1)/n_n_1
+  120.    
+  121.         if (i_group_send /= 0) then
+  122.    
+  123.            i_send = i_group_send*n_proc_1
+  124.    
+  125.            if (i_proc == 0) then
+  126.    
+  127.               call MPI_RECV(temp_n,&
+  128.                    1,&
+  129.                    MPI_DOUBLE_PRECISION,&
+  130.                    i_send,&
+  131.                    in,&
+  132.                    GYRO_COMM_WORLD,&
+  133.                    recv_status,&
+  134.                    i_err)
+  135.    
+  136.            else if (i_proc == i_send) then
+  137.    
+  138.               call MPI_SEND(v_distrib,&
+  139.                    1,&
+  140.                    MPI_DOUBLE_PRECISION,&
+  141.                    0,&
+  142.                    in,&
+  143.                    GYRO_COMM_WORLD,&
+  144.                    i_err)
+  145.    
+  146.            endif
+  147.    
+  148.         else
+  149.    
+  150.            temp_n = v_distrib
+  151.    
+  152.         endif
+  153.         !-----------------------------------------
+  154.    
+  155.         v_collect(in) = temp_n
+  156.    
+  157.      enddo ! in
+  158.    
+  159.    end subroutine collect_real
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  160.    
+  161.    !-----------------------------------------------------------
+  162.    ! collect_inetger.f90
+  163.    !
+  164.    ! PURPOSE:
+  165.    !  Merge an INTEGER array which is distributed over 
+  166.    !  toroidal subgroups.
+  167.    !
+  168.    ! NOTES:
+  169.    !
+  170.    ! input:  v_distrib(n_n_1,n_v)
+  171.    ! output: v_collect(n_n,n_v)
+  172.    !
+  173.    ! n_v is the length of the array for each n.
+  174.    !-----------------------------------------------------------
+  175.    
+  176.    subroutine collect_integer(v_distrib,v_collect)
+  177.    
+  178.      use mpi
+  179.      use gyro_globals
+  180.    
+  181.      !-------------------------------------
+  182.      implicit none
+  183.      !
+  184.      integer, intent(in) :: v_distrib
+  185.      integer, intent(inout) :: v_collect(n_n)
+  186.      !
+  187.      integer :: i_send
+  188.      integer :: i_group_send
+  189.      !
+  190.      integer :: temp_n
+  191.      !-------------------------------------
+  192.    
+  193.      do in=1,n_n
+  194.    
+  195.         !-----------------------------------------
+  196.         ! Subgroup collector:
+  197.         !
+  198.         i_group_send = (in-1)/n_n_1
+  199.    
+  200.         if (i_group_send /= 0) then
+  201.    
+  202.            i_send = i_group_send*n_proc_1
+  203.    
+  204.            if (i_proc == 0) then
+  205.    
+  206.               call MPI_RECV(temp_n,&
+  207.                    1,&
+  208.                    MPI_INTEGER,&
+  209.                    i_send,&
+  210.                    in,&
+  211.                    GYRO_COMM_WORLD,&
+  212.                    recv_status,&
+  213.                    i_err)
+  214.    
+  215.            else if (i_proc == i_send) then
+  216.    
+  217.               call MPI_SEND(v_distrib,&
+  218.                    1,&
+  219.                    MPI_INTEGER,&
+  220.                    0,&
+  221.                    in,&
+  222.                    GYRO_COMM_WORLD,&
+  223.                    i_err)
+  224.    
+  225.            endif
+  226.    
+  227.         else
+  228.    
+  229.            temp_n = v_distrib
+  230.    
+  231.         endif
+  232.         !-----------------------------------------
+  233.    
+  234.         v_collect(in) = temp_n
+  235.    
+  236.      enddo ! in
+  237.    
+  238.    end subroutine collect_integer
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     COLLECT_COMPLEX                  Block is used from MPI_CONSTANTS
+     COLLECT_INTEGER                  Block is used from MPI_CONSTANTS
+     COLLECT_REAL                     Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     COLLECT_COMPLEX                  Block is used from MPI_CONSTANTS
+     COLLECT_INTEGER                  Block is used from MPI_CONSTANTS
+     COLLECT_REAL                     Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     COLLECT_COMPLEX                  Block is used from MPI_CONSTANTS
+     COLLECT_INTEGER                  Block is used from MPI_CONSTANTS
+     COLLECT_REAL                     Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     COLLECT_COMPLEX                  Block is used from MPI_CONSTANTS
+     COLLECT_INTEGER                  Block is used from MPI_CONSTANTS
+     COLLECT_REAL                     Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     COLLECT_COMPLEX                  Block is used from MPI_CONSTANTS
+     COLLECT_INTEGER                  Block is used from MPI_CONSTANTS
+     COLLECT_REAL                     Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COLLECT_COMPLEX
+      Defined as:  Subroutine (line 16, file gyro_collect_routines.f90)
+
+      Interface:   None
+
+      Calls:       MPI_RECV (Line 48, file gyro_collect_routines.f90)
+                   MPI_SEND (Line 59, file gyro_collect_routines.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+COLLECT_INTEGER
+      Defined as:  Subroutine (line 176, file gyro_collect_routines.f90)
+
+      Interface:   None
+
+      Calls:       MPI_RECV (Line 206, file gyro_collect_routines.f90)
+                   MPI_SEND (Line 217, file gyro_collect_routines.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+COLLECT_REAL
+      Defined as:  Subroutine (line 97, file gyro_collect_routines.f90)
+
+      Interface:   None
+
+      Calls:       MPI_RECV (Line 127, file gyro_collect_routines.f90)
+                   MPI_SEND (Line 138, file gyro_collect_routines.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     COLLECT_COMPLEX
+                   COLLECT_REAL
+                   COLLECT_INTEGER
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     COLLECT_COMPLEX
+                   COLLECT_REAL
+                   COLLECT_INTEGER
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     COLLECT_COMPLEX  (indirectly)
+                   COLLECT_REAL  (indirectly)
+                   COLLECT_INTEGER  (indirectly)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     COLLECT_COMPLEX  (indirectly)
+                   COLLECT_REAL  (indirectly)
+                   COLLECT_INTEGER  (indirectly)
+
+Name  Messages
+----  --------
+MPI_RECV
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   COLLECT_COMPLEX (Line 48, file gyro_collect_routines.f90)
+                   WINEQ in MPI_CONSTANTS (Line 127, file gyro_collect_routines.f90)
+                   WINNEQ in MPI_CONSTANTS (Line 206, file gyro_collect_routines.f90)
+
+Name  Messages
+----  --------
+MPI_SEND
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   COLLECT_COMPLEX (Line 59, file gyro_collect_routines.f90)
+                   WINEQ in MPI_CONSTANTS (Line 138, file gyro_collect_routines.f90)
+                   WINNEQ in MPI_CONSTANTS (Line 217, file gyro_collect_routines.f90)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     COLLECT_COMPLEX  (indirectly)
+                   COLLECT_REAL  (indirectly)
+                   COLLECT_INTEGER  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

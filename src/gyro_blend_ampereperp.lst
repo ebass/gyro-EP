@@ -1,0 +1,784 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_blend_ampereperp.f90
+Compiled : 01/19/21  15:35:30
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_blend_ampereperp.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_BLEND_AMPEREPERP
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_blend_ampereperp.f90
+Date     : 01/19/2021  15:35:31
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------
+    2.    ! gyro_blend_ampereperp.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Generate matrices L_BB and LBP (LPB=-2*LBP) of paper.
+    6.    !------------------------------------------------
+    7.    
+    8.    subroutine gyro_blend_ampereperp
+    9.    
+   10.      use mpi
+   11.      use gyro_globals
+   12.      use gyro_pointers
+   13.      use math_constants
+   14.    
+   15.      !---------------------------------------------------
+   16.      implicit none
+   17.      !
+   18.      real :: betae_eff
+   19.      !
+   20.      real :: omega_c
+   21.      real :: rho_gyro
+   22.      real :: a_gyro
+   23.      real :: u_gyro
+   24.      real :: v_gyro
+   25.      ! 
+   26.      complex, dimension(-m_gyro:m_gyro-i_gyro,n_blend,n_blend) :: vel_sum_loc1
+   27.      complex, dimension(n_gk,-m_gyro:m_gyro-i_gyro) :: f_x1
+   28.      complex, dimension(-m_gyro:m_gyro-i_gyro,n_blend,n_blend) :: vel_sum_loc2
+   29.      complex, dimension(n_gk,-m_gyro:m_gyro-i_gyro) :: f_x2
+   30.      complex, dimension(-m_gyro:m_gyro-i_gyro,n_blend,n_blend) :: vel_sum_glob
+   31.      complex, dimension(n_gk,-m_gyro:m_gyro-i_gyro,n_stack,n_nek_loc_1) :: f1_save
+   32.      complex, dimension(n_gk,-m_gyro:m_gyro-i_gyro,n_stack,n_nek_loc_1) :: f2_save
+   33.      !---------------------------------------------------
+   34.    
+   35.      betae_eff = betae_unit_norm*ampere_scale
+   36.    
+   37.      do i=1,n_x
+   38.    
+   39.         vel_sum_loc1 = (0.0,0.0)
+ftn-6332 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 39 
+  A loop starting at line 39 was not vectorized because it does not map well onto the target architecture.
+
+   40.         vel_sum_loc2 = (0.0,0.0)
+ftn-6332 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 40 
+  A loop starting at line 40 was not vectorized because it does not map well onto the target architecture.
+
+   41.    
+   42.         p_nek_loc = 0
+   43.    
+   44.         do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+   45.    
+   46.            p_nek_loc = p_nek_loc+1
+   47.    
+   48.            ie = nek_e(p_nek)
+   49.            k  = nek_k(p_nek)
+   50.    
+   51.            ck = class(k)
+   52.    
+   53.            ! Now, compute m-projections of the RHS:
+   54.    
+   55.            do m=1,n_stack
+   56.    
+   57.               m0 = m_phys(ck,m)
+   58.    
+   59.               ! Fast option for flat profiles
+   60.    
+   61.               if (i == 1 .or. flat_profile_flag == 0) then
+   62.    
+   63.                  do is=1,n_gk
+   64.    
+   65.                     !---------------------------------------------------------------
+   66.                     ! Prepare argument of Bessel function
+   67.                     !  
+   68.                     omega_c = abs(z(is))*b_unit_s(i)*mu(is)**2
+   69.    
+   70.                     if (kill_gyro_b_flag == 0) then
+   71.                        omega_c = omega_c*b0_t(i,k,m0)
+   72.                     endif
+   73.    
+   74.                     rho_gyro = rhos_norm*v_perp(m0,i,p_nek_loc,is)/omega_c
+   75.                     !
+   76.                     a_gyro = grad_r_t(i,k,m0)/x_length*dr_eodr(i)
+   77.                     u_gyro = qrat_t(i,k,m0)*n_1(in_1)*q_s(i)/r_s(i)*captheta_t(i,k,m0)
+   78.                     v_gyro = qrat_t(i,k,m0)*n_1(in_1)*q_s(i)/r_s(i)
+   79.                     !---------------------------------------------------------------
+   80.    
+   81.                     f_x1(is,:) = (0.0,0.0) 
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 81 
+  A loop starting at line 81 was not vectorized because it contains a reference to a non-vector intrinsic on line 81.
+
+   82.                     f_x2(is,:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 82 
+  A loop starting at line 82 was not vectorized because it contains a reference to a non-vector intrinsic on line 82.
+
+   83.    
+   84.                     ! G_perp^2
+   85.                     call gyro_bessel_operator(rho_gyro,&
+   86.                          a_gyro,&
+   87.                          u_gyro,&
+   88.                          v_gyro,&
+   89.                          f_x1(is,:),&
+                                    ^        
+ftn-1438 ftn: CAUTION GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 89, Column = 27 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   90.                          5)
+   91.    
+   92.                     ! G_perp * G
+   93.                     call gyro_bessel_operator(rho_gyro,&
+   94.                          a_gyro,&
+   95.                          u_gyro,&
+   96.                          v_gyro,&
+   97.                          f_x2(is,:),&
+                                    ^        
+ftn-1438 ftn: CAUTION GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 97, Column = 27 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   98.                          6)
+   99.    
+  100.                  enddo ! is
+  101.                  f1_save(:,:,m,p_nek_loc) = f_x1(:,:)
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 101 
+  A loop starting at line 101 was not vectorized because it contains a reference to a non-vector intrinsic on line 101.
+
+  102.                  f2_save(:,:,m,p_nek_loc) = f_x2(:,:)
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 102 
+  A loop starting at line 102 was not vectorized because it contains a reference to a non-vector intrinsic on line 102.
+
+  103.               else
+  104.                  f_x1(:,:) = f1_save(:,:,m,p_nek_loc)
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 104 
+  A loop starting at line 104 was not vectorized because it contains a reference to a non-vector intrinsic on line 104.
+
+  105.                  f_x2(:,:) = f2_save(:,:,m,p_nek_loc)
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 105 
+  A loop starting at line 105 was not vectorized because it contains a reference to a non-vector intrinsic on line 105.
+
+  106.               endif
+  107.    
+  108.               do j=1,n_blend
+  109.                  do jp=1,n_blend
+  110.    
+  111.                     do i_diff=-m_gyro,m_gyro-i_gyro
+  112.    
+  113.                        !-----------------------------------------------
+  114.                        ! This will stagnate at i=n_x for i+i_diff > n_x
+  115.                        ! if boundary_method=2:
+  116.                        ip = i_cyc(i+i_diff)
+  117.                        !-----------------------------------------------
+  118.    
+  119.                        ! FV[ (F*_j) (2*z_i*n_i*T_i*V[(ene*lambda*G_perp)^2]
+  120.                        !             + 1/beta_e) (F_jp) ]
+  121.                        !
+  122.                        !  = L_B 
+  123.    
+  124.                        vel_sum_loc1(i_diff,j,jp) = vel_sum_loc1(i_diff,j,jp)+&
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 124 
+  A loop starting at line 124 was not vectorized because it contains a reference to a non-vector intrinsic on line 124.
+
+  125.                             fakefield_flag*(sum(2.0*den_s(1:n_gk,i)*tem_s(1:n_gk,i)&
+  126.                             * f_x1(1:n_gk,i_diff)*energy(ie)**2)) &
+  127.                             * lambda(i,k)**2 &
+  128.                             * cs_blend(j,m0,i,p_nek_loc) &
+  129.                             * c_blend(jp,m0,ip,p_nek_loc) &
+  130.                             + b_unit_s(i)**2*1.0/betae_eff * w_g0(i_diff) &
+  131.                             * cs_blend(j,m0,i,p_nek_loc) &
+  132.                             * c_blend(jp,m0,ip,p_nek_loc)              
+  133.    
+  134.                        ! FV[ (F*_j) (z_i*n_i*V[(ene*lambda*G*G_perp)]) (F_jp) ]
+  135.                        !
+  136.                        !  = L_BP 
+  137.    
+  138.                        vel_sum_loc2(i_diff,j,jp) = vel_sum_loc2(i_diff,j,jp)+&
+ftn-6263 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 138 
+  A loop starting at line 138 was not vectorized because it contains a reference to a non-vector intrinsic on line 138.
+
+  139.                             fakefield_flag*(sum(z(1:n_gk)*den_s(1:n_gk,i)&
+  140.                             * f_x2(1:n_gk,i_diff)*energy(ie))) &
+  141.                             * lambda(i,k) &
+  142.                             * cs_blend(j,m0,i,p_nek_loc) &
+  143.                             * c_blend(jp,m0,ip,p_nek_loc)
+  144.    
+  145.                     enddo ! i_diff
+  146.    
+  147.                  enddo ! jp
+  148.               enddo ! j
+  149.    
+  150.            enddo ! m 
+  151.         enddo ! p_nek_loc 
+  152.         !-------------------------------------------------------------------
+  153.    
+  154.         call MPI_ALLREDUCE(vel_sum_loc1,&
+  155.              vel_sum_glob,&
+  156.              n_blend*n_blend*(2*m_gyro-i_gyro+1),&
+  157.              MPI_DOUBLE_COMPLEX,&
+  158.              MPI_SUM,&
+  159.              NEW_COMM_1,&
+  160.              i_err)
+  161.    
+  162.         ab_mm(i,:,:,:) = vel_sum_glob(:,:,:)
+ftn-6262 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 162 
+  A loop starting at line 162 was not vectorized because it contains a call to a subroutine or function on line 162.
+
+  163.    
+  164.         call MPI_ALLREDUCE(vel_sum_loc2,&
+  165.              vel_sum_glob,&
+  166.              n_blend*n_blend*(2*m_gyro-i_gyro+1),&
+  167.              MPI_DOUBLE_COMPLEX,&
+  168.              MPI_SUM,&
+  169.              NEW_COMM_1,&
+  170.              i_err)
+  171.    
+  172.         abp_mm(i,:,:,:) = vel_sum_glob(:,:,:)
+ftn-6262 ftn: VECTOR GYRO_BLEND_AMPEREPERP, File = gyro_blend_ampereperp.f90, Line = 172 
+  A loop starting at line 172 was not vectorized because it contains a call to a subroutine or function on line 172.
+
+  173.    
+  174.      enddo ! i 
+  175.    
+  176.      if (debug_flag == 1 .and. i_proc == 0) then
+  177.         print *,'[make_ampereperp_blend done]'
+  178.      endif
+  179.    
+  180.    end subroutine gyro_blend_ampereperp
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_BLEND_AMPEREPERP            Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_BLEND_AMPEREPERP            Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_BLEND_AMPEREPERP            Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_BLEND_AMPEREPERP            Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_BLEND_AMPEREPERP            Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BLEND_AMPEREPERP (Line 68, file gyro_blend_ampereperp.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_BESSEL_OPERATOR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BLEND_AMPEREPERP (Line 85, file gyro_blend_ampereperp.f90)
+                   GYRO_BLEND_AMPEREPERP (Line 93, file gyro_blend_ampereperp.f90)
+
+Name  Messages
+----  --------
+GYRO_BLEND_AMPEREPERP
+      Defined as:  Subroutine (line 8, file gyro_blend_ampereperp.f90)
+
+      Interface:   None
+
+      Calls:       ABS(Intrinsic) (Line 68, file gyro_blend_ampereperp.f90)
+                   GYRO_BESSEL_OPERATOR (Line 85, file gyro_blend_ampereperp.f90)
+                   GYRO_BESSEL_OPERATOR (Line 93, file gyro_blend_ampereperp.f90)
+                   SUM(Intrinsic) (Line 125, file gyro_blend_ampereperp.f90)
+                   SUM(Intrinsic) (Line 139, file gyro_blend_ampereperp.f90)
+                   MPI_ALLREDUCE (Line 164, file gyro_blend_ampereperp.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+                   GYRO_POINTERS
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP
+
+Name  Messages
+----  --------
+MPI_ALLREDUCE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BLEND_AMPEREPERP (Line 164, file gyro_blend_ampereperp.f90)
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BLEND_AMPEREPERP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BLEND_AMPEREPERP (Line 125, file gyro_blend_ampereperp.f90)
+                   GYRO_BLEND_AMPEREPERP (Line 139, file gyro_blend_ampereperp.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

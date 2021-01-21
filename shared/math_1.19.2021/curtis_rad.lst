@@ -1,0 +1,156 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/curtis_rad.f90
+Compiled : 01/19/21  14:38:37
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -c curtis_rad.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : CURTIS_RAD
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/curtis_rad.f90
+Date     : 01/19/2021  14:38:37
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    ! Based on J. Candy's rotuine make_energy_grid_curtis
+    2.    ! Makes a radial grid based on the open
+    3.    ! Curtis-Clenshaw quadrature, also known as Fejer's second quadrature.
+    4.    ! This routine computes only the derivative weights 
+    5.    ! (i.e. the integration weights are not returned)
+    6.    
+    7.    subroutine curtis_rad(n_radial,ra,rb,r,wr_deriv)
+    8.    
+    9.      !------------------------------------------
+   10.      implicit none
+   11.      !
+   12.      integer, intent(in) :: n_radial
+   13.      real, intent(in)    :: ra, rb
+   14.      real, intent(inout) :: r(n_radial)
+   15.      real, intent(inout) :: wr_deriv(n_radial,n_radial)
+   16.      !
+   17.      integer :: k, kp, n, nm
+   18.      real :: pi
+   19.      real :: xa, xb
+   20.      real :: thetak
+   21.      real :: thetakp
+   22.      real, dimension(:), allocatable :: x
+   23.      real, dimension(:,:), allocatable :: wd
+   24.      !------------------------------------------
+   25.    
+   26.      pi = 3.1415926535897932
+   27.    
+   28.      xa = 0.5*(rb-ra)
+   29.      xb = 0.5*(rb+ra)
+   30.    
+   31.      nm = n_radial-1
+   32.      allocate(x(0:nm))
+   33.      allocate(wd(0:nm,0:nm))
+   34.    
+   35.      ! Grid points
+   36.      do k=0,nm
+   37.         thetak = (2*k+1)*pi/(2.0*(nm+1))
+   38.         x(k)     = -cos(thetak)
+   39.      enddo
+   40.    
+   41.      ! Unscaled derivative matrix: wd(k,kp)
+   42.      do k=0,nm
+   43.         do kp=0,nm
+   44.    
+   45.            thetak  = (2*k+1)*pi/(2.0*(nm+1))
+   46.            thetakp = (2*kp+1)*pi/(2.0*(nm+1))
+   47.    
+   48.            ! First term is zero:
+   49.            wd(k,kp) = 0.0 
+   50.            do n=1,nm
+   51.               wd(k,kp) = wd(k,kp)-(2.0*n)/(nm+1)*cos(n*thetakp)* &
+   52.                    sin(n*thetak)/sin(thetak)
+   53.            enddo
+   54.    
+   55.         enddo
+   56.      enddo
+   57.    
+   58.      ! Scaled quantities:
+   59.    
+   60.      r(:) = xa*x(:) + xb
+ftn-6262 ftn: VECTOR CURTIS_RAD, File = curtis_rad.f90, Line = 60 
+  A loop starting at line 60 was not vectorized because it contains a call to a subroutine or function on line 60.
+
+   61.      wr_deriv(:,:) = wd(:,:)/xa
+ftn-6262 ftn: VECTOR CURTIS_RAD, File = curtis_rad.f90, Line = 61 
+  A loop starting at line 61 was not vectorized because it contains a call to a subroutine or function on line 61.
+
+   62.    
+   63.    end subroutine curtis_rad
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+COS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CURTIS_RAD (Line 38, file curtis_rad.f90)
+                   CURTIS_RAD (Line 51, file curtis_rad.f90)
+
+Name  Messages
+----  --------
+CURTIS_RAD
+      Defined as:  Subroutine (line 7, file curtis_rad.f90)
+
+      Interface:   None
+
+      Calls:       COS(Intrinsic) (Line 38, file curtis_rad.f90)
+                   COS(Intrinsic) (Line 51, file curtis_rad.f90)
+                   SIN(Intrinsic) (Line 52, file curtis_rad.f90)
+                   SIN(Intrinsic) (Line 52, file curtis_rad.f90)
+
+Name  Messages
+----  --------
+SIN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CURTIS_RAD (Line 52, file curtis_rad.f90)
+                   CURTIS_RAD (Line 52, file curtis_rad.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

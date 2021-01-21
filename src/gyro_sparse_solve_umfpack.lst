@@ -1,0 +1,730 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_sparse_solve_umfpack.f90
+Compiled : 01/19/21  15:35:50
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_sparse_solve_umfpack.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_SPARSE_SOLVE_UMFPACK
+          WRITE_MATRIX_STAT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_sparse_solve_umfpack.f90
+Date     : 01/19/2021  15:35:50
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------------
+    2.    ! gyro_sparse_solve_umfpack.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Manage factorize or solve for various field matrix combinations 
+    6.    !  using UMFPACK.
+    7.    !
+    8.    ! NOTES:
+    9.    !  i_solve=0: factor
+   10.    !  i_solve=1: solve
+   11.    !------------------------------------------------------------------
+   12.    
+   13.    subroutine gyro_sparse_solve_umfpack(n_elem,n_row,matnum,i_solve)
+   14.    
+   15.      use gyro_globals
+   16.    
+   17.      !---------------------------------------------------
+   18.      implicit none
+   19.      !
+   20.      integer, intent(in) :: n_elem
+   21.      integer, intent(in) :: n_row
+   22.      integer, intent(in) :: matnum
+   23.      integer, intent(in) :: i_solve
+   24.      !
+   25.      integer :: iter
+   26.      integer :: ij
+   27.      !
+   28.      complex, dimension(:), allocatable :: b_UMF
+   29.      complex, dimension(:), allocatable :: x_UMF
+   30.      complex, dimension(:), allocatable :: w_UMF
+   31.      !---------------------------------------------------
+   32.    
+   33.      select case(matnum)
+   34.    
+   35.      case(1) 
+   36.         m_sparse => m_poisson
+   37.         indx_sparse => indx_poisson
+   38.    
+   39.      case(2)
+   40.         m_sparse => m_ampere
+   41.         indx_sparse => indx_ampere
+   42.    
+   43.      case(3)
+   44.         m_sparse => m_maxwell
+   45.         indx_sparse => indx_maxwell
+   46.    
+   47.      case(4)
+   48.         m_sparse => m_poissonaperp
+   49.         indx_sparse => indx_poissonaperp
+   50.    
+   51.      end select
+   52.    
+   53.      if (i_solve == 0) then
+   54.    
+   55.         !==============================================
+   56.         ! FACTORIZE
+   57.         !==============================================
+   58.    
+   59.         iter = 0
+   60.    
+   61.    20   continue
+   62.    
+   63.         ! Define sparse field matrices
+   64.    
+   65.         select case(matnum)
+   66.    
+   67.         case(1) 
+   68.    
+   69.            call gyro_build_sparse_poisson
+   70.    
+   71.         case(2)
+   72.    
+   73.            call gyro_build_sparse_ampere
+   74.    
+   75.         case(3)
+   76.    
+   77.            call gyro_build_sparse_maxwell
+   78.    
+   79.         case(4)
+   80.    
+   81.            call gyro_build_sparse_poissonaperp
+   82.    
+   83.         end select
+   84.    
+   85.         call UMZ21I(keep(matnum,:),cntl(matnum,:),icntl(matnum,:))
+                               ^                                          
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 85, Column = 22 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                              ^                           
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 85, Column = 37 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                              ^           
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 85, Column = 53 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   86.    
+   87.         !--------------------------------------------
+   88.         ! Error and diagnostic messages from UMFPACK,
+   89.         ! to unit=5.
+   90.         !
+   91.         icntl(matnum,1) = 6
+   92.         icntl(matnum,2) = 6
+   93.         !
+   94.         ! Use icntl(3) = 2 for more verbosity.
+   95.         icntl(matnum,3) = 0
+   96.         !
+   97.         ! Use icntl(8)=n for n levels of iterative 
+   98.         ! refinement (set job=1).
+   99.         icntl(matnum,8) = 0
+  100.         !--------------------------------------------
+  101.    
+  102.         ! Factor Maxwell matrices
+  103.         call UMZ2FA(n_row,&
+  104.              n_elem,&
+  105.              0,&
+  106.              .false.,&
+  107.              lvalue(matnum),&
+  108.              lindx(matnum),&
+  109.              m_sparse,&
+                    ^          
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 109, Column = 11 
+  This argument produces a possible copy in and out to a temporary variable.
+
+  110.              indx_sparse,&
+                    ^             
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 110, Column = 11 
+  This argument produces a possible copy in and out to a temporary variable.
+
+  111.              keep(matnum,:),&
+                        ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 111, Column = 15 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  112.              cntl(matnum,:),&
+                        ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 112, Column = 15 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  113.              icntl(matnum,:),&
+                         ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 113, Column = 16 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  114.              uinfo,&
+  115.              rinfo)
+  116.    
+  117.         lindx(matnum)  = uinfo(19)+n_elem
+  118.         lvalue(matnum) = uinfo(21)+n_elem
+  119.    
+  120.         if (uinfo(1) < 0) then
+  121.    
+  122.            iter = iter+1
+  123.    
+  124.            select case(matnum)
+  125.    
+  126.            case(1) 
+  127.    
+  128.               deallocate(m_poisson)
+  129.               deallocate(indx_poisson)
+  130.    
+  131.               allocate(m_poisson(lvalue(matnum)))
+  132.               allocate(indx_poisson(lindx(matnum)))
+  133.    
+  134.               m_sparse => m_poisson
+  135.               indx_sparse => indx_poisson
+  136.    
+  137.            case(2)
+  138.    
+  139.               deallocate(m_ampere)
+  140.               deallocate(indx_ampere)
+  141.    
+  142.               allocate(m_ampere(lvalue(matnum)))
+  143.               allocate(indx_ampere(lindx(matnum)))
+  144.    
+  145.               m_sparse => m_ampere
+  146.               indx_sparse => indx_ampere
+  147.    
+  148.            case(3)
+  149.    
+  150.               deallocate(m_maxwell)
+  151.               deallocate(indx_maxwell)
+  152.    
+  153.               allocate(m_maxwell(lvalue(matnum)))
+  154.               allocate(indx_maxwell(lindx(matnum)))
+  155.    
+  156.               m_sparse => m_maxwell
+  157.               indx_sparse => indx_maxwell
+  158.    
+  159.            case(4)
+  160.    
+  161.               deallocate(m_poissonaperp)
+  162.               deallocate(indx_poissonaperp)
+  163.    
+  164.               allocate(m_poissonaperp(lvalue(matnum)))
+  165.               allocate(indx_poissonaperp(lindx(matnum)))
+  166.    
+  167.               m_sparse => m_poissonaperp
+  168.               indx_sparse => indx_poissonaperp
+  169.    
+  170.            end select
+  171.    
+  172.            goto 20
+  173.    
+  174.         endif
+  175.    
+  176.         if (uinfo(1) > 0) then
+  177.            if (i_proc == 0) then 
+  178.               print *,'matnum   =',matnum
+  179.               print *,'uinfo(1) =',uinfo(1)
+  180.            endif
+  181.            call catch_error('Error: UMZ2FA')
+  182.         endif
+  183.    
+  184.         call write_matrix_stat(n_elem,lvalue(matnum),lindx(matnum),iter,matnum)
+  185.    
+  186.      else
+  187.    
+  188.         !----------
+  189.         ! SOLVE
+  190.         !----------
+  191.    
+  192.         allocate(b_UMF(n_row))
+  193.         allocate(x_UMF(n_row))
+  194.         allocate(w_UMF(4*n_row))
+  195.    
+  196.         select case(matnum)
+  197.    
+  198.         case(1)
+  199.            do i=1,n_x
+  200.               do j=1,n_blend
+  201.                  ij  = i+(j-1)*n_x
+  202.                  b_UMF(ij) = vel_sum_p(j,i)
+  203.               enddo ! j
+  204.            enddo ! i
+  205.    
+  206.         case(2) 
+  207.            do i=1,n_x
+  208.               do j=1,n_blend
+  209.                  ij = i+(j-1)*n_x
+  210.                  b_UMF(ij) = vel_sum_a(j,i)
+  211.               enddo ! j
+  212.            enddo ! i
+  213.    
+  214.         case(3) 
+  215.            do i=1,n_x
+  216.               do j=1,n_blend
+  217.                  ij = i+(j-1)*n_x
+  218.                  b_UMF(ij) = vel_sum_p(j,i)
+  219.               enddo ! j
+  220.            enddo ! i
+  221.    
+  222.            if (n_field > 1) then
+  223.    
+  224.               do i=1,n_x
+  225.                  do j=1,n_blend
+  226.                     ij = i+(j-1)*n_x + n_x*n_blend
+  227.                     b_UMF(ij) = vel_sum_a(j,i)
+  228.                  enddo ! j
+  229.               enddo ! i
+  230.    
+  231.            endif
+  232.    
+  233.            if (n_field > 2) then
+  234.    
+  235.               do i=1,n_x
+  236.                  do j=1,n_blend
+  237.                     ij = i+(j-1)*n_x + 2*n_x*n_blend
+  238.                     b_UMF(ij) = vel_sum_aperp(j,i)
+  239.                  enddo ! j
+  240.               enddo ! i
+  241.    
+  242.            endif
+  243.    
+  244.         case(4)
+  245.            do i=1,n_x
+  246.               do j=1,n_blend
+  247.                  ij = i+(j-1)*n_x
+  248.                  b_UMF(ij) = vel_sum_p(j,i)
+  249.               enddo ! j
+  250.            enddo ! i        
+  251.    
+  252.            do i=1,n_x
+  253.               do j=1,n_blend
+  254.                  ij = i+(j-1)*n_x + n_x*n_blend
+  255.                  b_UMF(ij) = vel_sum_aperp(j,i)
+  256.               enddo ! j
+  257.            enddo ! i        
+  258.    
+  259.         end select
+  260.    
+  261.         call UMZ2SO(n_row,&
+  262.              0,&
+  263.              .false.,&
+  264.              lvalue(matnum),&
+  265.              lindx(matnum),&
+  266.              m_sparse,&
+                    ^          
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 266, Column = 11 
+  This argument produces a possible copy in and out to a temporary variable.
+
+  267.              indx_sparse,&
+                    ^             
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 267, Column = 11 
+  This argument produces a possible copy in and out to a temporary variable.
+
+  268.              keep(matnum,:),&
+                        ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 268, Column = 15 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  269.              b_UMF,&
+  270.              x_UMF,&
+  271.              w_UMF,&
+  272.              cntl(matnum,:),&
+                        ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 272, Column = 15 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  273.              icntl(matnum,:),&
+                         ^            
+ftn-1438 ftn: CAUTION GYRO_SPARSE_SOLVE_UMFPACK, File = gyro_sparse_solve_umfpack.f90, Line = 273, Column = 16 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  274.              uinfo,&
+  275.              rinfo)
+  276.    
+  277.         if (uinfo(1) /= 0) then
+  278.            if (i_proc == 0) then 
+  279.               print *,'matnum   =',matnum
+  280.               print *,'uinfo(1) =',uinfo(1)
+  281.            endif
+  282.            call catch_error('ERROR: (GYRO) UMZ2SO failed.')
+  283.         endif
+  284.    
+  285.         select case(matnum)
+  286.    
+  287.         case(1)
+  288.            do i=1,n_x
+  289.               do j=1,n_blend
+  290.                  ij = i+(j-1)*n_x
+  291.                  field_blend(j,i,1) = x_UMF(ij)
+  292.               enddo ! j
+  293.            enddo ! i
+  294.    
+  295.         case(2) 
+  296.            do i=1,n_x
+  297.               do j=1,n_blend
+  298.                  ij = i+(j-1)*n_x
+  299.                  field_blend(j,i,2) = x_UMF(ij)
+  300.               enddo
+  301.            enddo
+  302.    
+  303.         case(3) 
+  304.            do i=1,n_x
+  305.               do j=1,n_blend
+  306.                  ij = i+(j-1)*n_x
+  307.                  field_blend(j,i,1) = x_UMF(ij)
+  308.               enddo
+  309.            enddo
+  310.    
+  311.            if (n_field > 1) then
+  312.               do i=1,n_x
+  313.                  do j=1,n_blend
+  314.                     ij = i+(j-1)*n_x + n_x*n_blend
+  315.                     field_blend(j,i,2) = x_UMF(ij)
+  316.                  enddo
+  317.               enddo
+  318.            endif
+  319.    
+  320.            if (n_field > 2) then
+  321.               do i=1,n_x
+  322.                  do j=1,n_blend
+  323.                     ij = i+(j-1)*n_x + 2*n_x*n_blend
+  324.                     field_blend(j,i,3) = x_UMF(ij)
+  325.                  enddo
+  326.               enddo
+  327.            endif
+  328.    
+  329.         case(4)
+  330.            do i=1,n_x
+  331.               do j=1,n_blend
+  332.                  ij = i+(j-1)*n_x
+  333.                  field_blend(j,i,1) = x_UMF(ij)
+  334.               enddo
+  335.            enddo
+  336.    
+  337.            do i=1,n_x
+  338.               do j=1,n_blend
+  339.                  ij = i+(j-1)*n_x + n_x*n_blend
+  340.                  field_blend(j,i,3) = x_UMF(ij)
+  341.               enddo
+  342.            enddo
+  343.    
+  344.         end select
+  345.    
+  346.         deallocate(b_UMF)
+  347.         deallocate(x_UMF)
+  348.         deallocate(w_UMF)
+  349.    
+  350.      endif
+  351.    
+  352.      if (debug_flag == 1 .and. i_proc == 0) then
+  353.         print *,'[sparse_solve_umfpack done]'
+  354.      endif
+  355.    
+  356.    end subroutine gyro_sparse_solve_umfpack
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  357.    
+  358.    
+  359.    subroutine write_matrix_stat(nelem,nval,nindx,niter,tag)
+  360.    
+  361.      use gyro_globals
+  362.    
+  363.      !------------------------------------------------
+  364.      implicit none
+  365.      !
+  366.      integer, intent(in) :: nelem
+  367.      integer, intent(in) :: nval
+  368.      integer, intent(in) :: nindx
+  369.      integer, intent(in) :: niter
+  370.      !
+  371.      integer :: nelem_c(n_n)
+  372.      integer :: nval_c(n_n)
+  373.      integer :: nindx_c(n_n)
+  374.      integer :: niter_c(n_n)
+  375.      integer :: p
+  376.      !
+  377.      integer, intent(in) :: tag
+  378.      !
+  379.      character (len=36) :: lab1
+  380.      character (len=36) :: lab2
+  381.      character (len=36) :: lab3
+  382.      character (len=36) :: lab4
+  383.      !------------------------------------------------
+  384.    
+  385.      select case (output_flag)
+  386.    
+  387.      case (1)
+  388.    
+  389.         call collect_integer(nelem,nelem_c)
+  390.         call collect_integer(nval,nval_c)
+  391.         call collect_integer(nindx,nindx_c)
+  392.         call collect_integer(niter,niter_c)
+  393.    
+  394.         if (n(1) == 0 .and. n_n > 1) then
+  395.            p = 2
+  396.            lab1 = 'EXPLICIT POISSON:     n=0        n>0'
+  397.            lab2 = ' EXPLICIT AMPERE:     n=0        n>0'
+  398.            lab3 = '     TOTAL FIELD:     n=0        n>0'
+  399.            lab4 = '  POISSON-AMPERE:     n=0        n>0'
+  400.         endif
+  401.    
+  402.         if (n(1) == 0 .and. n_n == 1) then
+  403.            p = 1
+  404.            lab1 = 'EXPLICIT POISSON:     n=0'
+  405.            lab2 = ' EXPLICIT AMPERE:     n=0'
+  406.            lab3 = '     TOTAL FIELD:     n=0'
+  407.            lab4 = '  POISSON-AMPERE:     n=0'
+  408.         endif
+  409.    
+  410.         if (n(1) /= 0) then
+  411.            p = 1
+  412.            lab1 = 'EXPLICIT POISSON:     n>0'
+  413.            lab2 = ' EXPLICIT AMPERE:     n>0'
+  414.            lab3 = '     TOTAL FIELD:     n>0'
+  415.            lab4 = '  POISSON-AMPERE:     n>0'
+  416.         endif
+  417.    
+  418.         if ((i_proc == 0) .and. (gkeigen_j_set == 0)) then
+  419.            open(unit=1,file=trim(runfile),status='old',position='append')
+  420.    
+  421.            select case (tag)
+  422.    
+  423.            case (1)
+  424.    
+  425.               write(1,*) '----------- SPARSE MATRIX STATS ---------------'
+  426.               write(1,*) lab1
+  427.    
+  428.            case (2)
+  429.    
+  430.               write(1,*) lab2
+  431.    
+  432.            case (3)
+  433.    
+  434.               write(1,*) lab3
+  435.    
+  436.            case (4)
+  437.    
+  438.               write(1,*) '----------- SPARSE MATRIX STATS ---------------'
+  439.               write(1,*) lab4
+  440.    
+  441.            end select
+  442.    
+  443.            write(1,40) '        nonzeros:',nelem_c(1:p)
+  444.            write(1,40) '          values:',nval_c(1:p)
+  445.            write(1,40) '         indices:',nindx_c(1:p)
+  446.            write(1,40) '      iterations:',niter_c(1:p)
+  447.            write(1,*)
+  448.    
+  449.            close(1)
+  450.    
+  451.         endif
+  452.    
+  453.         return
+  454.    
+  455.      end select
+  456.    
+  457.    40 format(t2,a,t20,4(i8,2x))
+  458.    
+  459.    end subroutine write_matrix_stat
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 181, file gyro_sparse_solve_umfpack.f90)
+                   GYRO_GLOBALS (Line 282, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COLLECT_INTEGER
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   UMZ2FA (Line 389, file gyro_sparse_solve_umfpack.f90)
+                   UMZ2FA (Line 390, file gyro_sparse_solve_umfpack.f90)
+                   UMZ2FA (Line 391, file gyro_sparse_solve_umfpack.f90)
+                   UMZ2FA (Line 392, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+GYRO_BUILD_SPARSE_AMPERE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 73, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+GYRO_BUILD_SPARSE_MAXWELL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 77, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+GYRO_BUILD_SPARSE_POISSON
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 69, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+GYRO_BUILD_SPARSE_POISSONAPERP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 81, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_SPARSE_SOLVE_UMFPACK
+                   WRITE_MATRIX_STAT
+
+Name  Messages
+----  --------
+GYRO_SPARSE_SOLVE_UMFPACK
+      Defined as:  Subroutine (line 13, file gyro_sparse_solve_umfpack.f90)
+
+      Interface:   None
+
+      Calls:       GYRO_BUILD_SPARSE_POISSON (Line 69, file gyro_sparse_solve_umfpack.f90)
+                   GYRO_BUILD_SPARSE_AMPERE (Line 73, file gyro_sparse_solve_umfpack.f90)
+                   GYRO_BUILD_SPARSE_MAXWELL (Line 77, file gyro_sparse_solve_umfpack.f90)
+                   GYRO_BUILD_SPARSE_POISSONAPERP (Line 81, file gyro_sparse_solve_umfpack.f90)
+                   UMZ21I (Line 85, file gyro_sparse_solve_umfpack.f90)
+                   UMZ2FA (Line 103, file gyro_sparse_solve_umfpack.f90)
+                   CATCH_ERROR (Line 181, file gyro_sparse_solve_umfpack.f90)
+                   CATCH_ERROR (Line 282, file gyro_sparse_solve_umfpack.f90)
+                   WRITE_MATRIX_STAT (Line 184, file gyro_sparse_solve_umfpack.f90)
+
+        Uses:      GYRO_GLOBALS
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   UMZ2FA (Line 419, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+UMZ21I
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 85, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+UMZ2FA
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 103, file gyro_sparse_solve_umfpack.f90)
+
+Name  Messages
+----  --------
+UMZ2SO
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WRITE_MATRIX_STAT
+      Defined as:  Subroutine (line 359, file gyro_sparse_solve_umfpack.f90)
+
+      Interface:   None
+
+      Called By:   GYRO_GLOBALS (Line 184, file gyro_sparse_solve_umfpack.f90)
+
+      Calls:       COLLECT_INTEGER (Line 389, file gyro_sparse_solve_umfpack.f90)
+                   COLLECT_INTEGER (Line 390, file gyro_sparse_solve_umfpack.f90)
+                   COLLECT_INTEGER (Line 391, file gyro_sparse_solve_umfpack.f90)
+                   COLLECT_INTEGER (Line 392, file gyro_sparse_solve_umfpack.f90)
+                   TRIM(Intrinsic) (Line 419, file gyro_sparse_solve_umfpack.f90)
+
+        Uses:      GYRO_GLOBALS
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

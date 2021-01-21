@@ -1,0 +1,1230 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_profile_init.f90
+Compiled : 01/19/21  15:41:27
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_profile_init.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_PROFILE_INIT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_profile_init.f90
+Date     : 01/19/2021  15:41:28
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------------------
+    2.    ! gyro_profile_init.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Manage generation of radial profiles and associated 
+    6.    !  quantities given radial_profile_method.
+    7.    !
+    8.    ! NOTES:
+    9.    !
+   10.    !  radial_profile_method = 1: 
+   11.    !    flat, profiles, s-alpha geometry
+   12.    !  radial_profile_method = 5: 
+   13.    !    flat profiles, s-alpha, model, or general geometry
+   14.    !  radial_profile_method = 3: 
+   15.    !    experimental profiles, model, or general geometry
+   16.    !
+   17.    !  r_e is the uniform REFERENCE grid.
+   18.    !  r is the (possibly nonuniform) PHYSICAL grid.
+   19.    !
+   20.    ! FIELD ORIENTATION NOTES:
+   21.    !  Field orientation is accomplished by giving signs to a minimal 
+   22.    !  set of quantities:
+   23.    !  
+   24.    !  1. sign(b_unit)   = -btccw
+   25.    !  2. sign(q)        = ipccw*btccw
+   26.    !  3. sign(rho_star) = -btccw
+   27.    !-----------------------------------------------------------------------
+   28.    
+   29.    subroutine gyro_profile_init
+   30.    
+   31.      use gyro_globals
+   32.      use gyro_profile_exp
+   33.      use math_constants
+   34.    
+   35.      !---------------------------------------------------
+   36.      implicit none
+   37.      !
+   38.      integer :: ic 
+   39.      real :: loglam
+   40.      real :: cc
+   41.      real :: p_total
+   42.      !---------------------------------------------------
+   43.    
+   44.      !---------------------------------------------------
+   45.      ! Generate toroidal mode numbers:
+   46.      !
+   47.      ! Set for each processor subgroup as well.
+   48.      !
+   49.      ! Super:
+   50.      do in=1,n_n
+   51.         n(in) = n0+(in-1)*d_n
+   52.      enddo
+   53.      !
+   54.      ! Sub:
+   55.      in_1 = 1
+   56.      !
+   57.      in = i_group_1*n_n_1 + in_1
+   58.      n_1(in_1) = n(in)
+   59.      !
+   60.      ! For nonlinear convolution:
+   61.      n_max = n_n-1 
+   62.      !---------------------------------------------------
+   63.    
+   64.      !---------------------------------------------------
+   65.      ! Charge and mass for each species:
+   66.      !
+   67.      ! First, ions:
+   68.      !
+   69.      do is=1,n_spec-1
+   70.         z(is)  = z_vec(is)
+   71.         mu(is) = mu_vec(is) 
+   72.      enddo
+   73.      !
+   74.      ! Finally, electrons.  Before any profile mapping, these 
+   75.      ! have species index n_spec.
+   76.      !
+   77.      z(n_spec)  = z_vec(0)
+   78.      mu(n_spec) = mu_vec(0)
+   79.      !---------------------------------------------------
+   80.    
+   81.      !---------------------------------------------------
+   82.      ! Defaults and initializations.
+   83.      !
+   84.      if (radial_profile_method /= 3) then
+   85.    
+   86.         ! For local runs, set some unused parameters:
+   87.    
+   88.         a_meters   = 1.0
+   89.         bt_exp     = 1.0
+   90.         n_grid_exp = 0
+   91.    
+   92.      endif
+   93.      !
+   94.      ! Location of "norm point" (index of central radius)
+   95.      !
+   96.      ir_norm = n_x/2+1-n_x_offset
+   97.      !
+   98.      ! Set some geometry parameters not defined for 
+   99.      ! circular equilibrium.  These will also be reset 
+  100.      ! when using radial_profile_method=3  
+  101.      !
+  102.      b_unit_s(:)  = -btccw
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 102 
+  A loop starting at line 102 was not vectorized because it contains a reference to a non-vector intrinsic on line 102.
+
+  103.      kappa_s(:)   = kappa0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 103 
+  A loop starting at line 103 was not vectorized because it contains a reference to a non-vector intrinsic on line 103.
+
+  104.      delta_s(:)   = delta0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 104 
+  A loop starting at line 104 was not vectorized because it contains a reference to a non-vector intrinsic on line 104.
+
+  105.      zeta_s(:)    = zeta0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 105 
+  A loop starting at line 105 was not vectorized because it contains a reference to a non-vector intrinsic on line 105.
+
+  106.      s_kappa_s(:) = s_kappa0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 106 
+  A loop starting at line 106 was not vectorized because it contains a reference to a non-vector intrinsic on line 106.
+
+  107.      s_delta_s(:) = s_delta0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 107 
+  A loop starting at line 107 was not vectorized because it contains a reference to a non-vector intrinsic on line 107.
+
+  108.      s_zeta_s(:)  = s_zeta0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 108 
+  A loop starting at line 108 was not vectorized because it contains a reference to a non-vector intrinsic on line 108.
+
+  109.      rmaj_s(:)    = r_maj
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 109 
+  A loop starting at line 109 was not vectorized because it contains a reference to a non-vector intrinsic on line 109.
+
+  110.      drmaj_s(:)   = drmaj0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 110 
+  A loop starting at line 110 was not vectorized because it contains a reference to a non-vector intrinsic on line 110.
+
+  111.      zmag_s(:)    = zmag0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 111 
+  A loop starting at line 111 was not vectorized because it contains a reference to a non-vector intrinsic on line 111.
+
+  112.      dzmag_s(:)   = dzmag0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 112 
+  A loop starting at line 112 was not vectorized because it contains a reference to a non-vector intrinsic on line 112.
+
+  113.    
+  114.      !-------------------------------------------------------------------
+  115.      ! General geometry Fourier coefficients
+  116.      !
+  117.      if (num_equil_flag == 1) then
+  118.         do i=1,n_x
+  119.            a_fourier_geo_s(:,:,i) = a_fourier_geo(:,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 119 
+  A loop starting at line 119 was not vectorized because it contains a call to a subroutine or function on line 119.
+
+  120.         enddo
+  121.      else
+  122.         if (udsymmetry_flag == 1) then
+  123.            call send_message('INFO: (GYRO) Forcing up-down symmetry (UDSYMMETRY_FLAG=1).')
+  124.            zmag_s(:)  = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 124 
+  A loop starting at line 124 was not vectorized because it contains a reference to a non-vector intrinsic on line 124.
+
+  125.            dzmag_s(:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 125 
+  A loop starting at line 125 was not vectorized because it contains a reference to a non-vector intrinsic on line 125.
+
+  126.         endif
+  127.      endif
+  128.      !-------------------------------------------------------------------
+  129.    
+  130.      beta_unit_s(:) = betae_unit*(sum(n_vec(0:n_spec-1)*t_vec(0:n_spec-1)))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 130 
+  A loop starting at line 130 was not vectorized because it contains a reference to a non-vector intrinsic on line 130.
+
+  131.    
+  132.      csda_s(:)   = sqrt(1.6022e-16/(2.0*kg_proton))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 132 
+  A loop starting at line 132 was not vectorized because it contains a reference to a non-vector intrinsic on line 132.
+
+  133.      z_eff_s (:) = z_eff
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 133 
+  A loop starting at line 133 was not vectorized because it contains a reference to a non-vector intrinsic on line 133.
+
+  134.      mach_s(:)   = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 134 
+  A loop starting at line 134 was not vectorized because it contains a reference to a non-vector intrinsic on line 134.
+
+  135.      w0_s(:)     = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 135 
+  A loop starting at line 135 was not vectorized because it contains a reference to a non-vector intrinsic on line 135.
+
+  136.      w0p_s(:)    = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 136 
+  A loop starting at line 136 was not vectorized because it contains a reference to a non-vector intrinsic on line 136.
+
+  137.      nu_s(:,:)   = 1.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 137 
+  A loop starting at line 137 was not vectorized because it contains a reference to a non-vector intrinsic on line 137.
+
+  138.      !---------------------------------------------------
+  139.    
+  140.      !---------------------------------------------------
+  141.      ! Determine radial box size, etc.
+  142.      !
+  143.      call gyro_radial_simulation_box
+  144.      if (debug_flag == 1) call send_line('After gyro_radial_simulation_box.')
+  145.      !---------------------------------------------------
+  146.    
+  147.      rhosda_s(:) = rho_star
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 147 
+  A loop starting at line 147 was not vectorized because it contains a reference to a non-vector intrinsic on line 147.
+
+  148.    
+  149.      if (lock_ti_flag == 1) then
+  150.         t_vec(1:10) = t_vec(1)
+ftn-6204 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 150 
+  A loop starting at line 150 was vectorized.
+
+  151.         dlntdr_vec(1:10) = dlntdr_vec(1)
+ftn-6204 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 151 
+  A loop starting at line 151 was vectorized.
+
+  152.      endif
+  153.    
+  154.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 1')
+  155.    !  STOP   ! EMB 1.19.2021
+  156.    
+  157.      select case (radial_profile_method)
+  158.    
+  159.      case (1,5)
+  160.    
+  161.         !-----------------------------
+  162.         ! standard flat profiles (no variation)
+  163.         !-----------------------------
+  164.    
+  165.         ! Explicit sign convention
+  166.         q0 = q0*(ipccw)*(btccw)
+  167.    
+  168.         do i=1,n_x
+  169.    
+  170.            shat_s(i) = s0
+  171.    
+  172.            q(i) = q0+q0*s0/r0*(r(i)-r0)
+  173.    
+  174.            ! Get correct helicity
+  175.    
+  176.            r_s(i) = r0
+  177.            q_s(i) = q0
+  178.    
+  179.            rmaj_s(i) = r_maj
+  180.    
+  181.            ! Ions
+  182.    
+  183.            do is=1,n_ion
+  184.               den_s(is,i)    = n_vec(is)
+  185.               tem_s(is,i)    = t_vec(is)
+  186.               dlnndr_s(is,i) = dlnndr_vec(is) 
+  187.               dlntdr_s(is,i) = dlntdr_vec(is)
+  188.            enddo
+  189.    
+  190.            ! Electrons
+  191.    
+  192.            den_s(n_spec,i)    = n_vec(0)
+  193.            tem_s(n_spec,i)    = t_vec(0)
+  194.            dlnndr_s(n_spec,i) = dlnndr_vec(0)
+  195.            dlntdr_s(n_spec,i) = dlntdr_vec(0)
+  196.    
+  197.            ! Rotation with correct helicity
+  198.    
+  199.            gamma_p_s(i) = pgamma0
+  200.            gamma_e_s(i) = gamma_e
+  201.            mach_s(i)    = mach0
+  202.    
+  203.            ! Total pressure not available
+  204.            dlnptotdr_s(i) = 0.0
+  205.    
+  206.         enddo
+  207.    
+  208.      case (3) 
+  209.    
+  210.         !----------------------------------------
+  211.         ! experimental profiles and real geometry
+  212.         !---------------------------------------- 
+  213.    
+  214.         !---------------------------------------------------------------
+  215.         ! Read/broadcast experimental profiles on profile (_p) grid 
+  216.         ! and interpolate to simulation (_s) grid.  In general, the 
+  217.         ! _s grid is much finer than the _p grid.
+  218.         !
+  219.         ! At this point r = r_e and dr_eodr = 1.0.
+  220.         !
+  221.         call gyro_read_experimental_profiles
+  222.         !---------------------------------------------------------------
+  223.         if (debug_flag == 1) call send_line('After read_experimental_profiles (gyro_profile_init checkpoint 1.1)')
+  224.         call gyro_map_experimental_profiles
+  225.         if (debug_flag == 1) call send_line('After gyro_map_experimental_profiles (gyro_profile_init checkpoint 1.2)')
+  226.    
+  227.         !----------------------------------------------------------
+  228.         ! Recompute box length and gridpoints to get periodic case 
+  229.         ! right when using experimental profiles:
+  230.         !
+  231.         if (boundary_method == 1) then
+  232.    
+  233.            call send_message('INFO: (GYRO) Remapping into periodic domain.')
+  234.    
+  235.            if (box_multiplier < 0.0) then
+  236.               box_multiplier = 1.0
+  237.               ! rho_star < 0 if btccw = 1.
+  238.               rho_star = abs(l_y*r0/(n_ref*q_s(ir_norm)))*(-btccw)
+  239.               lambda_debye = lambda_debye/rhosda_s(ir_norm)*rho_star
+  240.               rhosda_s(:) = rho_star
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 240 
+  A loop starting at line 240 was not vectorized because it contains a reference to a non-vector intrinsic on line 240.
+
+  241.            endif
+  242.    
+  243.            x_length = abs(box_multiplier*r0/(n_ref*q_s(ir_norm)*shat_s(ir_norm)))
+  244.    
+  245.            ! Box ends at periodic point
+  246.            !
+  247.            ! x----x----x----x----p
+  248.            !           |
+  249.            !          r=r0
+  250.    
+  251.            d_x = x_length/n_x
+  252.    
+  253.            do i=1,n_x
+  254.               r(i) = r0-0.5*x_length+d_x*(i-1.0)
+  255.            enddo
+  256.    
+  257.            r_e(:)     = r(:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 257 
+  A loop starting at line 257 was not vectorized because it contains a call to a subroutine or function on line 257.
+
+  258.            dr_eodr(:) = 1.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 258 
+  A loop starting at line 258 was not vectorized because it contains a reference to a non-vector intrinsic on line 258.
+
+  259.    
+  260.         endif
+  261.         !------------------------------------------------------
+  262.    
+  263.         !------------------------------------------------------
+  264.         ! Need to set r_s before exiting make_profile_*.
+  265.         ! So, set it for nonperiodic case and reset later if 
+  266.         ! flat_profile_flag=1:
+  267.         r_s = r
+ftn-6209 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 267 
+  A loop starting at line 267 was partially vectorized.
+
+  268.         !------------------------------------------------------
+  269.    
+  270.         !------------------------------------------------------
+  271.         ! Modification of input temperature and gradients
+  272.         !
+  273.         ! Experimental chi_gb_(:) will increase by a factor of
+  274.         !  
+  275.         !                  1/(1-eps_lt_vec(:))
+  276.         !
+  277.         ! Gradients in simulation will decrease by a factor of 
+  278.         !
+  279.         !                    1-eps_lt_vec(:)
+  280.         !
+  281.         ! Similar results hold for eps_ln_vec.
+  282.         !
+  283.         do is=1,n_spec-1
+  284.            dlntdr_s(is,:) = dlntdr_s(is,:)*(1.0-eps_dlntdr_vec(is))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 284 
+  A loop starting at line 284 was not vectorized because it contains a reference to a non-vector intrinsic on line 284.
+
+  285.            dlnndr_s(is,:) = dlnndr_s(is,:)*(1.0-eps_dlnndr_vec(is))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 285 
+  A loop starting at line 285 was not vectorized because it contains a reference to a non-vector intrinsic on line 285.
+
+  286.            if (eps_dlntdr_vec(is) /= 0.0) then
+  287.               call send_message_real('INFO: (GYRO) Ti gradient RESCALED by: ',1.0-eps_dlntdr_vec(is))
+  288.               if (reintegrate_flag == 1) then
+  289.                  !call logint(tem_s(is,:),dlntdr_s(is,:),r_s,n_x,ir_norm)
+  290.                  !call send_message('INFO: (GYRO) Ti profile REINTEGRATRED')
+  291.                  call catch_error('ERROR: (GYRO) REINTEGRATE_FLAG no longer supported')
+  292.               endif
+  293.            endif
+  294.            if (eps_dlnndr_vec(is) /= 0.0) then
+  295.               call send_message_real('INFO: (GYRO) ni gradient RESCALED by: ',1.0-eps_dlnndr_vec(is))
+  296.               if (reintegrate_flag == 1) then
+  297.                  !call logint(den_s(is,:),dlntdr_s(is,:),r_s,n_x,ir_norm)
+  298.                  !call send_message('INFO: (GYRO) ni profile REINTEGRATRED')
+  299.                  call catch_error('ERROR: (GYRO) REINTEGRATE_FLAG no longer supported')
+  300.               endif
+  301.            endif
+  302.         enddo
+  303.         !
+  304.         dlntdr_s(n_spec,:) = dlntdr_s(n_spec,:)*(1.0-eps_dlntdr_vec(0))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 304 
+  A loop starting at line 304 was not vectorized because it contains a reference to a non-vector intrinsic on line 304.
+
+  305.         dlnndr_s(n_spec,:) = dlnndr_s(n_spec,:)*(1.0-eps_dlnndr_vec(0))
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 305 
+  A loop starting at line 305 was not vectorized because it contains a reference to a non-vector intrinsic on line 305.
+
+  306.         if (eps_dlntdr_vec(0) /= 0.0) then
+  307.            call send_message_real('INFO: (GYRO) Te gradient RESCALED by: ',1.0-eps_dlntdr_vec(0))
+  308.            if (reintegrate_flag == 1) then
+  309.               !call logint(tem_s(n_spec,:),dlntdr_s(n_spec,:),r_s,n_x,ir_norm)
+  310.               !call send_message('INFO: (GYRO) Te profile REINTEGRATRED')
+  311.               call catch_error('ERROR: (GYRO) REINTEGRATE_FLAG no longer supported')
+  312.            endif
+  313.         endif
+  314.         if (eps_dlnndr_vec(0) /= 0.0) then
+  315.            call send_message_real('INFO: (GYRO) ne gradient RESCALED by: ',1.0-eps_dlnndr_vec(0))
+  316.            if (reintegrate_flag == 1) then
+  317.               !call logint(den_s(n_spec,:),dlnndr_s(n_spec,:),r_s,n_x,ir_norm)
+  318.               !call send_message('INFO: (GYRO) ne profile REINTEGRATRED')
+  319.               call catch_error('ERROR: (GYRO) REINTEGRATE_FLAG no longer supported')
+  320.            endif
+  321.         endif
+  322.         !
+  323.         if ((sum(abs(eps_dlntdr_vec(:))+abs(eps_dlnndr_vec(:))) > 0.0)  .and. &
+  324.              (reintegrate_flag == 1)) then
+  325.            call send_message('INFO: (GYRO) profiles changed, recalculating beta_unit')
+  326.    
+  327.            ! den_s  -> 1/m^3
+  328.            ! tem_s  -> keV
+  329.            ! b_unit -> T
+  330.            !
+  331.            ! beta calculation in CGS:
+  332.            !
+  333.            !         8*pi ( n[1e19/m^3]*1e-6*1e19 )( T[keV]*1.6022*1e-9 )
+  334.            ! beta = ------------------------------------------------------
+  335.            !                           ( 1e4*B[T] )^2
+  336.            !
+  337.            !      = 4.027e-3 n[1e19/m^3]*T[keV]/B[T]^2
+  338.    
+  339.            do i=1,n_x
+  340.               p_total = sum(den_s(:,i)*tem_s(:,i))
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 340 
+  A loop starting at line 340 was not vectorized because it contains a call to a subroutine or function on line 340.
+
+  341.               beta_unit_s(i) = 4.027e-3*p_total/b_unit_s(i)**2
+  342.            enddo
+  343.         endif
+  344.         !------------------------------------------------------
+  345.    
+  346.      end select ! profile_method
+  347.    
+  348.      if (debug_flag == 1) call send_line('After profile method selection (gyro_profile_init checkpoint 1.3)')
+  349.    
+  350.      !--------------------------------------------------------------------
+  351.      ! Overwrite Z_eff with self-consistent value if z_eff_method set:
+  352.      !
+  353.      if (z_eff_method == 2) then
+  354.    
+  355.         z_eff_s(:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 355 
+  A loop starting at line 355 was not vectorized because it contains a reference to a non-vector intrinsic on line 355.
+
+  356.    
+  357.         do is=1,n_spec-1
+  358.            z_eff_s(:) = z_eff_s(:)+z(is)**2*den_s(is,:)/den_s(n_spec,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 358 
+  A loop starting at line 358 was not vectorized because it contains a call to a subroutine or function on line 358.
+
+  359.         enddo
+  360.    
+  361.      endif
+  362.      !--------------------------------------------------------------------
+  363.    
+  364.      !----------------------------------------------------------------------
+  365.      ! When electron_method=4, n_spec is naturally overlayed on n_ion, but 
+  366.      ! for electron_method=3, we must permute species
+  367.      !
+  368.      if (electron_method == 3) then
+  369.         z(1:n_spec)          = z(n_spec:1:-1)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 369 
+  A loop starting at line 369 was not vectorized because it contains a call to a subroutine or function on line 369.
+
+  370.         mu(1:n_spec)         = mu(n_spec:1:-1)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 370 
+  A loop starting at line 370 was not vectorized because it contains a call to a subroutine or function on line 370.
+
+  371.         den_s(1:n_spec,:)    = den_s(n_spec:1:-1,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 371 
+  A loop starting at line 371 was not vectorized because it contains a call to a subroutine or function on line 371.
+
+  372.         tem_s(1:n_spec,:)    = tem_s(n_spec:1:-1,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 372 
+  A loop starting at line 372 was not vectorized because it contains a call to a subroutine or function on line 372.
+
+  373.         dlntdr_s(1:n_spec,:) = dlntdr_s(n_spec:1:-1,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 373 
+  A loop starting at line 373 was not vectorized because it contains a call to a subroutine or function on line 373.
+
+  374.         dlnndr_s(1:n_spec,:) = dlnndr_s(n_spec:1:-1,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 374 
+  A loop starting at line 374 was not vectorized because it contains a call to a subroutine or function on line 374.
+
+  375.      endif
+  376.      !------------------------------------------------------------------
+  377.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 2.')
+  378.    !  STOP   ! EMB 1.19.2021
+  379.      !-------------------------------------------------------------
+  380.      ! Values of functions at the norm point.
+  381.      !
+  382.      ! These are reset from the intialized values in 
+  383.      ! make_profiles.
+  384.      !
+  385.      r_norm     = r(ir_norm)
+  386.      q_norm     = q_s(ir_norm)
+  387.      shat_norm  = shat_s(ir_norm)
+  388.      rhos_norm  = rhosda_s(ir_norm)
+  389.      csda_norm  = csda_s(ir_norm)
+  390.    
+  391.      tem_norm = tem_s(indx_e,ir_norm)
+  392.      den_norm = den_s(indx_e,ir_norm)
+  393.    
+  394.      b_unit_norm = b_unit_s(ir_norm)
+  395.      r_maj_norm  = rmaj_s(ir_norm)
+  396.      !
+  397.      ! betae_unit_norm enters Ampere's law
+  398.      !
+  399.      pr_s(:,:) = den_s(:,:)*tem_s(:,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 399 
+  A loop starting at line 399 was not vectorized because it contains a call to a subroutine or function on line 399.
+
+  400.      !
+  401.      betae_unit_norm = beta_unit_s(ir_norm)*pr_s(indx_e,ir_norm) &
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 401 
+  A loop starting at line 401 was not vectorized because it contains a reference to a non-vector intrinsic on line 401.
+
+  402.           /sum(pr_s(1:n_spec,ir_norm))
+  403.      !-------------------------------------------------------------
+  404.    
+  405.      !------------------------------------------------------
+  406.      ! FINAL NORMALIZATIONS:
+  407.      !
+  408.      ! Convert b_unit_s, tem_s and den_s to units of   
+  409.      ! central b_unit, Te and ne.
+  410.      !
+  411.      b_unit_s(:) = b_unit_s(:)/b_unit_norm
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 411 
+  A loop starting at line 411 was not vectorized because it contains a reference to a non-vector intrinsic on line 411.
+
+  412.      tem_s(:,:)  = tem_s(:,:)/tem_norm
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 412 
+  A loop starting at line 412 was not vectorized because it contains a reference to a non-vector intrinsic on line 412.
+
+  413.      den_s(:,:)  = den_s(:,:)/den_norm
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 413 
+  A loop starting at line 413 was not vectorized because it contains a reference to a non-vector intrinsic on line 413.
+
+  414.      !
+  415.      alpha_s(:,:) = den_s(:,:)/tem_s(:,:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 415 
+  A loop starting at line 415 was not vectorized because it contains a call to a subroutine or function on line 415.
+
+  416.      !------------------------------------------------------
+  417.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 3.')
+  418.      !------------------------------------------------------
+  419.      ! Total pressure gradient
+  420.      !
+  421.      do i=1,n_x
+  422.         dlnpdr_s(i) = sum(pr_s(1:n_spec,i)*(dlnndr_s(1:n_spec,i)+&
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 422 
+  A loop starting at line 422 was not vectorized because it contains a reference to a non-vector intrinsic on line 422.
+
+  423.              dlntdr_s(1:n_spec,i)))/sum(pr_s(1:n_spec,i))
+  424.      enddo
+  425.      !
+  426.      ! beta_star = -(8 pi)/(B_unit**2) dp/dr
+  427.      !
+  428.      if (geo_fastionbeta_flag == 0) then
+  429.    
+  430.         ! Pressure from species sum
+  431.    
+  432.         beta_star_s(:) = beta_unit_s(:)*dlnpdr_s(:)*geo_betaprime_scale         
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 432 
+  A loop starting at line 432 was not vectorized because it contains a call to a subroutine or function on line 432.
+
+  433.         if (geo_betaprime_scale /= 1.0) then
+  434.            call send_message_real(&
+  435.                 'INFO: (GYRO) Scaling dp/dr in GEO by: ',geo_betaprime_scale)
+  436.         endif
+  437.    
+  438.      else
+  439.    
+  440.         ! Pressure from total pressure including fast ions
+  441.         ! Note that this is not updated even if reintegrate_flag=1.
+  442.    
+  443.         beta_star_s(:) = beta_unit_ptot_s(:)*dlnptotdr_s(:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 443 
+  A loop starting at line 443 was not vectorized because it contains a call to a subroutine or function on line 443.
+
+  444.         call send_message('INFO: (GYRO) Using total dp/dr (+ fast ions) in GEO.')
+  445.    
+  446.      endif
+  447.      !------------------------------------------------------
+  448.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 4.')
+  449.      !----------------------------------------------------------
+  450.      ! Sign manipulations: up to now, we k*rho can have either 
+  451.      ! sign depending on field and current orientation.
+  452.      ! Now, we manipulate the sign of n to make k*rho >=0:
+  453.      !
+  454.      if (q_s(ir_norm)*rhos_norm < 0) then
+  455.         n_1(:) = -n_1(:)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 455 
+  A loop starting at line 455 was not vectorized because it contains a reference to a non-vector intrinsic on line 455.
+
+  456.         n0     = -n0
+  457.         n(:)   = -n(:)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 457 
+  A loop starting at line 457 was not vectorized because it contains a reference to a non-vector intrinsic on line 457.
+
+  458.      endif
+  459.      !
+  460.      ! Define krho_i = k_theta * rho_{s,unit} 
+  461.      !
+  462.      do i=1,n_x
+  463.         krho_i(:,i) = n_1(:)*q_s(i)/r_s(i)*rhos_norm/b_unit_s(i)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 463 
+  A loop starting at line 463 was not vectorized because it contains a call to a subroutine or function on line 463.
+
+  464.      enddo
+  465.      !----------------------------------------------------------
+  466.    
+  467.      !---------------------------------------------------------
+  468.      ! Rotation parameter scaling and definition of omega_eb_s
+  469.      ! 
+  470.      !  omega0 = - c (dphi/dpsi) 
+  471.      !
+  472.      !       M = omega_0 R_0/c_s
+  473.      ! gamma_p = -R_0 d(omega_0)/dr
+  474.      ! gamma_e = -(r/q) d(omega_0)/dr
+  475.      !
+  476.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 5.')
+  477.    !  STOP  ! EMB 1.19.2021
+  478.      if (radial_profile_method == 3) then
+  479.    
+  480.         mach_s(:)     = mach_s(:)*mach0_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 480 
+  A loop starting at line 480 was not vectorized because it contains a reference to a non-vector intrinsic on line 480.
+
+  481.         gamma_e_s(:)  = gamma_e_s(:)/csda_norm*doppler_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 481 
+  A loop starting at line 481 was not vectorized because it contains a reference to a non-vector intrinsic on line 481.
+
+  482.         gamma_p_s(:)  = gamma_p_s(:)/csda_norm*pgamma0_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 482 
+  A loop starting at line 482 was not vectorized because it contains a reference to a non-vector intrinsic on line 482.
+
+  483.         w0_s(:)       = w0_s(:)/csda_norm*doppler_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 483 
+  A loop starting at line 483 was not vectorized because it contains a reference to a non-vector intrinsic on line 483.
+
+  484.    
+  485.         omega_eb_s(:) = -n_1(in_1)*w0_s(:)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 485 
+  A loop starting at line 485 was not vectorized because it contains a call to a subroutine or function on line 485.
+
+  486.    
+  487.         if (mach0_scale /= 1.0) then
+  488.            call send_message_real('INFO: (GYRO) Scaling experimental Mach number by ',&
+  489.                 mach0_scale)
+  490.         endif
+  491.    
+  492.         if (pgamma0_scale /= 1.0) then
+  493.            call send_message_real('INFO: (GYRO) Scaling experimental gamma_p by ',&
+  494.                 pgamma0_scale)
+  495.         endif
+  496.    
+  497.         if (doppler_scale /= 1.0) then
+  498.            call send_message_real('INFO: (GYRO) Scaling experimental gamma_e by ',&
+  499.                 doppler_scale)
+  500.         endif
+  501.    
+  502.         !---------------------------------------------------------
+  503.         ! Subtraction of a constant rotational velocity 
+  504.         omega_eb_s(:) = omega_eb_s(:)-omega_eb_s(ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 504 
+  A loop starting at line 504 was not vectorized because it contains a reference to a non-vector intrinsic on line 504.
+
+  505.         !---------------------------------------------------------
+  506.    
+  507.      else
+  508.    
+  509.         omega_eb_s(:) = gamma_e_s(ir_norm)*n_1(in_1)*q_s(:)/r_norm*(r(:)-r_norm)
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 509 
+  A loop starting at line 509 was not vectorized because it contains a call to a subroutine or function on line 509.
+
+  510.    
+  511.      endif
+  512.      !---------------------------------------------------------
+  513.    
+  514.      !----------------------------------------------------------
+  515.      ! Complete definition of profile functions:
+  516.      !
+  517.      if (flat_profile_flag == 0 .and. radial_profile_method == 3) then
+  518.    
+  519.         ! Profiles have RADIAL VARIATION
+  520.    
+  521.         do i=1,n_x
+  522.    
+  523.            ! Normal definitions
+  524.    
+  525.            q(i) = q_s(i)
+  526.    
+  527.         enddo
+  528.    
+  529.      else
+  530.    
+  531.         ! Profiles are FLAT
+  532.    
+  533.         do i=1,n_x
+  534.    
+  535.            if (radial_profile_method == 3) then
+  536.    
+  537.               r_s(i)     = r_norm
+  538.               rmaj_s(i) = rmaj_s(ir_norm)
+  539.    
+  540.               ! q, as always, needs a linear form here:
+  541.    
+  542.               q(i) = q_s(ir_norm)+   &
+  543.                    q_s(ir_norm)/r(ir_norm)*shat_s(ir_norm)*(r(i)-r(ir_norm))
+  544.    
+  545.            endif
+  546.    
+  547.            rhogrid_s(i)    = rhogrid_s(ir_norm)
+  548.            q_s(i)          = q_s(ir_norm)
+  549.            kappa_s(i)      = kappa_s(ir_norm)
+  550.            delta_s(i)      = delta_s(ir_norm)
+  551.            zeta_s(i)       = zeta_s(ir_norm)
+  552.            z_eff_s(i)      = z_eff_s(ir_norm)
+  553.            b_unit_s(i)     = b_unit_s(ir_norm)
+  554.            rhosda_s(i)     = rhosda_s(ir_norm)
+  555.            csda_s(i)       = csda_s(ir_norm)
+  556.            drmaj_s(i)      = drmaj_s(ir_norm)
+  557.            s_delta_s(i)    = s_delta_s(ir_norm)
+  558.            s_zeta_s(i)     = s_zeta_s(ir_norm)
+  559.            s_kappa_s(i)    = s_kappa_s(ir_norm)
+  560.            zmag_s(i)       = zmag_s(ir_norm)
+  561.            dzmag_s(i)      = dzmag_s(ir_norm)
+  562.            shat_s(i)       = shat_s(ir_norm)
+  563.            beta_unit_s(i)  = beta_unit_s(ir_norm)
+  564.            beta_star_s(i)  = beta_star_s(ir_norm)
+  565.    
+  566.            gamma_e_s(i) = gamma_e_s(ir_norm)
+  567.            gamma_p_s(i) =  gamma_p_s(ir_norm)
+  568.            mach_s(i)    = mach_s(ir_norm)
+  569.    
+  570.            tem_s(:,i)    = tem_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 570 
+  A loop starting at line 570 was not vectorized because it contains a reference to a non-vector intrinsic on line 570.
+
+  571.            den_s(:,i)    = den_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 571 
+  A loop starting at line 571 was not vectorized because it contains a reference to a non-vector intrinsic on line 571.
+
+  572.            dlntdr_s(:,i) = dlntdr_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 572 
+  A loop starting at line 572 was not vectorized because it contains a reference to a non-vector intrinsic on line 572.
+
+  573.            dlnndr_s(:,i) = dlnndr_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 573 
+  A loop starting at line 573 was not vectorized because it contains a reference to a non-vector intrinsic on line 573.
+
+  574.            dlnpdr_s(i)   = dlnpdr_s(ir_norm)
+  575.            pr_s(:,i)     = pr_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 575 
+  A loop starting at line 575 was not vectorized because it contains a reference to a non-vector intrinsic on line 575.
+
+  576.            alpha_s(:,i)  = alpha_s(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 576 
+  A loop starting at line 576 was not vectorized because it contains a reference to a non-vector intrinsic on line 576.
+
+  577.            krho_i(:,i)   = krho_i(:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 577 
+  A loop starting at line 577 was not vectorized because it contains a reference to a non-vector intrinsic on line 577.
+
+  578.    
+  579.            omega_eb_s(:) = gamma_e_s(ir_norm)*&
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 579 
+  A loop starting at line 579 was not vectorized because it contains a call to a subroutine or function on line 579.
+
+  580.                 n_1(in_1)*q_norm/r_norm*(r(:)-r_norm)
+  581.    
+  582.            a_fourier_geo_s(:,:,i) = a_fourier_geo_s(:,:,ir_norm)
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 582 
+  A loop starting at line 582 was not vectorized because it contains a reference to a non-vector intrinsic on line 582.
+
+  583.    
+  584.         enddo
+  585.    
+  586.      endif
+  587.      !----------------------------------------------------------
+  588.    
+  589.      !------------------------------------------------------
+  590.      ! Compute true Debye length at box center if profile
+  591.      ! data is available:
+  592.      !
+  593.      if (radial_profile_method == 3) then
+  594.    
+  595.         !----------------------------------------------------------
+  596.         ! Debye length (from NRL plasma formulary):
+  597.         !
+  598.         lambda_debye = lambda_debye_scale*7.43* &
+  599.              sqrt((1e3*tem_norm)/(1e13*den_norm))/a_meters
+  600.         !----------------------------------------------------------
+  601.    
+  602.      endif
+  603.      !------------------------------------------------------
+  604.    
+  605.      !-------------------------------------------------------------
+  606.      ! Compute base collision rates
+  607.      !
+  608.      !          4 pi ne e^4 ne ln(Lambda)
+  609.      !  nu_ei = ------------------------- 
+  610.      !            me^(1/2) (2 Te)^(3/2)
+  611.      !
+  612.      !            nu_ei
+  613.      !  nu_e = ----------- { Zeff + H[sqrt(enhat_e)] } -> nu_s(indx_e,:)
+  614.      !         enhat^(3/2)
+  615.    
+  616.      if (radial_profile_method == 3) then
+  617.    
+  618.         ! Numerical coefficient
+  619.         cc = 4*pi*(4.8032e-10)**4/(2*1.6022e-12)**1.5/(9.1094e-28)**0.5  
+  620.    
+  621.         ! Coulomb logarithm
+  622.         loglam = 24.0-log(sqrt(den_norm*1e13)/(tem_norm*1e3))
+  623.    
+  624.         do is=1,n_spec
+  625.    
+  626.            ! Collision rate (1/sec)
+  627.            nu_s(is,:) = cc*loglam*(den_norm*den_s(is,:)*1e13)/&
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 627 
+  A loop starting at line 627 was not vectorized because it contains a call to a subroutine or function on line 627.
+
+  628.                 (tem_norm*tem_s(is,:)*1e3)**1.5*&
+  629.                 mu(is)/mu(indx_e)*z(is)**2
+  630.    
+  631.            ! Express in dimensionless GYRO units:
+  632.            nu_s(is,:) = nu_s(is,:)/csda_norm
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 632 
+  A loop starting at line 632 was not vectorized because it contains a reference to a non-vector intrinsic on line 632.
+
+  633.    
+  634.         enddo
+  635.    
+  636.      else
+  637.    
+  638.         do is=1,n_spec
+  639.    
+  640.            ! Collision rate (GYRO units):  
+  641.            nu_s(is,:) = nu_ei*(den_s(is,:)/den_s(indx_e,:))/ &
+ftn-6262 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 641 
+  A loop starting at line 641 was not vectorized because it contains a call to a subroutine or function on line 641.
+
+  642.                 (tem_s(is,:)/tem_s(indx_e,:))**1.5*&
+  643.                 mu(is)/mu(indx_e)*z(is)**2
+  644.    
+  645.         enddo
+  646.    
+  647.      endif
+  648.      !-------------------------------------------------------------
+  649.    
+  650.      !-------------------------------------------------------------
+  651.      ! Apply collisional scaling factors, and determine number of 
+  652.      ! collisional species:
+  653.      !
+  654.      if (nu_ii_scale /= 1.0) then
+  655.         call send_message_real('INFO: (GYRO) nu_ii rescaled by: ',nu_ii_scale)
+  656.      endif
+  657.      if (nu_ei_scale /= 1.0) then
+  658.         call send_message_real('INFO: (GYRO) nu_ei rescaled by: ',nu_ei_scale)
+  659.      endif
+  660.      !
+  661.      ic = 0
+  662.      c_map(:) = 0
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 662 
+  A loop starting at line 662 was not vectorized because it contains a reference to a non-vector intrinsic on line 662.
+
+  663.      do is=1,n_spec
+  664.    
+  665.         if (is /= indx_e) then 
+  666.            nu_s(is,:) = nu_s(is,:)*nu_ii_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 666 
+  A loop starting at line 666 was not vectorized because it contains a reference to a non-vector intrinsic on line 666.
+
+  667.         else
+  668.            nu_s(is,:) = nu_s(is,:)*nu_ei_scale
+ftn-6263 ftn: VECTOR GYRO_PROFILE_INIT, File = gyro_profile_init.f90, Line = 668 
+  A loop starting at line 668 was not vectorized because it contains a reference to a non-vector intrinsic on line 668.
+
+  669.         endif
+  670.    
+  671.         if (nu_s(is,ir_norm) > 0.0) then
+  672.            ic = ic+1
+  673.            c_map(ic) = is
+  674.         endif
+  675.    
+  676.      enddo
+  677.      n_coll = ic
+  678.      !-------------------------------------------------------------
+  679.    
+  680.      if (debug_flag == 1) call send_line('gyro_profile_init checkpoint 6.')
+  681.    !  STOP   ! EMB 1.19.2021
+  682.    
+  683.      !-------------------------------------------------------------
+  684.      ! Calculation of phase
+  685.      !
+  686.      do i=1,n_x
+  687.         phase(in_1,i) = exp(-pi_2*i_c*n_1(in_1)*q(i))
+  688.         angp(i) = n_1(in_1)*q(i)-int(n_1(in_1)*q(i))
+  689.         if (angp(i) > 0.5) angp(i) = angp(i)-1.0
+  690.      enddo
+  691.      !-------------------------------------------------------------
+  692.    
+  693.      if (debug_flag == 1 .and. i_proc == 0) then
+  694.         print *,"[gyro_profile_init done]"
+  695.      endif
+  696.    
+  697.      if (debug_flag == 1) call send_line('[gyro_profile_init done')
+  698.    
+  699.    end subroutine gyro_profile_init
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 238, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 243, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 323, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 323, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 291, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 299, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 311, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 319, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 687, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_PROFILE_INIT
+
+Name  Messages
+----  --------
+GYRO_MAP_EXPERIMENTAL_PROFILES
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 224, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+GYRO_PROFILE_EXP
+      Defined as:  No definitions.
+
+      Used By:     GYRO_PROFILE_INIT
+
+Name  Messages
+----  --------
+GYRO_PROFILE_INIT
+      Defined as:  Subroutine (line 29, file gyro_profile_init.f90)
+
+      Interface:   None
+
+      Calls:       SEND_MESSAGE (Line 123, file gyro_profile_init.f90)
+                   SEND_MESSAGE (Line 233, file gyro_profile_init.f90)
+                   SEND_MESSAGE (Line 325, file gyro_profile_init.f90)
+                   SEND_MESSAGE (Line 444, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 130, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 323, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 340, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 402, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 422, file gyro_profile_init.f90)
+                   SUM(Intrinsic) (Line 423, file gyro_profile_init.f90)
+                   SQRT(Intrinsic) (Line 132, file gyro_profile_init.f90)
+                   SQRT(Intrinsic) (Line 599, file gyro_profile_init.f90)
+                   SQRT(Intrinsic) (Line 622, file gyro_profile_init.f90)
+                   GYRO_RADIAL_SIMULATION_BOX (Line 143, file gyro_profile_init.f90)
+                   SEND_LINE (Line 144, file gyro_profile_init.f90)
+                   SEND_LINE (Line 154, file gyro_profile_init.f90)
+                   SEND_LINE (Line 223, file gyro_profile_init.f90)
+                   SEND_LINE (Line 225, file gyro_profile_init.f90)
+                   SEND_LINE (Line 348, file gyro_profile_init.f90)
+                   SEND_LINE (Line 377, file gyro_profile_init.f90)
+                   SEND_LINE (Line 417, file gyro_profile_init.f90)
+                   SEND_LINE (Line 448, file gyro_profile_init.f90)
+                   SEND_LINE (Line 476, file gyro_profile_init.f90)
+                   SEND_LINE (Line 680, file gyro_profile_init.f90)
+                   SEND_LINE (Line 697, file gyro_profile_init.f90)
+                   GYRO_MAP_EXPERIMENTAL_PROFILES (Line 224, file gyro_profile_init.f90)
+                   ABS(Intrinsic) (Line 238, file gyro_profile_init.f90)
+                   ABS(Intrinsic) (Line 243, file gyro_profile_init.f90)
+                   ABS(Intrinsic) (Line 323, file gyro_profile_init.f90)
+                   ABS(Intrinsic) (Line 323, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 287, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 295, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 307, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 315, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 434, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 488, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 493, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 498, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 655, file gyro_profile_init.f90)
+                   SEND_MESSAGE_REAL (Line 658, file gyro_profile_init.f90)
+                   CATCH_ERROR (Line 291, file gyro_profile_init.f90)
+                   CATCH_ERROR (Line 299, file gyro_profile_init.f90)
+                   CATCH_ERROR (Line 311, file gyro_profile_init.f90)
+                   CATCH_ERROR (Line 319, file gyro_profile_init.f90)
+                   LOG(Intrinsic) (Line 622, file gyro_profile_init.f90)
+                   EXP(Intrinsic) (Line 687, file gyro_profile_init.f90)
+                   INT(Intrinsic) (Line 688, file gyro_profile_init.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_PROFILE_EXP
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+GYRO_RADIAL_SIMULATION_BOX
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 143, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+GYRO_READ_EXPERIMENTAL_PROFILES
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 688, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+LOG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 622, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_PROFILE_INIT
+
+Name  Messages
+----  --------
+SEND_LINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 144, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 154, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 223, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 225, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 348, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 377, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 417, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 448, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 476, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 680, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 697, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+SEND_MESSAGE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 123, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 233, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 325, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 444, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+SEND_MESSAGE_REAL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 287, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 295, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 307, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 315, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 434, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 488, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 493, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 498, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 655, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 658, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 132, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 599, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 622, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_PROFILE_INIT (Line 130, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 323, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 340, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 402, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 422, file gyro_profile_init.f90)
+                   GYRO_PROFILE_INIT (Line 423, file gyro_profile_init.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

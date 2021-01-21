@@ -1,0 +1,690 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/EXPRO/EXPRO_compute_derived.f90
+Compiled : 01/14/21  15:27:06
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -c EXPRO_compute_derived.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : EXPRO_COMPUTE_DERIVED
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/EXPRO/EXPRO_compute_derived.f90
+Date     : 01/14/2021  15:27:07
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !--------------------------------------------------------------
+    2.    ! EXPRO_compute_derived.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Compute numerous derived quantities, including primary 
+    6.    !  ion density *EXPRO_ni_new* that satisfies quasineutrality.
+    7.    !--------------------------------------------------------------
+    8.    
+    9.    subroutine EXPRO_compute_derived
+   10.    
+   11.      use EXPRO_interface
+   12.      use GEO_interface
+   13.    
+   14.      implicit none
+   15.    
+   16.      integer :: n_ion
+   17.      integer :: n
+   18.      integer :: i
+   19.      integer :: is
+   20.    
+   21.      real, parameter :: k  = 1.6022e-12 ! erg/eV
+   22.      real, parameter :: mp = 1.6726e-24 ! g
+   23.      real, parameter :: e  = 4.8032e-10 ! statcoul
+   24.      real, parameter :: c  = 2.9979e10  ! cm/s
+   25.    
+   26.      real, dimension(:), allocatable :: rho
+   27.      real, dimension(:), allocatable :: dummy
+   28.      real, dimension(:), allocatable :: u_par
+   29.    
+   30.      real :: r_min
+   31.      real :: fa,fb
+   32.    
+   33.      !---------------------------------------------------------------------
+   34.      ! Sanity checks
+   35.      !
+   36.      if (EXPRO_ctrl_numeq_flag == 1 .and. EXPRO_nfourier == -1) then
+   37.         print *,'ERROR: (EXPRO) input.profiles.geo missing'
+   38.         stop
+   39.      endif
+   40.      if (EXPRO_ctrl_density_method == -1) then
+   41.         print *,'ERROR: (EXPRO) EXPRO_ctrl_density_method not set.'
+   42.         stop
+   43.      endif
+   44.      if (EXPRO_ctrl_numeq_flag == -1) then
+   45.         print *,'ERROR: (EXPRO) EXPRO_ctrl_numeq_flag not set.'
+   46.         stop
+   47.      endif
+   48.      if (EXPRO_ctrl_signb < -1.0) then
+   49.         print *,'ERROR: (EXPRO) EXPRO_ctrl_signb not set.'
+   50.         stop
+   51.      endif
+   52.      if (EXPRO_ctrl_signq < -1.0) then
+   53.         print *,'ERROR: (EXPRO) EXPRO_ctrl_signq not set.'
+   54.         stop
+   55.      endif
+   56.      if (EXPRO_ctrl_rotation_method == -1) then
+   57.         print *,'ERROR: (EXPRO) EXPRO_ctrl_rotation_method not set.'
+   58.         stop
+   59.      endif
+   60.      !---------------------------------------------------------------------
+   61.    
+   62.      !---------------------------------------------------------------------
+   63.      ! Derived quantities:
+   64.      !
+   65.      allocate(rho(EXPRO_n_exp))
+   66.      allocate(dummy(EXPRO_n_exp))
+   67.    
+   68.      rho(:) = EXPRO_arho*EXPRO_rho(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 68 
+  A loop starting at line 68 was not vectorized because it contains a call to a subroutine or function on line 68.
+
+   69.    
+   70.      ! b_unit
+   71.      call bound_deriv(dummy,rho**2,EXPRO_rmin**2,EXPRO_n_exp)
+                                      ^                              
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 71, Column = 29 
+  This argument produces a copy in to a temporary variable.
+
+                                                    ^                
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 71, Column = 43 
+  This argument produces a copy in to a temporary variable.
+
+   72.      EXPRO_bunit(:) = EXPRO_b_ref*dummy(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 72 
+  A loop starting at line 72 was not vectorized because it contains a call to a subroutine or function on line 72.
+
+   73.    
+   74.      ! s
+   75.      call bound_deriv(dummy,EXPRO_q,EXPRO_rmin,EXPRO_n_exp)
+   76.      EXPRO_s(:) = (EXPRO_rmin(:)/EXPRO_q(:))*dummy(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 76 
+  A loop starting at line 76 was not vectorized because it contains a call to a subroutine or function on line 76.
+
+   77.    
+   78.      !         d(rmaj)
+   79.      ! drmaj = -------
+   80.      !           dr
+   81.      call bound_deriv(EXPRO_drmaj,EXPRO_rmaj,EXPRO_rmin,EXPRO_n_exp)
+   82.    
+   83.      !         d(zmag)
+   84.      ! dzmag = -------
+   85.      !           dr
+   86.      call bound_deriv(EXPRO_dzmag,EXPRO_zmag,EXPRO_rmin,EXPRO_n_exp)
+   87.    
+   88.      !             r   d(kappa)
+   89.      ! s_kappa = ----- -------- 
+   90.      !           kappa    dr
+   91.      call bound_deriv(dummy,EXPRO_kappa,EXPRO_rmin,EXPRO_n_exp)
+   92.      EXPRO_skappa(:) = (EXPRO_rmin(:)/EXPRO_kappa(:))*dummy(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 92 
+  A loop starting at line 92 was not vectorized because it contains a call to a subroutine or function on line 92.
+
+   93.    
+   94.      !             d(delta)
+   95.      ! s_delta = r -------- 
+   96.      !                dr
+   97.      call bound_deriv(dummy,EXPRO_delta,EXPRO_rmin,EXPRO_n_exp)
+   98.      EXPRO_sdelta(:) = EXPRO_rmin(:)*dummy(:) 
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 98 
+  A loop starting at line 98 was not vectorized because it contains a call to a subroutine or function on line 98.
+
+   99.    
+  100.      !            d(zeta)
+  101.      ! s_zeta = r -------- 
+  102.      !              dr
+  103.      call bound_deriv(dummy,EXPRO_zeta,EXPRO_rmin,EXPRO_n_exp)
+  104.      EXPRO_szeta(:) = EXPRO_rmin(:)*dummy(:) 
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 104 
+  A loop starting at line 104 was not vectorized because it contains a call to a subroutine or function on line 104.
+
+  105.    
+  106.      ! 1/L_ne = -dln(ne)/dr (1/m)
+  107.      call bound_deriv(EXPRO_dlnnedr,-log(EXPRO_ne),EXPRO_rmin,EXPRO_n_exp)
+                                           ^                                      
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 107, Column = 34 
+  This argument produces a copy in to a temporary variable.
+
+  108.    
+  109.      ! 1/L_Te = -dln(Te)/dr (1/m)
+  110.      call bound_deriv(EXPRO_dlntedr,-log(EXPRO_te),EXPRO_rmin,EXPRO_n_exp)
+                                           ^                                      
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 110, Column = 34 
+  This argument produces a copy in to a temporary variable.
+
+  111.    
+  112.    !  print *, 'EXPRO_compute_derived checkpoint 1'
+  113.      do is=1,nion_max
+  114.         if (minval(EXPRO_ni(is,:)) > 0.0) then
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 114 
+  A loop starting at line 114 was not vectorized because it contains a reference to a non-vector intrinsic on line 114.
+
+  115.            ! 1/L_ni = -dln(ni)/dr (1/m)
+  116.            call bound_deriv(EXPRO_dlnnidr(is,:),-log(EXPRO_ni(is,:)),&
+                                                ^                             
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 116, Column = 39 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                       ^                      
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 116, Column = 46 
+  This argument produces a copy in to a temporary variable.
+
+  117.                 EXPRO_rmin,EXPRO_n_exp)
+  118.    
+  119.            ! 1/L_Ti = -dln(Ti)/dr (1/m)
+  120.            call bound_deriv(EXPRO_dlntidr(is,:),-log(EXPRO_ti(is,:)),&
+                                                ^                             
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 120, Column = 39 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                       ^                      
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 120, Column = 46 
+  This argument produces a copy in to a temporary variable.
+
+  121.                 EXPRO_rmin,EXPRO_n_exp)
+  122.         endif
+  123.      enddo
+  124.    
+  125.      ! 1/L_Ptot = -dln(Ptot)/dr (1/m)
+  126.      if (minval(EXPRO_ptot) > 0.0) then
+ftn-6297 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 126 
+  A loop starting at line 126 was not vectorized because a recurrence was found at line 126.
+
+  127.         call bound_deriv(EXPRO_dlnptotdr,-log(EXPRO_ptot),EXPRO_rmin,EXPRO_n_exp)
+                                                ^                                        
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 127, Column = 39 
+  This argument produces a copy in to a temporary variable.
+
+  128.      else
+  129.         EXPRO_dlnptotdr = 0.0
+ftn-6204 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 129 
+  A loop starting at line 129 was vectorized.
+
+  130.      endif
+  131.    
+  132.      ! dr/d(rho)
+  133.      call bound_deriv(EXPRO_drdrho,EXPRO_rmin,rho,EXPRO_n_exp)
+  134.      !--------------------------------------------------------------------
+  135.    
+  136.    !  print *, 'EXPRO_compute_derived checkpoint 2'
+  137.    
+  138.      !-------------------------------------------------------------------
+  139.      ! Fourier coefficients for geometry (if they exist)
+  140.      !
+  141.      if (EXPRO_nfourier > 0) then
+  142.         do n=0,EXPRO_nfourier
+  143.            do i=1,4  
+  144.    
+  145.               ! aR_n = EXPRO_geo(1,n,:)
+  146.               ! bR_n = EXPRO_geo(2,n,:)
+  147.               ! aZ_n = EXPRO_geo(3,n,:)
+  148.               ! bZ_n = EXPRO_geo(4,n,:)
+  149.    
+  150.               ! d(aR_n)/dr, d(bR_n)/dr, d(aZ_n)/dr, d(bZ_n)/dr
+  151.    
+  152.               call bound_deriv(EXPRO_dgeo(i,n,:),EXPRO_geo(i,n,:),&
+                                                ^                          
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 152, Column = 39 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                 ^         
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 152, Column = 56 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  153.                    EXPRO_rmin,EXPRO_n_exp)
+  154.            enddo
+  155.         enddo
+  156.      endif
+  157.      !-------------------------------------------------------------------
+  158.    
+  159.      !---------------------------------------------------------------------
+  160.      ! Geometry factors: 
+  161.      !
+  162.      ! - w0, w0p, vol, volp
+  163.      !
+  164.      GEO_nfourier_in = EXPRO_nfourier
+  165.      GEO_signb_in    = EXPRO_ctrl_signb
+  166.      call GEO_alloc(1)
+  167.    
+  168.      r_min = EXPRO_rmin(EXPRO_n_exp)
+  169.    
+  170.      do i=2,EXPRO_n_exp
+  171.    
+  172.         ! Parameters to be passed to GEO library   
+  173.         !
+  174.         ! NOTE: dp/dr set to zero without loss of generality.
+  175.         ! 
+  176.         GEO_rmin_in      = EXPRO_rmin(i)/r_min
+  177.         GEO_rmaj_in      = EXPRO_rmaj(i)/r_min
+  178.         GEO_drmaj_in     = EXPRO_drmaj(i)
+  179.         GEO_zmag_in      = EXPRO_zmag(i)/r_min
+  180.         GEO_dzmag_in     = EXPRO_dzmag(i)
+  181.         GEO_q_in         = EXPRO_q(i)
+  182.         GEO_s_in         = EXPRO_s(i)
+  183.         GEO_kappa_in     = EXPRO_kappa(i)
+  184.         GEO_s_kappa_in   = EXPRO_skappa(i)
+  185.         GEO_delta_in     = EXPRO_delta(i)
+  186.         GEO_s_delta_in   = EXPRO_sdelta(i)
+  187.         GEO_zeta_in      = EXPRO_zeta(i)
+  188.         GEO_s_zeta_in    = EXPRO_szeta(i)
+  189.         GEO_beta_star_in = 0.0
+  190.         !
+  191.         if (EXPRO_ctrl_numeq_flag == 0) then
+  192.            ! Call GEO with model shape
+  193.            GEO_model_in = 0
+  194.            call GEO_do()
+  195.         else
+  196.            ! Call GEO with general (numerical) shape
+  197.            GEO_model_in = 1
+  198.            GEO_fourier_in(1:4,:) = EXPRO_geo(:,:,i)/r_min
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 198 
+  A loop starting at line 198 was not vectorized because it contains a call to a subroutine or function on line 198.
+
+  199.            GEO_fourier_in(5:8,:) = EXPRO_dgeo(:,:,i)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 199 
+  A loop starting at line 199 was not vectorized because it contains a call to a subroutine or function on line 199.
+
+  200.            call GEO_do()
+  201.         endif
+  202.    
+  203.         ! V and dV/dr
+  204.         EXPRO_volp(i) = GEO_volume_prime*r_min**2
+  205.         EXPRO_vol(i)  = GEO_volume*r_min**3
+  206.    
+  207.         ! |grad r| at theta=0
+  208.         EXPRO_grad_r0(i) = GEO_grad_r0
+  209.    
+  210.         ! <|grad r|> 
+  211.         EXPRO_ave_grad_r(i) = GEO_fluxsurfave_grad_r
+  212.    
+  213.         call GEO_interp(0.0)
+  214.    
+  215.         ! B_poloidal and B_toroidal at theta=0
+  216.         EXPRO_bp0(i) = GEO_bp*EXPRO_bunit(i)
+  217.         EXPRO_bt0(i) = GEO_bt*EXPRO_bunit(i)
+  218.    
+  219.      enddo
+  220.    
+  221.    ! print *, 'EXPRO_compute_derived checkpoint 3'
+  222.    
+  223.      !--------------------------------------------------------------
+  224.      ! Extrapolate some quantities to axis:
+  225.      !
+  226.      call bound_extrap(fa,fb,EXPRO_w0,EXPRO_rmin,EXPRO_n_exp)
+  227.      EXPRO_w0(1) = fa
+  228.    
+  229.      call bound_extrap(fa,fb,EXPRO_bp0,EXPRO_rmin,EXPRO_n_exp)
+  230.      EXPRO_bp0(1) = fa
+  231.    
+  232.      call bound_extrap(fa,fb,EXPRO_bt0,EXPRO_rmin,EXPRO_n_exp)
+  233.      EXPRO_bt0(1) = fa
+  234.      !
+  235.      ! Both V and dV/dr are zero on axis.
+  236.      !
+  237.      EXPRO_vol(1)  = 0.0
+  238.      EXPRO_volp(1) = 0.0  
+  239.      !--------------------------------------------------------------
+  240.    
+  241.      !-----------------------------------------------------------------
+  242.      ! CGS calculation of deuterium sound speed (cm/s) and 
+  243.      ! deuterium gyroradius (cm)
+  244.      !
+  245.      EXPRO_cs(:)   = sqrt( k*(1e3*EXPRO_te(:))/(2.0*mp) )   
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 245 
+  A loop starting at line 245 was not vectorized because it contains a call to a subroutine or function on line 245.
+
+  246.      EXPRO_rhos(:) = EXPRO_cs(:)/(e*(1e4*EXPRO_bunit(:))/(2.0*mp*c))
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 246 
+  A loop starting at line 246 was not vectorized because it contains a call to a subroutine or function on line 246.
+
+  247.      ! 
+  248.      ! Convert to m/s and m:
+  249.      !
+  250.      EXPRO_cs(:)   = EXPRO_cs(:)/100.0
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 250 
+  A loop starting at line 250 was not vectorized because it contains a reference to a non-vector intrinsic on line 250.
+
+  251.      EXPRO_rhos(:) = EXPRO_rhos(:)/100.0
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 251 
+  A loop starting at line 251 was not vectorized because it contains a reference to a non-vector intrinsic on line 251.
+
+  252.      !-----------------------------------------------------------------
+  253.    
+  254.    !  print *, 'EXPRO_compute_derived checkpoint 4'
+  255.    
+  256.      !--------------------------------------------------------------
+  257.      ! Compute w0p, gamma_e, gamma_p and mach:
+  258.      !
+  259.      allocate(u_par(EXPRO_n_exp))
+  260.      !
+  261.      call bound_deriv(EXPRO_w0p,EXPRO_w0,EXPRO_rmin,EXPRO_n_exp)
+  262.      !  
+  263.      EXPRO_gamma_e(:) = -EXPRO_rmin(:)/EXPRO_q(:)*EXPRO_w0p(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 263 
+  A loop starting at line 263 was not vectorized because it contains a call to a subroutine or function on line 263.
+
+  264.    
+  265.      if (EXPRO_ctrl_rotation_method == 1) then 
+  266.    
+  267.         ! Candy convention
+  268.    
+  269.         EXPRO_gamma_p(:) = -EXPRO_rmaj(:)*EXPRO_w0p(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 269 
+  A loop starting at line 269 was not vectorized because it contains a call to a subroutine or function on line 269.
+
+  270.         EXPRO_mach(:)    = EXPRO_rmaj(:)*EXPRO_w0(:)/EXPRO_cs(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 270 
+  A loop starting at line 270 was not vectorized because it contains a call to a subroutine or function on line 270.
+
+  271.    
+  272.      else
+  273.    
+  274.         ! Waltz convention
+  275.    
+  276.         u_par(:) = (EXPRO_bp0(:)*EXPRO_vpol(1,:)+EXPRO_bt0(:)*EXPRO_vtor(1,:))/&
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 276 
+  A loop starting at line 276 was not vectorized because it contains a call to a subroutine or function on line 276.
+
+  277.              sqrt(EXPRO_bt0(:)**2+EXPRO_bp0(:)**2)
+  278.    
+  279.         call bound_deriv(dummy,u_par/EXPRO_rmaj(:),EXPRO_rmin,EXPRO_n_exp)
+                                           ^                                      
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 279, Column = 34 
+  This argument produces a copy in to a temporary variable.
+
+  280.    
+  281.         EXPRO_gamma_p(:) = -EXPRO_rmaj(:)*dummy(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 281 
+  A loop starting at line 281 was not vectorized because it contains a call to a subroutine or function on line 281.
+
+  282.         EXPRO_mach(:)    = u_par(:)/EXPRO_cs(:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 282 
+  A loop starting at line 282 was not vectorized because it contains a call to a subroutine or function on line 282.
+
+  283.    
+  284.      endif
+  285.      !
+  286.      deallocate(u_par)
+  287.      !--------------------------------------------------------------
+  288.    
+  289.      ! Clean up
+  290.      call GEO_alloc(0)
+  291.      deallocate(rho)
+  292.    
+  293.    !  print *, 'EXPRO_compute_derived checkpoint 5'
+  294.    
+  295.      ! Density profile control
+  296.    
+  297.      n_ion = 1
+  298.      if (EXPRO_ctrl_z(2) /= 0.0) n_ion=2
+  299.      if (EXPRO_ctrl_z(3) /= 0.0) n_ion=3
+  300.      if (EXPRO_ctrl_z(4) /= 0.0) n_ion=4
+  301.      if (EXPRO_ctrl_z(5) /= 0.0) n_ion=5
+  302.    
+  303.      do is=1,n_ion
+  304.        EXPRO_ni(is,:) = EXPRO_ctrl_nscal(is) * EXPRO_ni(is,:)
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 304 
+  A loop starting at line 304 was not vectorized because it contains a reference to a non-vector intrinsic on line 304.
+
+  305.        EXPRO_ti(is,:) = EXPRO_ctrl_tscal(is) * EXPRO_ti(is,:)
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 305 
+  A loop starting at line 305 was not vectorized because it contains a reference to a non-vector intrinsic on line 305.
+
+  306.      enddo
+  307.    
+  308.      if (EXPRO_ctrl_density_method == 2) then
+  309.    
+  310.         EXPRO_ni_new(:) = 0.0
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 310 
+  A loop starting at line 310 was not vectorized because it contains a reference to a non-vector intrinsic on line 310.
+
+  311.         do is=2,n_ion
+  312.            EXPRO_ni_new(:) = EXPRO_ni_new(:)+EXPRO_ctrl_z(is)*EXPRO_ni(is,:)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 312 
+  A loop starting at line 312 was not vectorized because it contains a call to a subroutine or function on line 312.
+
+  313.         enddo
+  314.         EXPRO_ni_new(:) = (EXPRO_ne(:)-EXPRO_ni_new(:))/EXPRO_ctrl_z(1)
+ftn-6262 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 314 
+  A loop starting at line 314 was not vectorized because it contains a call to a subroutine or function on line 314.
+
+  315.    
+  316.         ! 1/L_ni = -dln(ni)/dr (1/m)
+  317.         call bound_deriv(EXPRO_dlnnidr_new(:),-log(EXPRO_ni_new(:)),&
+                                                     ^                       
+ftn-1438 ftn: CAUTION EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 317, Column = 44 
+  This argument produces a copy in to a temporary variable.
+
+  318.              EXPRO_rmin,EXPRO_n_exp)
+  319.    
+  320.         if (minval(EXPRO_ni_new(:)) <= 0.0) then
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 320 
+  A loop starting at line 320 was not vectorized because it contains a reference to a non-vector intrinsic on line 320.
+
+  321.            EXPRO_error = 1
+  322.         endif
+  323.    
+  324.      endif
+  325.    
+  326.    !  print *, 'EXPRO_compute_derived checkpoint 6'
+  327.    
+  328.      deallocate(dummy)
+  329.    
+  330.      if (minval(EXPRO_ni(:,:)) <= 0.0) EXPRO_error=1
+ftn-6263 ftn: VECTOR EXPRO_COMPUTE_DERIVED, File = EXPRO_compute_derived.f90, Line = 330 
+  A loop starting at line 330 was not vectorized because it contains a reference to a non-vector intrinsic on line 330.
+
+  331.    
+  332.    end subroutine EXPRO_compute_derived
+  333.     
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+BOUND_DERIV
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 71, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 75, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 81, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 86, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 91, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 97, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 103, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 107, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 110, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 116, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 120, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 127, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 133, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 279, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 317, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+BOUND_EXTRAP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 229, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 232, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+EXPRO_COMPUTE_DERIVED
+      Defined as:  Subroutine (line 9, file EXPRO_compute_derived.f90)
+
+      Interface:   None
+
+      Calls:       BOUND_DERIV (Line 71, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 75, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 81, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 86, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 91, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 97, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 103, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 107, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 110, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 116, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 120, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 127, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 133, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 279, file EXPRO_compute_derived.f90)
+                   BOUND_DERIV (Line 317, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 107, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 110, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 116, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 120, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 127, file EXPRO_compute_derived.f90)
+                   LOG(Intrinsic) (Line 317, file EXPRO_compute_derived.f90)
+                   MINVAL(Intrinsic) (Line 114, file EXPRO_compute_derived.f90)
+                   MINVAL(Intrinsic) (Line 126, file EXPRO_compute_derived.f90)
+                   MINVAL(Intrinsic) (Line 320, file EXPRO_compute_derived.f90)
+                   MINVAL(Intrinsic) (Line 330, file EXPRO_compute_derived.f90)
+                   GEO_ALLOC (Line 166, file EXPRO_compute_derived.f90)
+                   GEO_ALLOC (Line 290, file EXPRO_compute_derived.f90)
+                   GEO_DO (Line 194, file EXPRO_compute_derived.f90)
+                   GEO_DO (Line 200, file EXPRO_compute_derived.f90)
+                   GEO_INTERP (Line 213, file EXPRO_compute_derived.f90)
+                   BOUND_EXTRAP (Line 229, file EXPRO_compute_derived.f90)
+                   BOUND_EXTRAP (Line 232, file EXPRO_compute_derived.f90)
+                   SQRT(Intrinsic) (Line 245, file EXPRO_compute_derived.f90)
+                   SQRT(Intrinsic) (Line 277, file EXPRO_compute_derived.f90)
+
+        Uses:      EXPRO_INTERFACE
+                   GEO_INTERFACE
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     EXPRO_COMPUTE_DERIVED
+
+Name  Messages
+----  --------
+GEO_ALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 166, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 290, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+GEO_DO
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 194, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 200, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+GEO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     EXPRO_COMPUTE_DERIVED
+
+Name  Messages
+----  --------
+GEO_INTERP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 213, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+LOG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 107, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 110, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 116, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 120, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 127, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 317, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 114, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 126, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 320, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 330, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_COMPUTE_DERIVED (Line 245, file EXPRO_compute_derived.f90)
+                   EXPRO_COMPUTE_DERIVED (Line 277, file EXPRO_compute_derived.f90)
+
+Name  Messages
+----  --------
+__MINVAL(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

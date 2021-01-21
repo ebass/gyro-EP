@@ -1,0 +1,357 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/EXPRO/EXPRO_read_driver.f90
+Compiled : 01/14/21  15:27:06
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -c EXPRO_read_driver.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : EXPRO_READ_DRIVER
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/EXPRO/EXPRO_read_driver.f90
+Date     : 01/14/2021  15:27:06
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !--------------------------------------------------------------
+    2.    ! EXPRO_read_driver.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Low-level read control for EXPRO.
+    6.    !--------------------------------------------------------------
+    7.    
+    8.    subroutine EXPRO_read_driver
+    9.    
+   10.      use EXPRO_globals
+   11.      use EXPRO_interface
+   12.    
+   13.    !  use Alpha_use_input
+   14.    !  use Alpha_use_output
+   15.    
+   16.      implicit none
+   17.    
+   18.      integer, parameter :: io=2
+   19.      integer :: i
+   20.      integer :: ierr
+   21.    
+   22.      integer :: EXPRO_n_shot
+   23.      integer :: EXPRO_nion_file
+   24.      real :: EXPRO_ip_exp
+   25.      real :: EXPRO_rvbv
+   26.    
+   27.      real, dimension(:), allocatable :: dummy
+   28.    
+   29.      !--------------------------------------------------------------
+   30.      ! READ generated (stripped) version of input.profiles:
+   31.      !
+   32.      open(unit=1,file='EXPRO_debug.dat',status='replace')
+   33.    
+   34.      open(unit=io,&
+   35.           file=trim(path)//'input.profiles.gen',&
+   36.           status='old',&
+   37.           iostat=ierr)
+   38.    
+   39.      read(io,*) EXPRO_ncol
+   40.      write(1,*) EXPRO_ncol
+   41.    
+   42.      read(io,*) EXPRO_nblock
+   43.      write(1,*) EXPRO_nblock
+   44.    
+   45.      read(io,*) EXPRO_n_shot
+   46.      write(1,*) EXPRO_n_shot
+   47.    
+   48.      read(io,*) EXPRO_nion_file
+   49.      write(1,*) EXPRO_nion_file
+   50.    
+   51.      read(io,*) EXPRO_n_exp
+   52.      write(1,*) EXPRO_n_exp
+   53.    
+   54.      read(io,*) EXPRO_b_ref
+   55.      write(1,*) EXPRO_b_ref
+   56.    
+   57.      read(io,*) EXPRO_ip_exp
+   58.      write(1,*) EXPRO_ip_exp
+   59.    
+   60.      read(io,*) EXPRO_rvbv
+   61.      write(1,*) EXPRO_rvbv
+   62.    
+   63.      read(io,*) EXPRO_arho
+   64.      write(1,*) EXPRO_arho
+   65.    
+   66.      allocate(dummy(EXPRO_n_exp))
+   67.    
+   68.      ! 1-5
+   69.      read(io,*) EXPRO_rho(:)
+   70.      write(1,*) EXPRO_rho(:)
+   71.      read(io,*) EXPRO_rmin(:)
+   72.      write(1,*) EXPRO_rmin(:)
+   73.      read(io,*) EXPRO_rmaj(:)
+   74.      write(1,*) EXPRO_rmaj(:)
+   75.      read(io,*) EXPRO_q(:)     ! |q|
+   76.      write(1,*) EXPRO_q(:)
+   77.      read(io,*) EXPRO_kappa(:)
+   78.      write(1,*) EXPRO_kappa(:)
+   79.    
+   80.      ! 6-10
+   81.      read(io,*) EXPRO_delta(:)
+   82.      write(1,*) EXPRO_delta(:)
+   83.      read(io,*) EXPRO_te(:)
+   84.      write(1,*) EXPRO_te(:)
+   85.      read(io,*) EXPRO_ne(:)
+   86.      write(1,*) EXPRO_ne(:)
+   87.      read(io,*) EXPRO_z_eff(:)
+   88.      write(1,*) EXPRO_z_eff(:)
+   89.      read(io,*) EXPRO_w0(:)     ! Note that EXPRO_w0 has GYRO/NEO sign
+   90.      write(1,*) EXPRO_w0(:)
+   91.    
+   92.      ! 11-15
+   93.      read(io,*) EXPRO_flow_mom(:)
+   94.      write(1,*) EXPRO_flow_mom(:)
+   95.      read(io,*) EXPRO_pow_e(:)
+   96.      write(1,*) EXPRO_pow_e(:)
+   97.      read(io,*) EXPRO_pow_i(:)
+   98.      write(1,*) EXPRO_pow_i(:)
+   99.      read(io,*) EXPRO_pow_ei(:)
+  100.      write(1,*) EXPRO_pow_ei(:)
+  101.      read(io,*) EXPRO_zeta(:)
+  102.      write(1,*) EXPRO_zeta(:)
+  103.    
+  104.      ! 16-20
+  105.      read(io,*) EXPRO_flow_beam(:)
+  106.      write(1,*) EXPRO_flow_beam(:)
+  107.      read(io,*) EXPRO_flow_wall(:)
+  108.      write(1,*) EXPRO_flow_wall(:)
+  109.      read(io,*) EXPRO_zmag(:)
+  110.      write(1,*) EXPRO_zmag(:)
+  111.      read(io,*) EXPRO_ptot(:)
+  112.      write(1,*) EXPRO_ptot(:)
+  113.      read(io,*) EXPRO_poloidalfluxover2pi(:)
+  114.      write(1,*) EXPRO_poloidalfluxover2pi(:)
+  115.    
+  116.      ! 21-25
+  117.      read(io,*) EXPRO_ni(1,:)
+  118.      write(1,*) EXPRO_ni(1,:)
+  119.      read(io,*) EXPRO_ni(2,:)
+  120.      write(1,*) EXPRO_ni(2,:)
+  121.      read(io,*) EXPRO_ni(3,:)
+  122.      write(1,*) EXPRO_ni(3,:)
+  123.      read(io,*) EXPRO_ni(4,:)
+  124.      write(1,*) EXPRO_ni(4,:)
+  125.      read(io,*) EXPRO_ni(5,:)
+  126.      write(1,*) EXPRO_ni(5,:)
+  127.    
+  128.      ! 26-30
+  129.      read(io,*) EXPRO_ti(1,:)
+  130.      write(1,*) EXPRO_ti(1,:)
+  131.      read(io,*) EXPRO_ti(2,:)
+  132.      write(1,*) EXPRO_ti(2,:)
+  133.      read(io,*) EXPRO_ti(3,:)
+  134.      write(1,*) EXPRO_ti(3,:)
+  135.      read(io,*) EXPRO_ti(4,:)
+  136.      write(1,*) EXPRO_ti(4,:)
+  137.      read(io,*) EXPRO_ti(5,:)
+  138.      write(1,*) EXPRO_ti(5,:)
+  139.    
+  140.      ! 31-35
+  141.      read(io,*) EXPRO_vtor(1,:)
+  142.      write(1,*) EXPRO_vtor(1,:)
+  143.      read(io,*) EXPRO_vtor(2,:)
+  144.      write(1,*) EXPRO_vtor(2,:)
+  145.      read(io,*) EXPRO_vtor(3,:)
+  146.      write(1,*) EXPRO_vtor(3,:)
+  147.      read(io,*) EXPRO_vtor(4,:)
+  148.      write(1,*) EXPRO_vtor(4,:)
+  149.      read(io,*) EXPRO_vtor(5,:)
+  150.      write(1,*) EXPRO_vtor(5,:)
+  151.    
+  152.      ! 36-40
+  153.      read(io,*) EXPRO_vpol(1,:)
+  154.      write(1,*) EXPRO_vpol(1,:)
+  155.      read(io,*) EXPRO_vpol(2,:)
+  156.      write(1,*) EXPRO_vpol(2,:)
+  157.      read(io,*) EXPRO_vpol(3,:)
+  158.      write(1,*) EXPRO_vpol(3,:)
+  159.      read(io,*) EXPRO_vpol(4,:)
+  160.      write(1,*) EXPRO_vpol(4,:)
+  161.      read(io,*) EXPRO_vpol(5,:)
+  162.      write(1,*) EXPRO_vpol(5,:)
+  163.    
+  164.      close(io)
+  165.    
+  166.      write (1,*) 'Finished read of input.profiles.gen.'
+  167.    
+  168.      close(1)
+  169.    
+  170.      !--------------------------------------------------------------
+  171.    
+  172.      ! Change signs according to orientation control parameters
+  173.    
+  174.      EXPRO_b_ref = EXPRO_ctrl_signb*abs(EXPRO_b_ref)
+  175.      EXPRO_q(:)  = EXPRO_ctrl_signq*abs(EXPRO_q(:))
+ftn-6263 ftn: VECTOR EXPRO_READ_DRIVER, File = EXPRO_read_driver.f90, Line = 175 
+  A loop starting at line 175 was not vectorized because it contains a reference to a non-vector intrinsic on line 175.
+
+  176.    
+  177.      !--------------------------------------------------------------
+  178.      ! READ general shape coefficients if they exist: 
+  179.      !
+  180.      if (EXPRO_nfourier > 0) then
+  181.    
+  182.         open(unit=io,&
+  183.              file=trim(path)//'input.profiles.geo',&
+  184.              status='old')
+  185.    
+  186.         read(io,*) i
+  187.         do i=1,EXPRO_n_exp
+  188.            read(io,*) EXPRO_geo(:,:,i)
+  189.         enddo
+  190.    
+  191.         close(io)
+  192.    
+  193.      endif
+  194.      !--------------------------------------------------------------
+  195.    
+  196.    ! Depricated ALPHA profiles functionality.
+  197.    
+  198.    !  if (EXPRO_ctrl_alpha_profiles_flag == 1) then
+  199.    !    call Alpha_mainsub
+  200.    !  !--------------------------------------------------------------------------------
+  201.    !  ! Mapping equillibrium and alpha profiles onto EXPRO variables from Alpha.
+  202.    !  ! Density and temperature.
+  203.    !    call cub_spline(rho_hat,T_i_rho,n_rho_grid,EXPRO_rho,EXPRO_ti(1,:),EXPRO_n_exp)
+  204.    !    call cub_spline(rho_hat,T_e_rho,n_rho_grid,EXPRO_rho,EXPRO_te,EXPRO_n_exp)
+  205.    !    call cub_spline(rho_hat,n_i_rho,n_rho_grid,EXPRO_rho,EXPRO_ni(1,:),EXPRO_n_exp)
+  206.    !    call cub_spline(rho_hat,n_e_rho,n_rho_grid,EXPRO_rho,EXPRO_ne,EXPRO_n_exp)
+  207.    !
+  208.    !  ! Shaping and safety factor.
+  209.    !    call cub_spline(rho_hat,q_rho,n_rho_grid,EXPRO_rho,EXPRO_q,EXPRO_n_exp)
+  210.    !    call cub_spline(rho_hat,rmaj_rho,n_rho_grid,EXPRO_rho,EXPRO_rmaj,EXPRO_n_exp)
+  211.    !    call cub_spline(rho_hat,rmin_rho,n_rho_grid,EXPRO_rho,EXPRO_rmin,EXPRO_n_exp)
+  212.    !    call cub_spline(rho_hat,kappa_rho,n_rho_grid,EXPRO_rho,EXPRO_kappa,EXPRO_n_exp)
+  213.    !    call cub_spline(rho_hat,delta_rho,n_rho_grid,EXPRO_rho,EXPRO_delta,EXPRO_n_exp)
+  214.    !
+  215.    !  ! Crossover energy, slowing-down density, effective temperature.
+  216.    !    call cub_spline(rho_hat,E_c_hat_rho,n_rho_grid,EXPRO_rho,EXPRO_energy_c(2,:),EXPRO_n_exp)
+  217.    !    call cub_spline(rho_hat,n_alpha_rho,n_rho_grid,EXPRO_rho,EXPRO_ni(2,:),EXPRO_n_exp)
+  218.    !    if (use_t_equiv == 1) then
+  219.    !      call cub_spline(rho_hat,T_alpha_equiv_rho,n_rho_grid,EXPRO_rho,EXPRO_ti(2,:),EXPRO_n_exp)
+  220.    !    else
+  221.    !      call cub_spline(rho_hat,E_alpha_grid,n_rho_grid,EXPRO_rho,EXPRO_ti(2,:),EXPRO_n_exp)
+  222.    !    endif
+  223.    !
+  224.    !  else
+  225.    
+  226.        if (EXPRO_nion_file .gt. 1) then
+  227.          do i = 1, nion_max
+  228.            EXPRO_energy_c(i,:) = 33.0344836 * EXPRO_te(:) / EXPRO_ti(2,:)  ! Only appropriate for alpha particles.
+ftn-6262 ftn: VECTOR EXPRO_READ_DRIVER, File = EXPRO_read_driver.f90, Line = 228 
+  A loop starting at line 228 was not vectorized because it contains a call to a subroutine or function on line 228.
+
+  229.          enddo
+  230.        endif
+  231.    
+  232.    !  endif
+  233.    
+  234.      deallocate(dummy)
+  235.    
+  236.    end subroutine EXPRO_read_driver
+  237.     
+  238.     
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_READ_DRIVER (Line 174, file EXPRO_read_driver.f90)
+                   EXPRO_READ_DRIVER (Line 175, file EXPRO_read_driver.f90)
+
+Name  Messages
+----  --------
+EXPRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     EXPRO_READ_DRIVER
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     EXPRO_READ_DRIVER
+
+Name  Messages
+----  --------
+EXPRO_READ_DRIVER
+      Defined as:  Subroutine (line 8, file EXPRO_read_driver.f90)
+
+      Interface:   None
+
+      Calls:       TRIM(Intrinsic) (Line 35, file EXPRO_read_driver.f90)
+                   TRIM(Intrinsic) (Line 183, file EXPRO_read_driver.f90)
+                   ABS(Intrinsic) (Line 174, file EXPRO_read_driver.f90)
+                   ABS(Intrinsic) (Line 175, file EXPRO_read_driver.f90)
+
+        Uses:      EXPRO_GLOBALS
+                   EXPRO_INTERFACE
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPRO_READ_DRIVER (Line 35, file EXPRO_read_driver.f90)
+                   EXPRO_READ_DRIVER (Line 183, file EXPRO_read_driver.f90)
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,237 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_banana_integrate_tau.f90
+Compiled : 01/19/21  15:35:28
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_banana_integrate_tau.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_BANANA_INTEGRATE_TAU
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_banana_integrate_tau.f90
+Date     : 01/19/2021  15:35:29
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! gyro_banana_integrate_tau.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Compute s(lambda) = Int[0,lambda] tau(lambda) numerically.
+    6.    !------------------------------------------------------------
+    7.    
+    8.    subroutine gyro_banana_integrate_tau(lambda,s)
+    9.    
+   10.      use gyro_banana_private
+   11.      use GEO_interface
+   12.    
+   13.      !-----------------------------------------------------------
+   14.      implicit none
+   15.      !
+   16.      integer :: i
+   17.      !
+   18.      real, intent(in) :: lambda
+   19.      real, intent(inout) :: s
+   20.      real, dimension(:), allocatable :: f
+   21.      !
+   22.      real :: d_theta
+   23.      real :: f0
+   24.      real :: theta_bm
+   25.      real :: theta_bp
+   26.      real :: theta_0
+   27.      !
+   28.      real, parameter :: zero_tol = 1e-14
+   29.      !-----------------------------------------------------------
+   30.    
+   31.      allocate(f(n))
+   32.    
+   33.      ! Added '=' in test to take care of
+   34.      ! calls at the tp boundary.
+   35.    
+   36.      if (lambda <= lambda_tp) then
+   37.    
+   38.         ! Passing particle
+   39.         !
+   40.         ! Limits of integration: [-pi,pi]
+   41.    
+   42.         d_theta = 2.0*pi/(n-1)
+   43.    
+   44.         do i=1,n
+   45.    
+   46.            ! The zero-check here will pick out the 
+   47.            ! pinch orbit (lambda=ORB_lambda_tp) at 
+   48.            ! theta_0=-pi, and set f=0 to maintain
+   49.            ! accuracy.
+   50.    
+   51.            theta_0 = -pi+(i-1)*d_theta
+   52.            call GEO_interp(theta_0)
+   53.            f0 = abs(1.0-lambda*GEO_b)
+   54.            if (f0 < zero_tol) f0 = 0.0
+   55.            f(i) = (1.0-sqrt(f0))*GEO_g_theta/GEO_b
+   56.    
+   57.         enddo
+   58.    
+   59.         s = d_theta*(0.5*(f(1)+f(n))+sum(f(2:n-1)))/fluxave
+ftn-6263 ftn: VECTOR GYRO_BANANA_INTEGRATE_TAU, File = gyro_banana_integrate_tau.f90, Line = 59 
+  A loop starting at line 59 was not vectorized because it contains a reference to a non-vector intrinsic on line 59.
+
+   60.    
+   61.      else
+   62.    
+   63.         ! Trapped particle
+   64.         !
+   65.         ! Limits of integration: [theta_bm,theta_bp]
+   66.    
+   67.         call gyro_bounce_points(lambda,theta_bp,theta_bm)
+   68.    
+   69.         d_theta = (theta_bp-theta_bm)/(n-1)
+   70.    
+   71.         do i=1,n
+   72.            theta_0 = theta_bm+(i-1)*d_theta
+   73.            call GEO_interp(theta_0)
+   74.            f(i) = sqrt(abs(1.0-lambda*GEO_b))*GEO_g_theta/GEO_b
+   75.         enddo
+   76.    
+   77.         s = 1.0-d_theta*(0.5*(f(1)+f(n))+sum(f(2:n-1)))/fluxave
+ftn-6263 ftn: VECTOR GYRO_BANANA_INTEGRATE_TAU, File = gyro_banana_integrate_tau.f90, Line = 77 
+  A loop starting at line 77 was not vectorized because it contains a reference to a non-vector intrinsic on line 77.
+
+   78.    
+   79.      endif
+   80.    
+   81.      deallocate(f)
+   82.    
+   83.    end subroutine gyro_banana_integrate_tau
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BANANA_INTEGRATE_TAU (Line 53, file gyro_banana_integrate_tau.f90)
+                   GYRO_BANANA_INTEGRATE_TAU (Line 74, file gyro_banana_integrate_tau.f90)
+
+Name  Messages
+----  --------
+GEO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BANANA_INTEGRATE_TAU
+
+Name  Messages
+----  --------
+GEO_INTERP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BANANA_INTEGRATE_TAU (Line 52, file gyro_banana_integrate_tau.f90)
+                   GYRO_BANANA_INTEGRATE_TAU (Line 73, file gyro_banana_integrate_tau.f90)
+
+Name  Messages
+----  --------
+GYRO_BANANA_INTEGRATE_TAU
+      Defined as:  Subroutine (line 8, file gyro_banana_integrate_tau.f90)
+
+      Interface:   None
+
+      Calls:       GEO_INTERP (Line 52, file gyro_banana_integrate_tau.f90)
+                   GEO_INTERP (Line 73, file gyro_banana_integrate_tau.f90)
+                   ABS(Intrinsic) (Line 53, file gyro_banana_integrate_tau.f90)
+                   ABS(Intrinsic) (Line 74, file gyro_banana_integrate_tau.f90)
+                   SQRT(Intrinsic) (Line 55, file gyro_banana_integrate_tau.f90)
+                   SQRT(Intrinsic) (Line 74, file gyro_banana_integrate_tau.f90)
+                   SUM(Intrinsic) (Line 59, file gyro_banana_integrate_tau.f90)
+                   SUM(Intrinsic) (Line 77, file gyro_banana_integrate_tau.f90)
+                   GYRO_BOUNCE_POINTS (Line 67, file gyro_banana_integrate_tau.f90)
+
+        Uses:      GYRO_BANANA_PRIVATE
+                   GEO_INTERFACE
+
+Name  Messages
+----  --------
+GYRO_BANANA_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BANANA_INTEGRATE_TAU
+
+Name  Messages
+----  --------
+GYRO_BOUNCE_POINTS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BANANA_INTEGRATE_TAU (Line 67, file gyro_banana_integrate_tau.f90)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BANANA_INTEGRATE_TAU (Line 55, file gyro_banana_integrate_tau.f90)
+                   GYRO_BANANA_INTEGRATE_TAU (Line 74, file gyro_banana_integrate_tau.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BANANA_INTEGRATE_TAU (Line 59, file gyro_banana_integrate_tau.f90)
+                   GYRO_BANANA_INTEGRATE_TAU (Line 77, file gyro_banana_integrate_tau.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

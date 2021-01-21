@@ -1,0 +1,693 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_cleanup.f90
+Compiled : 01/19/21  15:35:33
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_cleanup.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_CLEANUP
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_cleanup.f90
+Date     : 01/19/2021  15:35:33
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! gyro_cleanup.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Deallocate and clean up.
+    6.    !-----------------------------------------------------------
+    7.    
+    8.    subroutine gyro_cleanup
+    9.    
+   10.      use mpi
+   11.      use gyro_globals
+   12.      use gyro_interface
+   13.    
+   14.      implicit none
+   15.    
+   16.      ! No need for cleanup in test mode
+   17.      if (gyrotest_flag == 1) return
+   18.    
+   19.      if (allocated(r)) then
+   20.    
+   21.         ! GYRO arrays
+   22.         call gyro_alloc_profile_sim(0)
+   23.         call gyro_alloc_big(0)
+   24.         call gyro_alloc_orbit(0)
+   25.         call gyro_alloc_velocity(0)
+   26.         call gyro_alloc_distrib(0)
+   27.         if (nonlinear_flag == 1) call gyro_alloc_nl(0)
+   28.    
+   29.         ! Sparse field arrays 
+   30.         if (allocated(m_poisson)) deallocate(m_poisson)
+   31.         if (allocated(indx_poisson)) deallocate(indx_poisson)
+   32.         if (allocated(m_ampere)) deallocate(m_ampere)
+   33.         if (allocated(indx_ampere)) deallocate(indx_ampere)
+   34.         if (allocated(m_maxwell)) deallocate(m_maxwell)
+   35.         if (allocated(indx_maxwell)) deallocate(indx_maxwell)
+   36.         if (allocated(m_poissonaperp)) deallocate(m_poissonaperp)
+   37.         if (allocated(indx_poissonaperp)) deallocate(indx_poissonaperp)
+   38.    
+   39.         ! Blending coefficients
+   40.         call BLEND_cleanup
+   41.    
+   42.         call MPI_COMM_FREE(NEW_COMM_1,i_err)
+   43.         call MPI_COMM_FREE(NEW_COMM_2,i_err)
+   44.         if (sparse_method == 2) call MPI_COMM_FREE(MUMPS_COMM,i_err)
+   45.    
+   46.      endif
+   47.    
+   48.    end subroutine gyro_cleanup
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_CLEANUP                     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_CLEANUP                     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_CLEANUP                     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_CLEANUP                     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_CLEANUP                     Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 19, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 30, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 31, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 32, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 33, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 34, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 35, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 36, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 37, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+BLEND_CLEANUP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 40, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_ALLOC_BIG
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 23, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_DISTRIB
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 26, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_NL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 27, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_ORBIT
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 24, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_PROFILE_SIM
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 22, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_ALLOC_VELOCITY
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 25, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+GYRO_CLEANUP
+      Defined as:  Subroutine (line 8, file gyro_cleanup.f90)
+
+      Interface:   None
+
+      Calls:       ALLOCATED(Intrinsic) (Line 19, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 30, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 31, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 32, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 33, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 34, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 35, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 36, file gyro_cleanup.f90)
+                   ALLOCATED(Intrinsic) (Line 37, file gyro_cleanup.f90)
+                   GYRO_ALLOC_PROFILE_SIM (Line 22, file gyro_cleanup.f90)
+                   GYRO_ALLOC_BIG (Line 23, file gyro_cleanup.f90)
+                   GYRO_ALLOC_ORBIT (Line 24, file gyro_cleanup.f90)
+                   GYRO_ALLOC_VELOCITY (Line 25, file gyro_cleanup.f90)
+                   GYRO_ALLOC_DISTRIB (Line 26, file gyro_cleanup.f90)
+                   GYRO_ALLOC_NL (Line 27, file gyro_cleanup.f90)
+                   BLEND_CLEANUP (Line 40, file gyro_cleanup.f90)
+                   MPI_COMM_FREE (Line 42, file gyro_cleanup.f90)
+                   MPI_COMM_FREE (Line 43, file gyro_cleanup.f90)
+                   MPI_COMM_FREE (Line 44, file gyro_cleanup.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+                   GYRO_INTERFACE
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP
+
+Name  Messages
+----  --------
+GYRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INTERFACELOCALDUMP in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MAP_GLOBAL2INTERFACE in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MAP_INTERFACE2GLOBAL in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_COMM_FREE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_CLEANUP (Line 42, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 43, file gyro_cleanup.f90)
+                   GYRO_CLEANUP (Line 44, file gyro_cleanup.f90)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_CLEANUP  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

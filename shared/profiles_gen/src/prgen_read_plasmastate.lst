@@ -1,0 +1,3290 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_read_plasmastate.f90
+Compiled : 01/19/21  15:35:01
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/netcdf/4.6.3.2/CRAYCLANG/9.0/include
+           -c prgen_read_plasmastate.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : PRGEN_READ_PLASMASTATE
+          BOUNDARY_FIX
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_read_plasmastate.f90
+Date     : 01/19/2021  15:35:02
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !--------------------------------------------------------------
+    2.    ! prgen_read_plasmastate.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Extract plasmastate data from native NETCDF file.
+    6.    !--------------------------------------------------------------
+    7.    
+    8.    subroutine prgen_read_plasmastate
+    9.    
+   10.      use prgen_globals
+   11.      use netcdf
+                ^      
+ftn-1494 ftn: CAUTION PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 11, Column = 7 
+  Module "NETCDF" and this compilation should both be compiled with the "-s real64" option.
+
+   12.    
+   13.      implicit none
+   14.    
+   15.      ! NetCDF variables
+   16.      integer :: i
+   17.      integer :: ncid
+   18.      integer :: varid
+   19.      integer :: err
+   20.      real :: dummy
+   21.      real, parameter :: idiag=1
+   22.    
+   23.      ! Open the file (NF90_NOWRITE means read-only)
+   24.      err = nf90_open(raw_data_file,NF90_NOWRITE,ncid)
+   25.    
+   26.      ! Shot
+   27.      plst_tag = 'shot_number'
+   28.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+   29.      err = nf90_get_var(ncid,varid,plst_shot_number)
+   30.      if (verbose_flag == 1) print *,err,plst_tag,plst_shot_number
+   31.    
+   32.      ! Tokamak
+   33.      plst_tag = 'tokamak_id'
+   34.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+   35.      err = nf90_get_var(ncid,varid,plst_tokamak_id)
+   36.      if (verbose_flag == 1) print *,err,plst_tag,plst_tokamak_id
+   37.    
+   38.      ! Number of thermal species
+   39.      plst_tag = 'dp1_nspec_th'
+   40.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   41.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dp1_nspec_th)
+   42.      if (verbose_flag == 1)  print *,err,plst_tag,plst_dp1_nspec_th
+   43.    
+   44.      ! Number of thermal species (abridged)
+   45.      plst_tag = 'dp1_nspec_tha'
+   46.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   47.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dp1_nspec_tha)
+   48.      if (verbose_flag == 1)  print *,err,plst_tag,plst_dp1_nspec_tha
+   49.    
+   50.      ! Number of species (thermal + fast)
+   51.      plst_tag = 'dp1_nspec_all'
+   52.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   53.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dp1_nspec_all)
+   54.      if (verbose_flag == 1) print *,err,plst_tag,plst_dp1_nspec_all
+   55.      if (plst_dp1_nspec_all > n_ion_max) then
+   56.         print '(a)','ERROR: (prgen_read_plasmastate) Too many ions in plasmastate file.'
+   57.         stop
+   58.      endif
+   59.    
+   60.      ! Number of species (thermal + fast, abridged)
+   61.      plst_tag = 'dp1_nspec_alla'
+   62.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   63.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dp1_nspec_alla)
+   64.      if (verbose_flag == 1) print *,err,plst_tag,plst_dp1_nspec_alla
+   65.    
+   66.      ! Gridpoints
+   67.      plst_tag = 'dim_nrho'
+   68.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   69.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dim_nrho)
+   70.      if (verbose_flag == 1) print *,err,plst_tag,plst_dim_nrho
+   71.    
+   72.      ! Gridpoints (geometry)
+   73.      plst_tag = 'dim_nrho_eq_geo'
+   74.      err = nf90_inq_dimid(ncid,trim(plst_tag),varid)
+   75.      err = nf90_Inquire_Dimension(ncid,varid,len=plst_dim_nrho_eq_geo)
+   76.      if (verbose_flag == 1) print *,err,plst_tag,plst_dim_nrho_eq_geo
+   77.      if (plst_dim_nrho_eq_geo /= plst_dim_nrho) then
+   78.         print '(a)','ERROR: (prgen_read_plasmastate) plst_dim_nrho_eq_geo /= plst_dim_nrho'
+   79.         stop
+   80.      endif
+   81.    
+   82.      nx = plst_dim_nrho
+   83.    
+   84.      call allocate_internals
+   85.      call allocate_plasmastate_vars
+   86.    
+   87.      ! Species names (abridged)
+   88.      plst_tag = 'ALLA_name'
+   89.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+   90.      err = nf90_get_var(ncid,varid,plst_alla_name(1:plst_dp1_nspec_alla))
+   91.    
+   92.      ! Species names
+   93.      plst_tag = 'ALL_name'
+   94.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+   95.      err = nf90_get_var(ncid,varid,plst_all_name(1:plst_dp1_nspec_all))
+   96.    
+   97.      ! Species charges
+   98.      plst_tag = 'q_ALL'
+   99.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+  100.      err = nf90_get_var(ncid,varid,plst_q_all(1:plst_dp1_nspec_all))
+  101.    
+  102.      ! Species mass
+  103.      plst_tag = 'm_ALL'
+  104.      err = nf90_inq_varid(ncid,trim(plst_tag),varid)
+  105.      err = nf90_get_var(ncid,varid,plst_m_all(1:plst_dp1_nspec_all))
+  106.    
+  107.      ! Flux-surface volume
+  108.      err = nf90_inq_varid(ncid,trim('vol'),varid)
+  109.      err = nf90_get_var(ncid,varid,plst_vol(:))
+  110.    
+  111.      ! Normalizing B for toroidal flux
+  112.      err = nf90_inq_varid(ncid,trim('B_axis_vac'),varid)
+  113.      err = nf90_get_var(ncid,varid,plst_b_axis_vac)
+  114.    
+  115.      ! B_phi orientation
+  116.      err = nf90_inq_varid(ncid,trim('kccw_Bphi'),varid)
+  117.      err = nf90_get_var(ncid,varid,btccw)
+  118.    
+  119.      ! J_phi orientation
+  120.      err = nf90_inq_varid(ncid,trim('kccw_Jphi'),varid)
+  121.      err = nf90_get_var(ncid,varid,ipccw)
+  122.    
+  123.      ! Root of normalized toroidal flux (rho)
+  124.      err = nf90_inq_varid(ncid,trim('rho'),varid)
+  125.      err = nf90_get_var(ncid,varid,plst_rho(:))
+  126.    
+  127.      ! Grad(rho)
+  128.      err = nf90_inq_varid(ncid,trim('grho1'),varid)
+  129.      err = nf90_get_var(ncid,varid,plst_grho1(:))
+  130.    
+  131.      ! Toroidal flux
+  132.      err = nf90_inq_varid(ncid,trim('phit'),varid)
+  133.      err = nf90_get_var(ncid,varid,plst_phit(:))
+  134.    
+  135.      ! Poloidal flux/(2pi)
+  136.      err = nf90_inq_varid(ncid,trim('psipol'),varid)
+  137.      err = nf90_get_var(ncid,varid,plst_psipol(:))
+  138.    
+  139.      ! Elongation
+  140.      err = nf90_inq_varid(ncid,trim('elong'),varid)
+  141.      err = nf90_get_var(ncid,varid,plst_elong(:))
+  142.    
+  143.      ! Triangularity
+  144.      err = nf90_inq_varid(ncid,trim('triang'),varid)
+  145.      err = nf90_get_var(ncid,varid,plst_triang(:))
+  146.    
+  147.      ! 1/q
+  148.      err = nf90_inq_varid(ncid,trim('iota'),varid)
+  149.      err = nf90_get_var(ncid,varid,plst_iota(:))
+  150.      q(:) = 1.0/plst_iota(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 150 
+  A loop starting at line 150 was not vectorized because it contains a call to a subroutine or function on line 150.
+
+  151.    
+  152.      ! R_major (-pi)
+  153.      err = nf90_inq_varid(ncid,trim('R_midp_in'),varid)
+  154.      err = nf90_get_var(ncid,varid,plst_r_midp_in(:))
+  155.    
+  156.      ! R_major (0)
+  157.      err = nf90_inq_varid(ncid,trim('R_midp_out'),varid)
+  158.      err = nf90_get_var(ncid,varid,plst_r_midp_out(:))
+  159.    
+  160.      ! Elevation
+  161.      err = nf90_inq_varid(ncid,trim('Z_midp'),varid)
+  162.      err = nf90_get_var(ncid,varid,plst_z_midp(:))
+  163.    
+  164.      ! Z_eff
+  165.      err = nf90_inq_varid(ncid,trim('Zeff'),varid)
+  166.      err = nf90_get_var(ncid,varid,plst_zeff(1:nx-1))
+  167.      plst_zeff(nx) = plst_zeff(nx-1)
+  168.    
+  169.      ! Temperatures
+  170.      err = nf90_inq_varid(ncid,trim('Ts'),varid)
+  171.      err = nf90_get_var(ncid,varid,plst_ts(1:nx-1,1:plst_dp1_nspec_th)) 
+  172.    
+  173.      ! Temperature (Te at r/a=1)
+  174.      err = nf90_inq_varid(ncid,trim('Te_bdy'),varid)
+  175.      err = nf90_get_var(ncid,varid,dummy)
+  176.    
+  177.      plst_ts(nx,1) = dummy
+  178.    
+  179.      ! Temperature (Ti at r/a=1)
+  180.      err = nf90_inq_varid(ncid,trim('Ti_bdy'),varid)
+  181.      err = nf90_get_var(ncid,varid,dummy)
+  182.    
+  183.      plst_ts(nx,2:plst_dp1_nspec_th) = dummy
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 183 
+  A loop starting at line 183 was not vectorized because it contains a reference to a non-vector intrinsic on line 183.
+
+  184.    
+  185.      ! Thermal species densities
+  186.      err = nf90_inq_varid(ncid,trim('ns'),varid)
+  187.      err = nf90_get_var(ncid,varid,plst_ns(1:nx-1,1:plst_dp1_nspec_th)) 
+  188.    
+  189.      ! Densities (n at r/a=1)
+  190.      err = nf90_inq_varid(ncid,trim('ns_bdy'),varid)
+  191.      err = nf90_get_var(ncid,varid,plst_ns(nx,1:plst_dp1_nspec_th)) 
+  192.    
+  193.      ! Fast-ion handling ...
+  194.    
+  195.      ntop = plst_dp1_nspec_th
+  196.      !------------------------------------------------------------------
+  197.      ! 1. Beams
+  198.      err = nf90_inq_varid(ncid,trim('nbeami'),varid)
+  199.      if (err == 0) then
+  200.         ! density
+  201.         err = nf90_get_var(ncid,varid,plst_nb(1:nx-1))
+  202.         plst_nb(nx) = plst_nb(nx-1)
+  203.         ! perpendicular energy
+  204.         err = nf90_inq_varid(ncid,trim('eperp_beami'),varid)
+  205.         err = nf90_get_var(ncid,varid,plst_eperp(1:nx-1))
+  206.         ! parallel energy
+  207.         err = nf90_inq_varid(ncid,trim('epll_beami'),varid)
+  208.         err = nf90_get_var(ncid,varid,plst_epar(1:nx-1))
+  209.    
+  210.         plst_tb(1:nx-1) = 2.0/3.0*(plst_epar(1:nx-1) + plst_eperp(1:nx-1))
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 210 
+  A loop starting at line 210 was not vectorized because it contains a reference to a non-vector intrinsic on line 210.
+
+  211.         plst_tb(nx)     = plst_tb(nx-1)
+  212.    
+  213.         ntop = ntop+1
+  214.         plst_ns(:,ntop) = plst_nb(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 214 
+  A loop starting at line 214 was not vectorized because it contains a call to a subroutine or function on line 214.
+
+  215.         plst_ts(:,ntop) = plst_tb(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 215 
+  A loop starting at line 215 was not vectorized because it contains a call to a subroutine or function on line 215.
+
+  216.      else
+  217.         plst_nb = 0.0
+ftn-6204 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 217 
+  A loop starting at line 217 was vectorized.
+
+  218.         plst_tb = 0.0
+ftn-6204 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 218 
+  A loop starting at line 218 was vectorized.
+
+  219.      endif
+  220.      !------------------------------------------------------------------
+  221.    
+  222.      !------------------------------------------------------------------
+  223.      ! 2. Minority ions 
+  224.      err = nf90_inq_varid(ncid,trim('nmini'),varid)
+  225.      if (err == 0) then
+  226.         err = nf90_get_var(ncid,varid,plst_nmini(1:nx-1))
+  227.         plst_nmini(nx) = plst_nmini(nx-1)
+  228.         ! perpendicular energy
+  229.         err = nf90_inq_varid(ncid,trim('eperp_mini'),varid)
+  230.         err = nf90_get_var(ncid,varid,plst_eperp(1:nx-1))
+  231.         ! parallel energy
+  232.         err = nf90_inq_varid(ncid,trim('epll_mini'),varid)
+  233.         err = nf90_get_var(ncid,varid,plst_epar(1:nx-1))
+  234.    
+  235.         plst_tmini(1:nx-1) = 2.0/3.0*(plst_epar(1:nx-1) + plst_eperp(1:nx-1))
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 235 
+  A loop starting at line 235 was not vectorized because it contains a reference to a non-vector intrinsic on line 235.
+
+  236.         plst_tmini(nx)     = plst_tmini(nx-1)
+  237.    
+  238.         ntop = ntop+1
+  239.         plst_ns(:,ntop) = plst_nmini(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 239 
+  A loop starting at line 239 was not vectorized because it contains a call to a subroutine or function on line 239.
+
+  240.         plst_ts(:,ntop) = plst_tmini(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 240 
+  A loop starting at line 240 was not vectorized because it contains a call to a subroutine or function on line 240.
+
+  241.      else
+  242.         plst_nmini = 0.0
+ftn-6204 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 242 
+  A loop starting at line 242 was vectorized.
+
+  243.         plst_tmini = 0.0
+ftn-6204 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 243 
+  A loop starting at line 243 was vectorized.
+
+  244.      endif
+  245.      !------------------------------------------------------------------
+  246.    
+  247.      !------------------------------------------------------------------
+  248.      ! 3. Fusion alphas
+  249.      err = nf90_inq_varid(ncid,trim('nfusi'),varid)
+  250.      if (err == 0) then
+  251.         err = nf90_get_var(ncid,varid,plst_nfusi(1:nx-1))
+  252.         plst_nfusi(nx) = plst_nfusi(nx-1)
+  253.         ! perpendicular energy
+  254.         err = nf90_inq_varid(ncid,trim('eperp_fusi'),varid)
+  255.         err = nf90_get_var(ncid,varid,plst_eperp(1:nx-1))
+  256.         ! parallel energy
+  257.         err = nf90_inq_varid(ncid,trim('epll_fusi'),varid)
+  258.         err = nf90_get_var(ncid,varid,plst_epar(1:nx-1))
+  259.    
+  260.         plst_tfusi(1:nx-1) = 2.0/3.0*(plst_epar(1:nx-1) + plst_eperp(1:nx-1))
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 260 
+  A loop starting at line 260 was not vectorized because it contains a reference to a non-vector intrinsic on line 260.
+
+  261.         plst_tfusi(nx)     = plst_tfusi(nx-1)
+  262.    
+  263.         ntop = ntop+1
+  264.         plst_ns(:,ntop) = plst_nfusi(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 264 
+  A loop starting at line 264 was not vectorized because it contains a call to a subroutine or function on line 264.
+
+  265.         plst_ts(:,ntop) = plst_tfusi(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 265 
+  A loop starting at line 265 was not vectorized because it contains a call to a subroutine or function on line 265.
+
+  266.      else
+  267.         plst_nfusi = 0.0
+ftn-6204 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 267 
+  A loop starting at line 267 was vectorized.
+
+  268.      endif
+  269.      !------------------------------------------------------------------
+  270.    
+  271.      ! Total plasma pressure, thermal + fast ions
+  272.      err = nf90_inq_varid(ncid,trim('P_eq'),varid)
+  273.      err = nf90_get_var(ncid,varid,p_tot)
+  274.    
+  275.      ! Radial electrostatic (equilibrium) potential (kV not keV!) 
+  276.      err = nf90_inq_varid(ncid,trim('Epot'),varid)
+  277.      err = nf90_get_var(ncid,varid,plst_epot(:))
+  278.    
+  279.      ! Rotation frequency (1/s) 
+  280.      err = nf90_inq_varid(ncid,trim('omegat'),varid)
+  281.      err = nf90_get_var(ncid,varid,plst_omegat(1:nx-1))
+  282.    
+  283.      ! Rotation frequency at r/a=1 (1/s) 
+  284.      err = nf90_inq_varid(ncid,trim('omegat_bdy'),varid)
+  285.      err = nf90_get_var(ncid,varid,dummy)
+  286.    
+  287.      plst_omegat(nx) = dummy
+  288.    
+  289.      ! SOURCES
+  290.    
+  291.      ! Total power to electrons 
+  292.      err = nf90_inq_varid(ncid,trim('pe_trans'),varid)
+  293.      err = nf90_get_var(ncid,varid,plst_pe_trans(1:nx-1))
+  294.      plst_pe_trans(nx) = 0.0
+  295.    
+  296.      ! Total power to ions 
+  297.      err = nf90_inq_varid(ncid,trim('pi_trans'),varid)
+  298.      err = nf90_get_var(ncid,varid,plst_pi_trans(1:nx-1))
+  299.      plst_pi_trans(nx) = 0.0
+  300.    
+  301.      ! Collisional exchange from ions to electrons
+  302.      err = nf90_inq_varid(ncid,trim('qie'),varid)
+  303.      err = nf90_get_var(ncid,varid,plst_qie(1:nx-1))
+  304.      plst_qie(nx) = 0.0
+  305.    
+  306.      ! Beam power to electrons
+  307.      err = nf90_inq_varid(ncid,trim('pbe'),varid)
+  308.      if (err == 0) then
+  309.         err = nf90_get_var(ncid,varid,plst_pbe(1:nx-1))
+  310.      else
+  311.         plst_pbe(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 311 
+  A loop starting at line 311 was not vectorized because it contains a reference to a non-vector intrinsic on line 311.
+
+  312.      endif
+  313.    
+  314.      ! Beam power to ions
+  315.      err = nf90_inq_varid(ncid,trim('pbi'),varid)
+  316.      if (err == 0) then
+  317.         err = nf90_get_var(ncid,varid,plst_pbi(1:nx-1))
+  318.      else
+  319.         plst_pbi(:) = 0.0 
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 319 
+  A loop starting at line 319 was not vectorized because it contains a reference to a non-vector intrinsic on line 319.
+
+  320.      endif
+  321.      ! ... thermalization 
+  322.      err = nf90_inq_varid(ncid,trim('pbth'),varid)
+  323.      if (err == 0) then
+  324.         err = nf90_get_var(ncid,varid,plst_pbth(1:nx-1))
+  325.      else
+  326.         plst_pbth(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 326 
+  A loop starting at line 326 was not vectorized because it contains a reference to a non-vector intrinsic on line 326.
+
+  327.      endif
+  328.    
+  329.      ! ECH power to electrons
+  330.      err = nf90_inq_varid(ncid,trim('peech'),varid)
+  331.      if (err == 0) then
+  332.         err = nf90_get_var(ncid,varid,plst_peech(1:nx-1))
+  333.      else
+  334.         plst_peech(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 334 
+  A loop starting at line 334 was not vectorized because it contains a reference to a non-vector intrinsic on line 334.
+
+  335.      endif
+  336.    
+  337.      ! Ohmic heating power to electrons
+  338.      err = nf90_inq_varid(ncid,trim('pohme'),varid)
+  339.      if (err == 0) then
+  340.         err = nf90_get_var(ncid,varid,plst_pohme(1:nx-1))
+  341.      else
+  342.         plst_pohme(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 342 
+  A loop starting at line 342 was not vectorized because it contains a reference to a non-vector intrinsic on line 342.
+
+  343.      endif
+  344.    
+  345.      ! Electron heating power by minority ions
+  346.      err = nf90_inq_varid(ncid,trim('pmine'),varid)
+  347.      if (err == 0) then
+  348.         err = nf90_get_var(ncid,varid,plst_pmine(1:nx-1))
+  349.      else
+  350.         plst_pmine(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 350 
+  A loop starting at line 350 was not vectorized because it contains a reference to a non-vector intrinsic on line 350.
+
+  351.      endif
+  352.    
+  353.      ! Ion heating power by minority ions
+  354.      err = nf90_inq_varid(ncid,trim('pmini'),varid)
+  355.      if (err == 0) then
+  356.         err = nf90_get_var(ncid,varid,plst_pmini(1:nx-1))
+  357.      else
+  358.         plst_pmini(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 358 
+  A loop starting at line 358 was not vectorized because it contains a reference to a non-vector intrinsic on line 358.
+
+  359.      endif
+  360.      ! + thermalization
+  361.      err = nf90_inq_varid(ncid,trim('pminth'),varid)
+  362.      if (err == 0) then
+  363.         err = nf90_get_var(ncid,varid,plst_pminth(1:nx-1))
+  364.      else
+  365.         plst_pminth(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 365 
+  A loop starting at line 365 was not vectorized because it contains a reference to a non-vector intrinsic on line 365.
+
+  366.      endif
+  367.    
+  368.      ! Direct ion heating power by ICRF
+  369.      err = nf90_inq_varid(ncid,trim('picth'),varid)
+  370.      if (err == 0) then
+  371.         err = nf90_get_var(ncid,varid,plst_picth(1:nx-1))
+  372.      else
+  373.         plst_picth(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 373 
+  A loop starting at line 373 was not vectorized because it contains a reference to a non-vector intrinsic on line 373.
+
+  374.      endif
+  375.    
+  376.      ! Fusion alpha power transferred to electrons
+  377.      err = nf90_inq_varid(ncid,trim('pfuse'),varid)
+  378.      if (err == 0) then
+  379.         err = nf90_get_var(ncid,varid,plst_pfuse(1:nx-1))
+  380.      else
+  381.         plst_pfuse(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 381 
+  A loop starting at line 381 was not vectorized because it contains a reference to a non-vector intrinsic on line 381.
+
+  382.      endif
+  383.    
+  384.      ! Fusion alpha power transferred to thermal ions
+  385.      err = nf90_inq_varid(ncid,trim('pfusi'),varid)
+  386.      if (err == 0) then
+  387.         err = nf90_get_var(ncid,varid,plst_pfusi(1:nx-1))
+  388.      else
+  389.         plst_pfusi(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 389 
+  A loop starting at line 389 was not vectorized because it contains a reference to a non-vector intrinsic on line 389.
+
+  390.      endif
+  391.      ! + thermalization
+  392.      err = nf90_inq_varid(ncid,trim('pfusth'),varid)
+  393.      if (err == 0) then
+  394.         err = nf90_get_var(ncid,varid,plst_pfusth(1:nx-1))
+  395.      else
+  396.         plst_pfusth(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 396 
+  A loop starting at line 396 was not vectorized because it contains a reference to a non-vector intrinsic on line 396.
+
+  397.      endif
+  398.    
+  399.      ! Radiated power: synchrotron
+  400.      err = nf90_inq_varid(ncid,trim('prad_cy'),varid)
+  401.      if (err == 0) then
+  402.         err = nf90_get_var(ncid,varid,plst_prad_cy(1:nx-1))
+  403.      else
+  404.         plst_prad_cy(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 404 
+  A loop starting at line 404 was not vectorized because it contains a reference to a non-vector intrinsic on line 404.
+
+  405.      endif
+  406.    
+  407.      ! Radiated power: bremsstrahlung
+  408.      err = nf90_inq_varid(ncid,trim('prad_br'),varid)
+  409.      if (err == 0) then
+  410.         err = nf90_get_var(ncid,varid,plst_prad_br(1:nx-1))
+  411.      else
+  412.         plst_prad_br(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 412 
+  A loop starting at line 412 was not vectorized because it contains a reference to a non-vector intrinsic on line 412.
+
+  413.      endif
+  414.    
+  415.      ! Radiated power: line
+  416.      err = nf90_inq_varid(ncid,trim('prad_li'),varid)
+  417.      if (err == 0) then
+  418.         err = nf90_get_var(ncid,varid,plst_prad_li(1:nx-1))
+  419.      else
+  420.         plst_prad_li(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 420 
+  A loop starting at line 420 was not vectorized because it contains a reference to a non-vector intrinsic on line 420.
+
+  421.      endif
+  422.    
+  423.      ! Electron power balance diagnostic
+  424.      if (idiag == 1) then
+  425.         open(unit=11,file='out.prgen.power_e',status='replace')
+  426.         do i=1,nx-1
+  427.            write(11,'(14(1pe12.5,2x))') plst_rho(i),& ! 0
+  428.                 plst_pe_trans(i), &     ! 1
+  429.                 plst_pfuse(i), &        ! 2
+  430.                 plst_qie(i), &          ! 3
+  431.                 plst_prad_cy(i), &      ! 4
+  432.                 plst_prad_br(i), &      ! 5
+  433.                 plst_prad_li(i), &      ! 6
+  434.                 plst_pbe(i), &          ! 7
+  435.                 plst_peech(i), &        ! 8
+  436.                 plst_pmine(i), &        ! 9
+  437.                 plst_pohme(i), &        ! 10
+  438.                 plst_vol(i+1)           ! 11
+  439.         enddo
+  440.         close(11)
+  441.      endif
+  442.    
+  443.      ! Angular momentum source torque 
+  444.      err = nf90_inq_varid(ncid,trim('tq_trans'),varid)
+  445.      err = nf90_get_var(ncid,varid,plst_tq_trans(1:nx-1))
+  446.      plst_tq_trans(nx) = 0.0
+  447.    
+  448.      ! Particle source 
+  449.      err = nf90_inq_varid(ncid,trim('sn_trans'),varid)
+  450.      err = nf90_get_var(ncid,varid,plst_sn_trans(1:nx-1))
+  451.      plst_sn_trans(nx) = 0.0
+  452.    
+  453.      err = nf90_close(ncid)
+  454.    
+  455.      ! COORDINATES: Ensure zero of flux and correct sign
+  456.      dpsi(:) = plst_psipol(:)-plst_psipol(1)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 456 
+  A loop starting at line 456 was not vectorized because it contains a call to a subroutine or function on line 456.
+
+  457.    
+  458.      ! Compute rmin and rmaj based on outer and 
+  459.      ! inner major radii at midplane (of course, 
+  460.      ! this is not correct for elevated plasmas).
+  461.      !
+  462.      rmin(:)  = 0.5*(plst_r_midp_out-plst_r_midp_in)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 462 
+  A loop starting at line 462 was not vectorized because it contains a call to a subroutine or function on line 462.
+
+  463.      rmaj(:)  = 0.5*(plst_r_midp_out+plst_r_midp_in)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 463 
+  A loop starting at line 463 was not vectorized because it contains a call to a subroutine or function on line 463.
+
+  464.    
+  465.      zmag(:)  = plst_z_midp(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 465 
+  A loop starting at line 465 was not vectorized because it contains a call to a subroutine or function on line 465.
+
+  466.      kappa(:) = plst_elong(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 466 
+  A loop starting at line 466 was not vectorized because it contains a call to a subroutine or function on line 466.
+
+  467.      delta(:) = plst_triang(:)
+ftn-6262 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 467 
+  A loop starting at line 467 was not vectorized because it contains a call to a subroutine or function on line 467.
+
+  468.    
+  469.      !----------------------------------------------
+  470.      ! Error check for missing/zero boundary (n,T)
+  471.      !
+  472.      do i=1,plst_dp1_nspec_th     
+  473.         call boundary_fix(plst_rho,plst_ts(:,i),nx)
+  474.         call boundary_fix(plst_rho,plst_ns(:,i),nx)
+  475.      enddo
+  476.      !----------------------------------------------
+  477.    
+  478.      ! No squareness 
+  479.      zeta(:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_PLASMASTATE, File = prgen_read_plasmastate.f90, Line = 479 
+  A loop starting at line 479 was not vectorized because it contains a reference to a non-vector intrinsic on line 479.
+
+  480.    
+  481.    end subroutine prgen_read_plasmastate
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  482.    
+  483.    !----------------------------------------------------------
+  484.    ! boundary_fix
+  485.    !
+  486.    ! Simple routine to correct anomalous boundary point.
+  487.    ! Normally, the issue is that the boundary point is 
+  488.    ! zero or very close to zero.
+  489.    !----------------------------------------------------------
+  490.    
+  491.    subroutine boundary_fix(x,f,n)
+  492.    
+  493.      implicit none
+  494.    
+  495.      integer, intent(in) :: n
+  496.      real, intent(in), dimension(n) :: x
+  497.      real, intent(inout), dimension(n) :: f
+  498.      real, parameter :: edge_tol = 1e-6
+  499.    
+  500.      if (f(n)/f(1) > edge_tol) then
+  501.    
+  502.         ! Exit if boundary point needs no correction
+  503.    
+  504.         return
+  505.    
+  506.      else
+  507.    
+  508.         if (f(n-1) > f(n-2)) then
+  509.            ! Upward trend
+  510.            f(n) = f(n-1)+(f(n-1)-f(n-2))/(x(n-1)-x(n-2))*(x(n)-x(n-1))
+  511.         else
+  512.            ! Downward trend
+  513.            f(n) = f(n-1)+(f(n-1)-f(n-2))/(x(n-1)-x(n-2))*(x(n)-x(n-1))
+  514.            if (f(n)/f(1) < edge_tol) then
+  515.               f(n) = f(n-1)/2.0
+  516.            endif
+  517.         endif
+  518.    
+  519.      endif
+  520.    
+  521.    end subroutine boundary_fix
+  522.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ALLOCATE_INTERNALS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 84, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+ALLOCATE_PLASMASTATE_VARS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 85, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+BOUNDARY_FIX
+      Defined as:  Subroutine (line 491, file prgen_read_plasmastate.f90)
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NETCDF
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_READ_PLASMASTATE
+
+Name  Messages
+----  --------
+NF90_ABORT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_CLOSE in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 453, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_COPY_ATT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_CREATE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_CREATE_MP in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_CREATE_PAR in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_COMPOUND in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_DIM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_ENUM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_GRP in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_OPAQUE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_CHUNKING in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_DEFLATE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_ENDIAN in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILL_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FILTER in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_FLETCHER32 in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_MANYDIMS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_ONEDIM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VAR_SCALAR in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEF_VLEN in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DELETE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_DEL_ATT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_ENDDEF in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ANY in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_ONE_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_ATT_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 100, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 105, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 109, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 125, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 129, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 133, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 137, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 141, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 145, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 149, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 154, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 158, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 162, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 166, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 191, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 201, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 205, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 208, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 226, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 230, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 233, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 251, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 255, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 258, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 273, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 277, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 281, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 293, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 298, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 303, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 309, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 317, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 324, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 332, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 340, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 348, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 356, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 363, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 371, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 379, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 387, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 394, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 402, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 410, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 418, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 445, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 450, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 90, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 95, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_1D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 171, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 187, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_2D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_3D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_4D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_5D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_6D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_7D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_ANY in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 113, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 175, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 181, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 285, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 29, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 117, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 121, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_GET_VAR_TEXT in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 35, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_GET_VAR_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQUIRE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQUIRE_ATTRIBUTE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQUIRE_DIMENSION in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 41, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 47, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 53, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 63, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 69, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 75, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_INQUIRE_VARIABLE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_ATTNAME in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_BASE_PE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_CMP_FIELDDIM_SIZES in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELD in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELDINDEX in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELDNAME in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELDNDIMS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELDOFFSET in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_FIELDTYPE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_NAME in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_NFIELDS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_COMPOUND_SIZE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_DIMID in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 40, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 46, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 52, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 62, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 68, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 74, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_INQ_DIMIDS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_ENUM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_ENUM_IDENT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_ENUM_MEMBER in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRPNAME in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRPNAME_FULL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRPNAME_LEN in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRPS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRP_FULL_NCID in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRP_NCID in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_GRP_PARENT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_LIBVERS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_NCID in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_OPAQUE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_PATH in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_TYPE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_TYPEIDS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_USER_TYPE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VARID in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 28, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 34, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 89, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 94, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 99, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 104, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 108, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 112, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 116, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 120, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 124, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 128, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 132, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 136, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 140, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 144, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 148, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 153, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 157, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 161, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 165, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 170, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 174, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 180, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 186, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 190, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 198, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 204, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 207, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 224, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 229, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 232, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 249, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 254, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 257, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 272, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 276, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 280, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 284, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 292, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 297, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 302, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 307, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 315, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 322, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 330, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 338, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 346, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 354, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 361, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 369, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 377, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 385, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 392, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 400, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 408, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 416, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 444, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 449, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_INQ_VARIDS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_CHUNKING in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_DEFLATE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_ENDIAN in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILL_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FILTER in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VAR_FLETCHER32 in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INQ_VLEN in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INSERT_ARRAY_COMPOUND in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INSERT_COMPOUND in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_INSERT_ENUM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_OPEN in NETCDF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 24, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+NF90_OPEN_MP in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_OPEN_PAR in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ANY in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_ONE_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_ATT_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_1D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_2D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_3D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_4D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_5D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_6D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_7D_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_ANY in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_EIGHTBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_EIGHTBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_FOURBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_FOURBYTEREAL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_ONEBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_TEXT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_PUT_VAR_TWOBYTEINT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_REDEF in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_RENAME_ATT in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_RENAME_DIM in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_RENAME_GRP in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_RENAME_VAR in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_SET_BASE_PE in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_SET_FILL in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_STRERROR in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_SYNC in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+NF90_VAR_PAR_ACCESS in NETCDF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+PRGEN_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_READ_PLASMASTATE
+
+Name  Messages
+----  --------
+PRGEN_READ_PLASMASTATE
+      Defined as:  Subroutine (line 8, file prgen_read_plasmastate.f90)
+
+      Interface:   None
+
+      Calls:       NF90_OPEN in NETCDF (Line 24, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 28, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 34, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 40, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 46, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 52, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 62, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 68, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 74, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 89, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 94, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 99, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 104, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 108, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 112, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 116, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 120, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 124, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 128, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 132, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 136, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 140, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 144, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 148, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 153, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 157, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 161, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 165, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 170, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 174, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 180, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 186, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 190, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 198, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 204, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 207, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 224, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 229, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 232, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 249, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 254, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 257, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 272, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 276, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 280, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 284, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 292, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 297, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 302, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 307, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 315, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 322, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 330, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 338, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 346, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 354, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 361, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 369, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 377, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 385, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 392, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 400, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 408, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 416, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 444, file prgen_read_plasmastate.f90)
+                   TRIM(Intrinsic) (Line 449, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 28, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 34, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 89, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 94, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 99, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 104, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 108, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 112, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 116, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 120, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 124, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 128, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 132, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 136, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 140, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 144, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 148, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 153, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 157, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 161, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 165, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 170, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 174, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 180, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 186, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 190, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 198, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 204, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 207, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 224, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 229, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 232, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 249, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 254, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 257, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 272, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 276, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 280, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 284, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 292, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 297, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 302, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 307, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 315, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 322, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 330, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 338, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 346, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 354, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 361, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 369, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 377, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 385, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 392, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 400, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 408, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 416, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 444, file prgen_read_plasmastate.f90)
+                   NF90_INQ_VARID in NETCDF (Line 449, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_FOURBYTEINT in NETCDF (Line 29, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_TEXT in NETCDF (Line 35, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_TEXT in NETCDF (Line 90, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_TEXT in NETCDF (Line 95, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 100, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 105, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 109, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_EIGHTBYTEREAL in NETCDF (Line 113, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_FOURBYTEINT in NETCDF (Line 117, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_FOURBYTEINT in NETCDF (Line 121, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 125, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 129, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 133, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 137, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 141, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 145, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 149, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 154, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 158, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 162, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 166, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_2D_EIGHTBYTEREAL in NETCDF (Line 171, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_EIGHTBYTEREAL in NETCDF (Line 175, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_EIGHTBYTEREAL in NETCDF (Line 181, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_2D_EIGHTBYTEREAL in NETCDF (Line 187, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 191, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 201, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 205, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 208, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 226, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 230, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 233, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 251, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 255, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 258, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 273, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 277, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 281, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_EIGHTBYTEREAL in NETCDF (Line 285, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 293, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 298, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 303, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 309, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 317, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 324, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 332, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 340, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 348, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 356, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 363, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 371, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 379, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 387, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 394, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 402, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 410, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 418, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 445, file prgen_read_plasmastate.f90)
+                   NF90_GET_VAR_1D_EIGHTBYTEREAL in NETCDF (Line 450, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 40, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 46, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 52, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 62, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 68, file prgen_read_plasmastate.f90)
+                   NF90_INQ_DIMID in NETCDF (Line 74, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 41, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 47, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 53, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 63, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 69, file prgen_read_plasmastate.f90)
+                   NF90_INQUIRE_DIMENSION in NETCDF (Line 75, file prgen_read_plasmastate.f90)
+                   ALLOCATE_INTERNALS (Line 84, file prgen_read_plasmastate.f90)
+                   ALLOCATE_PLASMASTATE_VARS (Line 85, file prgen_read_plasmastate.f90)
+                   NF90_CLOSE in NETCDF (Line 453, file prgen_read_plasmastate.f90)
+
+        Uses:      PRGEN_GLOBALS
+                   NETCDF
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_PLASMASTATE (Line 28, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 34, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 40, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 46, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 52, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 62, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 68, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 74, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 89, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 94, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 99, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 104, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 108, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 112, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 116, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 120, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 124, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 128, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 132, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 136, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 140, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 144, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 148, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 153, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 157, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 161, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 165, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 170, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 174, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 180, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 186, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 190, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 198, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 204, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 207, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 224, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 229, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 232, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 249, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 254, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 257, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 272, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 276, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 280, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 284, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 292, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 297, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 302, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 307, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 315, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 322, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 330, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 338, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 346, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 354, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 361, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 369, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 377, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 385, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 392, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 400, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 408, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 416, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 444, file prgen_read_plasmastate.f90)
+                   PRGEN_READ_PLASMASTATE (Line 449, file prgen_read_plasmastate.f90)
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

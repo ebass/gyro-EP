@@ -1,0 +1,745 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_init.f90
+Compiled : 01/19/21  15:35:26
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_init.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_INIT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_init.f90
+Date     : 01/19/2021  15:35:26
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !--------------------------------------------------------------
+    2.    ! gyro_init.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Initialize external GYRO interface.
+    6.    !---------------------------------------------------------------
+    7.    
+    8.    subroutine gyro_init(path_in, mpi_comm_in)
+    9.    
+   10.      use mpi
+   11.      use gyro_globals
+   12.      use gyro_interface
+   13.      use ompdata
+   14.    
+   15.      implicit none
+   16.    
+   17.      ! Input parameters (IN) - REQUIRED
+   18.      character(len=*), intent(in) :: path_in
+   19.      integer, intent(in) :: mpi_comm_in
+   20.    
+   21.      ! Local variable
+   22.      logical :: inputdat_flag
+   23.    
+   24.    !  integer, external :: omp_get_max_threads  ! OMP 1.19.2021
+   25.    
+   26.      ! Set appropriate global variables
+   27.      path = path_in
+   28.      GYRO_COMM_WORLD = mpi_comm_in
+   29.    
+   30.      !----------------------------------------------------------------
+   31.      ! Query OpenMP for dimensions
+   32.      !
+   33.    !  n_omp = omp_get_max_threads()  ! OMP 1.19.2021
+   34.      n_omp = 1   ! OMP 1.19.2021
+   35.      !-----------------------------------------------------------------
+   36.    
+   37.      !----------------------------------------------------------------
+   38.      ! Query MPI for dimensions
+   39.      !
+   40.      call MPI_COMM_RANK(GYRO_COMM_WORLD, i_proc, i_err)
+   41.      call MPI_COMM_SIZE(GYRO_COMM_WORLD, n_proc, i_err)
+   42.      !-----------------------------------------------------------------
+   43.    
+   44.      ! Check if input.gyro.gen file exists and set:
+   45.      !
+   46.      !   inputdat_flag=TRUE  if input.gyro.gen does exist, 
+   47.      !                 FALSE if input.gyro.gen does NOT exist
+   48.      !
+   49.      if (i_proc == 0) then
+   50.         inquire(file=trim(path)//'input.gyro.gen',exist=inputdat_flag)
+   51.      endif
+   52.    
+   53.      call MPI_BCAST(inputdat_flag, 1, MPI_LOGICAL, 0, GYRO_COMM_WORLD, i_err)
+   54.    
+   55.      if (i_proc == 0) then
+   56.         open(unit=1,file=trim(path)//trim(baserunfile),position='append')
+   57.         if (inputdat_flag .eqv. .true.) then
+   58.            write(1,'(a,a,a)') 'INFO: (GYRO) gyro_init reading ',&
+   59.                 trim(path),'input.gyro.gen'
+   60.         else
+   61.            write(1,'(a,a,a)') 'INFO: (GYRO) gyro_init NOT reading ',&
+   62.                 trim(path),'input.gyro.gen'
+   63.         endif
+   64.         close(1)
+   65.      endif
+   66.    
+   67.      if (inputdat_flag .eqv. .true.) then
+   68.    
+   69.         ! Only call read_input subroutine if input.gyro.gen file exists
+   70.    
+   71.         call gyro_read_input
+   72.    
+   73.         ! initialize OpenMP parameters including block indices
+   74.         call gyro_init_ompdata()
+   75.    
+   76.         ! Map GLOBAL variables -> INTERFACE parameters
+   77.         call map_global2interface
+   78.    
+   79.      else
+   80.    
+   81.         ! If input.gyro.gen file does NOT exist then initialize arrays
+   82.         ! NOTE: Vector initialization is normally done by read_input subroutine
+   83.         mu_vec(0:10)           = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 83 
+  A loop starting at line 83 was vectorized.
+
+   84.         dlnndr_vec(0:10)       = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 84 
+  A loop starting at line 84 was vectorized.
+
+   85.         dlntdr_vec(0:10)       = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 85 
+  A loop starting at line 85 was vectorized.
+
+   86.         n_vec(0:10)            = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 86 
+  A loop starting at line 86 was vectorized.
+
+   87.         t_vec(0:10)            = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 87 
+  A loop starting at line 87 was vectorized.
+
+   88.         eps_dlnndr_vec(0:10)   = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 88 
+  A loop starting at line 88 was vectorized.
+
+   89.         eps_dlntdr_vec(0:10)   = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 89 
+  A loop starting at line 89 was vectorized.
+
+   90.         z_vec(0:10)            = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 90 
+  A loop starting at line 90 was vectorized.
+
+   91.         orbit_upwind_vec(0:10) = 0.0
+ftn-6204 ftn: VECTOR GYRO_INIT, File = gyro_init.f90, Line = 91 
+  A loop starting at line 91 was vectorized.
+
+   92.    
+   93.         ! Default parameter values explicitly specified by read_input subroutine
+   94.         ! and NOT definable by user
+   95.         mu_vec(1)      =  1.0
+   96.         n_vec(0)       =  1.0
+   97.         t_vec(0)       =  1.0
+   98.         z_vec(0)       = -1.0
+   99.    
+  100.      endif
+  101.    
+  102.      if (debug_flag == 1 .and. i_proc == 0) then
+  103.         print *, '[gyro_init done]'
+  104.      endif
+  105.    
+  106.    end subroutine gyro_init
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_INIT                        Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_INIT                        Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_INIT                        Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_INIT                        Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_INIT                        Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT
+
+Name  Messages
+----  --------
+GYRO_INIT
+      Defined as:  Subroutine (line 8, file gyro_init.f90)
+
+      Interface:   None
+
+      Calls:       MPI_COMM_RANK (Line 40, file gyro_init.f90)
+                   MPI_COMM_SIZE (Line 41, file gyro_init.f90)
+                   TRIM(Intrinsic) (Line 50, file gyro_init.f90)
+                   TRIM(Intrinsic) (Line 56, file gyro_init.f90)
+                   TRIM(Intrinsic) (Line 56, file gyro_init.f90)
+                   TRIM(Intrinsic) (Line 59, file gyro_init.f90)
+                   TRIM(Intrinsic) (Line 62, file gyro_init.f90)
+                   MPI_BCAST (Line 53, file gyro_init.f90)
+                   GYRO_READ_INPUT (Line 71, file gyro_init.f90)
+                   GYRO_INIT_OMPDATA (Line 74, file gyro_init.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 77, file gyro_init.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+                   GYRO_INTERFACE
+                   OMPDATA
+
+Name  Messages
+----  --------
+GYRO_INIT_OMPDATA
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 74, file gyro_init.f90)
+
+Name  Messages
+----  --------
+GYRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT
+
+Name  Messages
+----  --------
+GYRO_READ_INPUT
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 71, file gyro_init.f90)
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INTERFACELOCALDUMP in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MAP_GLOBAL2INTERFACE in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 77, file gyro_init.f90)
+
+Name  Messages
+----  --------
+MAP_INTERFACE2GLOBAL in GYRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT  (indirectly)
+
+Name  Messages
+----  --------
+MPI_BCAST
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 53, file gyro_init.f90)
+
+Name  Messages
+----  --------
+MPI_COMM_RANK
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 40, file gyro_init.f90)
+
+Name  Messages
+----  --------
+MPI_COMM_SIZE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 41, file gyro_init.f90)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OMPDATA
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INIT
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_INIT (Line 50, file gyro_init.f90)
+                   GYRO_INIT (Line 56, file gyro_init.f90)
+                   GYRO_INIT (Line 56, file gyro_init.f90)
+                   GYRO_INIT (Line 59, file gyro_init.f90)
+                   GYRO_INIT (Line 62, file gyro_init.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,152 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_set_phase_space.f90
+Compiled : 01/19/21  15:35:52
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_set_phase_space.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_SET_PHASE_SPACE
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_set_phase_space.f90
+Date     : 01/19/2021  15:35:52
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------
+    2.    ! gyro_set_phase_space.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Combine the results of make_energy_grid and 
+    6.    !  make_lambda_grid -- to make phase-space weight
+    7.    !  w_p(ie,k).
+    8.    !
+    9.    !  Also, print various weights if verbose = 1.
+   10.    !-------------------------------------------------------
+   11.    
+   12.    subroutine gyro_set_phase_space(datafile,io)
+   13.    
+   14.      use gyro_globals
+   15.      use math_constants
+   16.    
+   17.      implicit none
+   18.    
+   19.      integer, intent(in) :: io
+   20.      character (len=*), intent(in) :: datafile
+   21.    
+   22.      do ie=1,n_energy
+   23.         do i=1,n_x
+   24.            do k=1,n_lambda
+   25.               ck = class(k)
+   26.               w_p(ie,i,k) = w_energy(ie)*w_lambda(i,k)*d_tau(ck)
+   27.            enddo
+   28.         enddo
+   29.      enddo
+   30.    
+   31.      if (i_proc == 0 .and. output_flag == 1) then
+   32.    
+   33.         open(unit=io,file=datafile,status='replace')
+   34.    
+   35.         ! Energy grid output
+   36.    
+   37.         write(io,'(a)') ' i    energy(i)    w_energy(i) '
+   38.         write(io,'(a)') '--- ------------  ------------ '
+   39.         do ie=1,n_energy
+   40.            write(io,'(i2,3(2x,f12.10))') ie,energy(ie),w_energy(ie)
+   41.         enddo
+   42.    
+   43.         ! Lambda-grid output
+   44.    
+   45.         do i=1,n_x,n_x-1
+   46.    
+   47.            write(io,*)
+   48.            write(io,'(a)') ' k   tau(k)/2pi     s_lambda(k)   lambda(k)   w_lambda(k)'
+   49.            write(io,'(a)') '--- ------------  ------------ ------------  -----------'
+   50.            do k=1,n_lambda
+   51.               write(io,'(i2,4(2x,f12.10))') & 
+   52.                    k,1.0/(pi_2*omega(i,k)),s_lambda(k),lambda(i,k),w_lambda(i,k)
+   53.               if (k == n_pass) write(io,'(a,t33,f12.10)') 'lambda-TP:',lambda_tp(i)
+   54.               if (k == n_lambda) write(io,'(a,t33,f12.10)') 'lambda-MAX:',lambda_max(i) 
+   55.            enddo
+   56.    
+   57.         enddo
+   58.    
+   59.         close(io)
+   60.    
+   61.      endif
+   62.    
+   63.    end subroutine gyro_set_phase_space
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_SET_PHASE_SPACE
+
+Name  Messages
+----  --------
+GYRO_SET_PHASE_SPACE
+      Defined as:  Subroutine (line 12, file gyro_set_phase_space.f90)
+
+      Interface:   None
+
+        Uses:      GYRO_GLOBALS
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_SET_PHASE_SPACE
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

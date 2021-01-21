@@ -1,0 +1,811 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_nonlinear_flux_velocity.f90
+Compiled : 01/19/21  15:35:46
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_nonlinear_flux_velocity.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_NONLINEAR_FLUX_VELOCITY
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_nonlinear_flux_velocity.f90
+Date     : 01/19/2021  15:35:46
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !----------------------------------------------------------
+    2.    ! gyro_nonlinear_flux_velocity.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Calculate the velocity dependence of the flux integrals.
+    6.    !----------------------------------------------------------
+    7.    
+    8.    subroutine gyro_nonlinear_flux_velocity
+    9.    
+   10.      use mpi
+   11.      use gyro_globals
+   12.      use gyro_pointers
+   13.      use math_constants
+   14.    
+   15.      !---------------------------------------------------
+   16.      implicit none
+   17.      !
+   18.      real, dimension(n_energy,n_lambda,n_kinetic,n_field,n_moment) :: moment
+   19.      !
+   20.      complex, dimension(i1_buffer:i2_buffer,n_kinetic) :: hh
+   21.      complex, dimension(n_x,n_energy,n_lambda,n_kinetic,n_field) :: ave_h
+   22.      !
+   23.      complex, dimension(n_x,n_energy,n_lambda,n_field) :: f_w
+   24.      complex, dimension(n_x) :: ikrho
+   25.      !--------------------------------------------------  
+   26.    
+   27.    
+   28.      if (n_field == 3) then
+   29.         call catch_error(&
+   30.              'ERROR: Velocity-space diagnostics not available for N_FIELD=3.')
+   31.      endif
+   32.    
+   33.      !--------------------------------------------------------
+   34.      moment(:,:,:,:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 34 
+  A loop starting at line 34 was not vectorized because it contains a reference to a non-vector intrinsic on line 34.
+
+   35.      !--------------------------------------------------------
+   36.    
+   37.      p_nek_loc = 0
+   38.      do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+   39.    
+   40.         p_nek_loc = p_nek_loc+1
+   41.    
+   42.         ie = nek_e(p_nek) 
+   43.         k  = nek_k(p_nek)
+   44.    
+   45.         ck = class(k)
+   46.    
+   47.         do m=1,n_stack
+   48.    
+   49.            !---------------------------------------------------------
+   50.            !
+   51.            hh(:,:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 51 
+  A loop starting at line 51 was not vectorized because it contains a reference to a non-vector intrinsic on line 51.
+
+   52.            do i=1,n_x
+   53.               hh(i,:) = h(m,i,p_nek_loc,:)
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 53 
+  A loop starting at line 53 was not vectorized because it contains a call to a subroutine or function on line 53.
+
+   54.            enddo
+   55.    
+   56.            m0 = m_phys(ck,m)
+   57.    
+   58.            !-----------------------------
+   59.            ! Index reminder:
+   60.            !
+   61.            ! ave_h(n_x,n_kinetic,n_field)
+   62.    
+   63.            ave_h(:,:,:,:,1) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 63 
+  A loop starting at line 63 was not vectorized because it contains a reference to a non-vector intrinsic on line 63.
+
+   64.    
+   65.            do i=1,n_x
+   66.               do i_diff=-m_gyro,m_gyro-i_gyro
+   67.    
+   68.                  ip = i+i_diff
+   69.    
+   70.                  ave_h(i,ie,k,1:n_gk,1) = ave_h(i,ie,k,1:n_gk,1)+ &
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 70 
+  A loop starting at line 70 was not vectorized because it contains a reference to a non-vector intrinsic on line 70.
+
+   71.                       w_gyro0(m0,i_diff,i,p_nek_loc,1:n_gk)*&
+   72.                       hh(i_loop(ip),1:n_gk)
+   73.    
+   74.               enddo ! i_diff
+   75.            enddo ! i
+   76.    
+   77.            if (electron_method == 2) then
+   78.               ave_h(:,ie,k,n_spec,1) = hh(1:n_x,n_spec)
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 78 
+  A loop starting at line 78 was not vectorized because it contains a call to a subroutine or function on line 78.
+
+   79.            endif
+   80.    
+   81.            if (n_field == 2) then
+   82.               do is=1,n_kinetic
+   83.                  ave_h(:,ie,k,is,2) = &
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 83 
+  A loop starting at line 83 was not vectorized because it contains a call to a subroutine or function on line 83.
+
+   84.                       ave_h(:,ie,k,is,1)*(-v_para(m,:,p_nek_loc,is))
+   85.               enddo
+   86.            endif
+   87.    
+   88.            f_w(:,:,:,:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 88 
+  A loop starting at line 88 was not vectorized because it contains a reference to a non-vector intrinsic on line 88.
+
+   89.            if (n_field == 1) then
+   90.               do j=1,n_blend
+   91.                  f_w(:,ie,k,1) = f_w(:,ie,k,1)+&
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 91 
+  A loop starting at line 91 was not vectorized because it contains a call to a subroutine or function on line 91.
+
+   92.                       conjg(field_blend(j,:,1))*cs_blend(j,m0,:,p_nek_loc)
+   93.               enddo ! j
+   94.            else
+   95.               do j=1,n_blend
+   96.                  f_w(:,ie,k,1) = f_w(:,ie,k,1) &
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 96 
+  A loop starting at line 96 was not vectorized because it contains a call to a subroutine or function on line 96.
+
+   97.                       +conjg(field_blend(j,:,1))*cs_blend(j,m0,:,p_nek_loc)
+   98.                  f_w(:,ie,k,2) = f_w(:,ie,k,2) &
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 98 
+  A loop starting at line 98 was not vectorized because it contains a call to a subroutine or function on line 98.
+
+   99.                       +conjg(field_blend(j,:,2))*cs_blend(j,m0,:,p_nek_loc)
+  100.               enddo ! j
+  101.            endif
+  102.    
+  103.            !-------------------------------------------------
+  104.            ! Keep running total of moment(:,:) over p_nek_loc 
+  105.            ! and m:
+  106.            !-------------------------------------------------
+  107.    
+  108.            ikrho(:) = i_c*krho_i(in_1,:)
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 108 
+  A loop starting at line 108 was not vectorized because it contains a call to a subroutine or function on line 108.
+
+  109.    
+  110.            !-----------------------------------------------------
+  111.            ! Main diffusivities:
+  112.            !
+  113.            do ix=1,n_field
+  114.               do is=1,n_kinetic
+  115.    
+  116.                  ! Moment 1: density
+  117.                  moment(ie,k,is,ix,1) = moment(ie,k,is,ix,1)+&
+ftn-6297 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 117 
+  A loop starting at line 117 was not vectorized because a recurrence was found at line 117.
+
+  118.                       sum(real(ikrho(:)*f_w(:,ie,k,ix)*&
+  119.                       ave_h(:,ie,k,is,ix)))
+  120.    
+  121.                  ! Moment 2: energy
+  122.                  moment(ie,k,is,ix,2) = moment(ie,k,is,ix,2)+&
+ftn-6262 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 122 
+  A loop starting at line 122 was not vectorized because it contains a call to a subroutine or function on line 122.
+
+  123.                       sum(real(ikrho(:)*f_w(:,ie,k,ix)*&
+  124.                       ave_h(:,ie,k,is,ix))*energy(ie)*tem_s(is,:))
+  125.    
+  126.               enddo ! is
+  127.            enddo ! ix
+  128.            !-----------------------------------------------------
+  129.    
+  130.         enddo ! m
+  131.    
+  132.      enddo ! p_nek
+  133.    
+  134.      !-----------------------------------------------------------
+  135.      ! Correct for Jacobian
+  136.      !
+  137.      do ie=1,n_energy
+  138.         do k=1,n_lambda
+  139.            do is=1,n_kinetic
+  140.               moment(ie,k,is,:,:) = moment(ie,k,is,:,:)*&
+ftn-6263 ftn: VECTOR GYRO_NONLINEAR_FLUX_VELOCITY, File = gyro_nonlinear_flux_velocity.f90, Line = 140 
+  A loop starting at line 140 was not vectorized because it contains a reference to a non-vector intrinsic on line 140.
+
+  141.                    sqrt(energy(ie))*exp(-energy(ie))/w_energy(ie)*&
+  142.                    (1.0/omega(ir_norm,k))/w_lambda(ir_norm,k)
+  143.            enddo
+  144.         enddo
+  145.      enddo
+  146.      !-----------------------------------------------------------
+  147.    
+  148.      !----------------------------------------------------------------------
+  149.      ! ALLREDUCE to obtain full velocity-space sums.  The nonlinear
+  150.      ! fluxes will be correct on all processors.
+  151.      !
+  152.      call MPI_ALLREDUCE(moment, &
+  153.           nonlinear_flux_velocity, &
+  154.           size(nonlinear_flux_velocity), &
+  155.           MPI_DOUBLE_PRECISION, &
+  156.           MPI_SUM, &
+  157.           NEW_COMM_1, &
+  158.           i_err)
+  159.    
+  160.      if (i_proc == 0 .and. debug_flag == 1) then
+  161.         print *,'[get_nonlinear_flux_energy called]'
+  162.      endif
+  163.    
+  164.    end subroutine gyro_nonlinear_flux_velocity
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GYRO_NONLINEAR_FLUX_VELOCITY     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GYRO_NONLINEAR_FLUX_VELOCITY     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GYRO_NONLINEAR_FLUX_VELOCITY     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GYRO_NONLINEAR_FLUX_VELOCITY     Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GYRO_NONLINEAR_FLUX_VELOCITY     Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 29, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CONJG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 92, file gyro_nonlinear_flux_velocity.f90)
+                   GYRO_NONLINEAR_FLUX_VELOCITY (Line 97, file gyro_nonlinear_flux_velocity.f90)
+                   GYRO_NONLINEAR_FLUX_VELOCITY (Line 99, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 141, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY
+
+Name  Messages
+----  --------
+GYRO_NONLINEAR_FLUX_VELOCITY
+      Defined as:  Subroutine (line 8, file gyro_nonlinear_flux_velocity.f90)
+
+      Interface:   None
+
+      Calls:       CATCH_ERROR (Line 29, file gyro_nonlinear_flux_velocity.f90)
+                   CONJG(Intrinsic) (Line 92, file gyro_nonlinear_flux_velocity.f90)
+                   CONJG(Intrinsic) (Line 97, file gyro_nonlinear_flux_velocity.f90)
+                   CONJG(Intrinsic) (Line 99, file gyro_nonlinear_flux_velocity.f90)
+                   REAL(Intrinsic) (Line 118, file gyro_nonlinear_flux_velocity.f90)
+                   REAL(Intrinsic) (Line 123, file gyro_nonlinear_flux_velocity.f90)
+                   SUM(Intrinsic) (Line 118, file gyro_nonlinear_flux_velocity.f90)
+                   SUM(Intrinsic) (Line 123, file gyro_nonlinear_flux_velocity.f90)
+                   SQRT(Intrinsic) (Line 141, file gyro_nonlinear_flux_velocity.f90)
+                   EXP(Intrinsic) (Line 141, file gyro_nonlinear_flux_velocity.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+                   GYRO_POINTERS
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY
+
+Name  Messages
+----  --------
+MPI_ALLREDUCE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY  (indirectly)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NONLINEAR_FLUX_VELOCITY  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 118, file gyro_nonlinear_flux_velocity.f90)
+                   GYRO_NONLINEAR_FLUX_VELOCITY (Line 123, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SIZE(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 141, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NONLINEAR_FLUX_VELOCITY (Line 118, file gyro_nonlinear_flux_velocity.f90)
+                   GYRO_NONLINEAR_FLUX_VELOCITY (Line 123, file gyro_nonlinear_flux_velocity.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

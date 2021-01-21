@@ -1,0 +1,356 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_write_initdata.f90
+Compiled : 01/19/21  15:35:55
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_write_initdata.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_WRITE_INITDATA
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_write_initdata.f90
+Date     : 01/19/2021  15:35:56
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! gyro_write_initdata.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Consolidated code to write all initial data.  
+    6.    !  file1: profile data
+    7.    !  file2: units
+    8.    !  file3: geometry data
+    9.    !
+   10.    !-----------------------------------------------------------
+   11.    
+   12.    subroutine gyro_write_initdata(datafile1,datafile2,datafile3,io)
+   13.    
+   14.      use gyro_globals
+   15.      use gyro_profile_exp
+   16.      use math_constants
+   17.      use GEO_interface
+   18.    
+   19.      !---------------------------------------------------
+   20.      implicit none
+   21.      !
+   22.      integer, intent(in) :: io
+   23.      character (len=*), intent(in) :: datafile1
+   24.      character (len=*), intent(in) :: datafile2
+   25.      character (len=*), intent(in) :: datafile3
+   26.      !
+   27.      real :: kt
+   28.      real :: theta
+   29.      real :: dr
+   30.      integer :: n_wedge
+   31.      !---------------------------------------------------
+   32.    
+   33.      if (output_flag == 0 .or. i_proc /= 0) return
+   34.    
+   35.      open(unit=io,file=datafile1,status='replace')
+   36.    
+   37.      ! Essential scalars
+   38.      write(io,20) n_x
+   39.      write(io,20) n_theta_section
+   40.      write(io,20) n_pass
+   41.      write(io,20) n_trap
+   42.      write(io,20) n_energy
+   43.      write(io,20) n_theta_plot
+   44.      write(io,20) n0
+   45.      write(io,20) n_n
+   46.      write(io,20) d_n
+   47.      write(io,20) n_explicit_damp
+   48.      write(io,20) nonlinear_flag
+   49.      write(io,20) electron_method
+   50.      write(io,20) n_field
+   51.      write(io,20) n_ion
+   52.      write(io,20) n_kinetic
+   53.      write(io,20) n_spec
+   54.      write(io,20) n_grid_exp
+   55.      write(io,20) boundary_method
+   56.    
+   57.      ! Basic profile data (** CORRECT IN VUGYRO **)
+   58.      write(io,10) r(:)
+   59.      write(io,10) q(:)
+   60.      write(io,10) r_s(:)
+   61.      write(io,10) q_s(:)
+   62.      write(io,10) dlntdr_s(:,:)
+   63.      write(io,10) dlnndr_s(:,:)
+   64.      write(io,10) tem_s(:,:)
+   65.      write(io,10) den_s(:,:)
+   66.      write(io,10) rmaj_s(:)/r_s(:)
+   67.      write(io,10) delta_s(:)
+   68.      write(io,10) zeta_s(:)
+   69.      write(io,10) kappa_s(:)
+   70.      write(io,10) drmaj_s(:)
+   71.      write(io,10) shat_s(:)
+   72.      write(io,10) s_delta_s(:)
+   73.      write(io,10) s_zeta_s(:)
+   74.      write(io,10) s_kappa_s(:)
+   75.      write(io,10) zmag_s(:)
+   76.      write(io,10) dzmag_s(:)
+   77.      write(io,10) beta_unit_s(:)
+   78.      write(io,10) gamma_e_s(:)
+   79.      write(io,10) gamma_p_s(:) 
+   80.      write(io,10) mach_s(:) 
+   81.      write(io,10) b_unit_s(:)
+   82.      write(io,10) dr_eodr(:)
+   83.      write(io,10) z_eff_s(:)
+   84.      write(io,10) nu_s(n_spec,:)
+   85.      write(io,10) w0_s(:)
+   86.    
+   87.      write(io,10) box_multiplier
+   88.    
+   89.      write(io,10) lambda(ir_norm,:)
+   90.      write(io,10) energy(:)
+   91.      write(io,10) lambda_tp(ir_norm)
+   92.      write(io,10) krho_collect(:)
+   93.      write(io,10) rhos_norm
+   94.      write(io,10) z(:)
+   95.    
+   96.      ! Recent additions
+   97.      write(io,20) n_theta_plot*n_theta_mult
+   98.    
+   99.      ! Number of flux moments
+  100.      write(io,20) n_moment
+  101.    
+  102.      close(io)
+  103.    
+  104.      !================================================================
+  105.    
+  106.      open(unit=io,file=datafile2,status='replace')
+  107.    
+  108.      ! kT in MJ (note the conversion 1.6022e-22 MJ/keV)
+  109.      kt = 1.6022e-22*tem_norm
+  110.    
+  111.      write(io,26) 2.0*kg_proton,'m_ref (kg)'
+  112.      write(io,26) b_unit_norm,'b_unit (Tesla)'
+  113.      write(io,26) a_meters,'a (m)'
+  114.      write(io,26) csda_norm,'csD/a (1/s)'
+  115.      write(io,26) csda_norm*a_meters,'csD (m/s)'
+  116.      write(io,26) tem_norm,'Te (keV)'
+  117.      write(io,26) den_norm,'ne (10^19/m^3)'
+  118.      write(io,26) rhos_norm*a_meters,'rho_sD (m)'
+  119.      write(io,26) csda_norm*(rhos_norm*a_meters)**2,&
+  120.           'chi_gBD (m^2/s)'
+  121.    
+  122.      write(io,26) 1e19*den_norm*(csda_norm*a_meters)*rhos_norm**2/0.624e22,&
+  123.           'Gamma_gBD (0.624e22/m^2/s) = (MW/keV/m^2)'
+  124.    
+  125.      write(io,26) 1e19*den_norm*(csda_norm*a_meters)*kt*rhos_norm**2,&
+  126.           'Q_gBD (MJ/m^2/s) = (MW/m^2)'
+  127.    
+  128.      write(io,26) 1e19*den_norm*a_meters*kt*rhos_norm**2*1e6,&
+  129.           'Pi_gBD (J/m^2) = (Nm/m^2)'
+  130.    
+  131.      write(io,26) 1e19*den_norm*csda_norm*kt*rhos_norm**2,&
+  132.           'S_gBD (MJ/m^3/s) = (MW/m^3)'
+  133.    
+  134.      close(io)
+  135.    
+  136.      !================================================================
+  137.    
+  138.      open(unit=io,file=datafile3,status='replace')
+  139.    
+  140.      n_wedge = n_theta_plot*n_theta_mult
+  141.    
+  142.      do i=1,n_x
+  143.    
+  144.         if (flat_profile_flag == 0) then
+  145.    
+  146.            ! All profiles are global and radial variation 
+  147.            ! is consistent
+  148.    
+  149.            GEO_rmin_in      = r_s(i)
+  150.            GEO_rmaj_in      = rmaj_s(i)
+  151.            GEO_drmaj_in     = drmaj_s(i)
+  152.            GEO_zmag_in      = zmag_s(i)
+  153.            GEO_dzmag_in     = dzmag_s(i)
+  154.            GEO_q_in         = q_s(i)
+  155.            GEO_s_in         = shat_s(i)
+  156.            GEO_kappa_in     = kappa_s(i)
+  157.            GEO_s_kappa_in   = s_kappa_s(i)
+  158.            GEO_delta_in     = delta_s(i)
+  159.            GEO_s_delta_in   = s_delta_s(i)
+  160.            GEO_zeta_in      = zeta_s(i)
+  161.            GEO_s_zeta_in    = s_zeta_s(i)
+  162.            GEO_beta_star_in = beta_star_s(i)
+  163.    
+  164.         else
+  165.    
+  166.            ! Profiles are flat and so some parameters need
+  167.            ! to be linearly extrapolated.
+  168.    
+  169.            dr = r(i)-r(ir_norm)
+  170.    
+  171.            GEO_rmin_in  = r(i)
+  172.            GEO_rmaj_in  = rmaj_s(ir_norm)+drmaj_s(ir_norm)*dr
+  173.            GEO_drmaj_in = drmaj_s(ir_norm)
+  174.            GEO_zmag_in  = zmag_s(ir_norm)+dzmag_s(ir_norm)*dr
+  175.            GEO_dzmag_in = dzmag_s(ir_norm)
+  176.            GEO_q_in     = q(i)
+  177.            GEO_s_in     = shat_s(ir_norm)
+  178.            GEO_kappa_in = kappa_s(ir_norm)+&
+  179.                 kappa_s(ir_norm)*s_kappa_s(ir_norm)/r(ir_norm)*dr
+  180.            GEO_s_kappa_in = s_kappa_s(ir_norm)
+  181.            GEO_delta_in   = delta_s(ir_norm)+s_delta_s(ir_norm)/r(ir_norm)*dr
+  182.            GEO_s_delta_in = s_delta_s(ir_norm)
+  183.            GEO_zeta_in    = zeta_s(ir_norm)+s_zeta_s(ir_norm)/r(ir_norm)*dr
+  184.            GEO_s_zeta_in  = s_zeta_s(ir_norm)
+  185.            GEO_beta_star_in = beta_star_s(ir_norm)
+  186.    
+  187.         endif
+  188.    
+  189.         GEO_fourier_in(:,:) = a_fourier_geo_s(:,0:n_fourier_geo,i)
+ftn-6262 ftn: VECTOR GYRO_WRITE_INITDATA, File = gyro_write_initdata.f90, Line = 189 
+  A loop starting at line 189 was not vectorized because it contains a call to a subroutine or function on line 189.
+
+  190.         call GEO_do()
+  191.    
+  192.         do j=1,n_wedge
+  193.    
+  194.            theta = -pi+(j-1)*pi_2/n_wedge
+  195.    
+  196.            ! Test for special case
+  197.            if (n_wedge == 1) theta = 0.0
+  198.    
+  199.            call GEO_interp(theta)
+  200.    
+  201.            write(io,10) GEO_nu
+  202.            write(io,10) GEO_gsin
+  203.            write(io,10) GEO_gcos1
+  204.            write(io,10) GEO_gcos2
+  205.            write(io,10) GEO_usin
+  206.            write(io,10) GEO_ucos
+  207.            write(io,10) GEO_b
+  208.            write(io,10) GEO_g_theta
+  209.            write(io,10) GEO_grad_r
+  210.            write(io,10) GEO_gq
+  211.            write(io,10) GEO_captheta
+  212.            write(io,10) GEO_theta_nc
+  213.    
+  214.         enddo ! j
+  215.      enddo ! i
+  216.    
+  217.      close(io)
+  218.    
+  219.      if (debug_flag == 1 ) then
+  220.         print *,'[gyro_write_initdata done]'
+  221.      endif
+  222.    
+  223.    10 format(1pe15.8)
+  224.    20 format(i4)
+  225.    26 format(t2,1pe15.8,2x,a) 
+  226.    
+  227.    end subroutine gyro_write_initdata
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GEO_DO
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_INITDATA (Line 190, file gyro_write_initdata.f90)
+
+Name  Messages
+----  --------
+GEO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_INITDATA
+
+Name  Messages
+----  --------
+GEO_INTERP
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_WRITE_INITDATA (Line 199, file gyro_write_initdata.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_INITDATA
+
+Name  Messages
+----  --------
+GYRO_PROFILE_EXP
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_INITDATA
+
+Name  Messages
+----  --------
+GYRO_WRITE_INITDATA
+      Defined as:  Subroutine (line 12, file gyro_write_initdata.f90)
+
+      Interface:   None
+
+      Calls:       GEO_DO (Line 190, file gyro_write_initdata.f90)
+                   GEO_INTERP (Line 199, file gyro_write_initdata.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_PROFILE_EXP
+                   MATH_CONSTANTS
+                   GEO_INTERFACE
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_WRITE_INITDATA
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

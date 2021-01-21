@@ -1,0 +1,490 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_radial_operators.f90
+Compiled : 01/19/21  15:35:48
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_radial_operators.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_RADIAL_OPERATORS
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_radial_operators.f90
+Date     : 01/19/2021  15:35:48
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-------------------------------------------------------
+    2.    ! gyro_radial_operators.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  This routine calculates complex forward and inverse
+    6.    !  FT coefficients and finite-element coefficients,
+    7.    !  derivative operators, and is the top-level driver
+    8.    !  for field-matrix and gyroaverage construction.
+    9.    !-----------------------------------------------------
+   10.    
+   11.    subroutine gyro_radial_operators
+   12.    
+   13.      use gyro_globals
+   14.      use math_constants
+   15.    
+   16.      !--------------------------------------
+   17.      implicit none  
+   18.      !
+   19.      integer :: p
+   20.      integer :: n_node
+   21.      integer :: i_lump
+   22.      integer :: j_lump
+   23.      !
+   24.      real :: t0
+   25.      real :: denom
+   26.      complex :: z0
+   27.      real, dimension(:), allocatable :: r_node
+   28.      real, dimension(-m_dx:m_dx-i_dx) :: w_temp
+   29.      real, dimension(-m_dx:m_dx) :: s_temp
+   30.      !
+   31.      real, external :: BLEND_f3
+   32.      !--------------------------------------
+   33.    
+   34.      !---------------------------------------------------
+   35.      ! COMPLEX FOURIER COEFFICIENTS:
+   36.      !
+   37.      do i=1,n_x
+   38.         p = i-n_x/2-1
+   39.         do ip=1,n_x
+   40.            m = ip-n_x/2-1
+   41.    
+   42.            ! c's are the matrix elements for m -> p
+   43.    
+   44.            cr(i,ip) = exp(i_c*m*p*(pi_2/n_x))
+   45.    
+   46.         enddo
+   47.      enddo
+   48.    
+   49.      ! ci's are the matrix elements for the inverse 
+   50.      ! transformation, namely p -> m.
+   51.    
+   52.      cri = conjg(cr)/n_x
+ftn-6332 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 52 
+  A loop starting at line 52 was not vectorized because it does not map well onto the target architecture.
+
+   53.      !---------------------------------------------------
+   54.    
+   55.      !---------------------------------------------------
+   56.      ! SOURCE EXPANSION COEFFICIENTS:
+   57.      !
+   58.      if (source_flag == 1) then
+   59.    
+   60.         n_node = n_lump-1
+   61.         allocate(r_node(n_node))
+   62.    
+   63.         ! Node points are equally-spaced in r.
+   64.    
+   65.         do i=1,n_node
+   66.            r_node(i) = r(1)+(r(n_x)-r(1))*(i-1)/(n_node-1.0)
+   67.         enddo
+   68.    
+   69.         ! b_src inherits (possibly) UNEQUAL spacing in r.
+   70.    
+   71.         do i_lump=1,n_lump
+   72.            do i=1,n_x
+   73.               t0 = (r(i)-r_node(1))/(r_node(2)-r_node(1))
+   74.               b_src(i,i_lump) = BLEND_f3(i_lump-3,t0)
+   75.            enddo
+   76.         enddo
+   77.    
+   78.         ! Need to account for nonuniform radial grid
+   79.         ! in the radial overlap integral.
+   80.    
+   81.         m_src(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 81 
+  A loop starting at line 81 was not vectorized because it contains a reference to a non-vector intrinsic on line 81.
+
+   82.         do i_lump=1,n_lump
+   83.            do j_lump=1,n_lump
+   84.               do i=1,n_x
+   85.                  m_src(i_lump,j_lump) = m_src(i_lump,j_lump)+ & 
+   86.                       b_src(i,i_lump)*b_src(i,j_lump)/dr_eodr(i)
+   87.               enddo
+   88.            enddo
+   89.         enddo
+   90.    
+   91.         call DGETRF(n_lump,n_lump,m_src,n_lump,src_piv,info)
+   92.    
+   93.         deallocate(r_node)
+   94.    
+   95.      endif
+   96.      !
+   97.      ! Set source amplitude coefficient to zero if n /= 0.
+   98.      if (n_1(in_1) /= 0) nu_source = 0.0
+   99.      !---------------------------------------------------
+  100.    
+  101.      !---------------------------------------------------
+  102.      ! Radial index mapping
+  103.      !
+  104.      if (boundary_method == 1) then
+  105.    
+  106.         do i=1,n_x
+  107.            i_cyc(i+n_x) = i
+  108.            i_cyc(i) = i
+  109.            i_cyc(i-n_x) = i
+  110.         enddo
+  111.    
+  112.         i_loop(:) = i_cyc(:)
+ftn-6262 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 112 
+  A loop starting at line 112 was not vectorized because it contains a call to a subroutine or function on line 112.
+
+  113.    
+  114.      else
+  115.    
+  116.         ! These forms will be used in gyro_blend_*:
+  117.      
+  118.         do i=1,n_x
+  119.            i_cyc(i+n_x) = n_x
+  120.            i_cyc(i) = i
+  121.            i_cyc(i-n_x) = 1
+  122.         enddo
+  123.    
+  124.         do i=1,n_x
+  125.            i_loop(i+n_x) = i+n_x
+  126.            i_loop(i) = i
+  127.            i_loop(i-n_x) = i-n_x
+  128.         enddo
+  129.    
+  130.         ! Arrays for efficient implementation of buffer damping
+  131.         explicit_damp_vec(:,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 131 
+  A loop starting at line 131 was not vectorized because it contains a reference to a non-vector intrinsic on line 131.
+
+  132.         do i=1,n_x
+  133.            if (n_1(in_1) == 0) then
+  134.               if (i <= n_explicit_damp .or. i > n_x-n_explicit_damp) then
+  135.                  explicit_damp_vec(:,i)      = explicit_damp
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 135 
+  A loop starting at line 135 was not vectorized because it contains a reference to a non-vector intrinsic on line 135.
+
+  136.                  explicit_damp_vec(indx_e,i) = explicit_damp_elec
+  137.               endif
+  138.            endif
+  139.         enddo
+  140.    
+  141.      endif
+  142.      !---------------------------------------------------
+  143.    
+  144.      ! Define delta-function (for use with d/dr)
+  145.    
+  146.      w_d0(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 146 
+  A loop starting at line 146 was not vectorized because it contains a reference to a non-vector intrinsic on line 146.
+
+  147.      w_d0(0) = (1.0,0.0)
+  148.    
+  149.      ! Define delta-function (for use with << >>)
+  150.    
+  151.      w_g0(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 151 
+  A loop starting at line 151 was not vectorized because it contains a reference to a non-vector intrinsic on line 151.
+
+  152.      w_g0(0) = (1.0,0.0)
+  153.    
+  154.      ! Variable width delta-function
+  155.    
+  156.      w_gd0(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 156 
+  A loop starting at line 156 was not vectorized because it contains a reference to a non-vector intrinsic on line 156.
+
+  157.      w_gd0(0) = (1.0,0.0)
+  158.    
+  159.      !-----------------------------------
+  160.      ! Use PolyDiff to get 1st-derivative
+  161.      ! using 2*m_dx+1 points:
+  162.      !
+  163.      if (i_dx == 0) then
+  164.    
+  165.         ! Finite-difference derivative and dissipation
+  166.    
+  167.         call polydiff(2*m_dx,m_dx,w_temp,denom)
+  168.         w_d1 = w_temp/d_x
+ftn-6332 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 168 
+  A loop starting at line 168 was not vectorized because it does not map well onto the target architecture.
+
+  169.    
+  170.         call pascal(2*m_dx+1,s_temp)
+  171.         s_d1 = abs(radial_upwind)*s_temp*abs(w_temp(m_dx)/d_x)
+ftn-6262 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 171 
+  A loop starting at line 171 was not vectorized because it contains a call to a subroutine or function on line 171.
+
+  172.    
+  173.         call poly2diff(m_dx,w_temp)
+  174.         w_d2 = w_temp/(d_x*d_x)
+ftn-6332 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 174 
+  A loop starting at line 174 was not vectorized because it does not map well onto the target architecture.
+
+  175.    
+  176.      else
+  177.    
+  178.         ! Pseudo-spectral derivative (FD dissipation)
+  179.    
+  180.         w_d1(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 180 
+  A loop starting at line 180 was not vectorized because it contains a reference to a non-vector intrinsic on line 180.
+
+  181.    
+  182.         do m=-m_dx,m_dx-1
+  183.            do p=-m_dx,m_dx-1
+  184.               z0 = exp(i_c*p*m*(pi_2/n_x))
+  185.               w_d1(m) = w_d1(m)+p*z0
+  186.            enddo
+  187.         enddo
+  188.    
+  189.         w_d1(:) = -(1.0/n_x)*(pi_2*i_c/x_length)*w_d1(:)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 189 
+  A loop starting at line 189 was not vectorized because it contains a reference to a non-vector intrinsic on line 189.
+
+  190.    
+  191.         w_d2(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 191 
+  A loop starting at line 191 was not vectorized because it contains a reference to a non-vector intrinsic on line 191.
+
+  192.    
+  193.         do m=-m_dx,m_dx-1
+  194.            do p=-m_dx,m_dx-1
+  195.               z0 = exp(i_c*p*m*(pi_2/n_x))
+  196.               w_d2(m) = w_d2(m)+p*p*z0
+  197.            enddo
+  198.         enddo
+  199.    
+  200.         ! Note the sign change
+  201.         w_d2(:) = (1.0/n_x)*(pi_2*i_c/x_length)**2*w_d2(:)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 201 
+  A loop starting at line 201 was not vectorized because it contains a reference to a non-vector intrinsic on line 201.
+
+  202.    
+  203.         if (m_dx == 2) then
+  204.    
+  205.            s_d1(-2) = -2.0
+  206.            s_d1(-1) = 4.0
+  207.            s_d1(0)  = -6.0
+  208.            s_d1(1)  = 4.0 
+  209.    
+  210.            ! Usual 3rd order upwind normalization
+  211.            s_d1(-2:1) = abs(radial_upwind)*s_d1(-2:1)/(12.0*d_x)
+ftn-6263 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 211 
+  A loop starting at line 211 was not vectorized because it contains a reference to a non-vector intrinsic on line 211.
+
+  212.    
+  213.         else
+  214.    
+  215.            w_temp = 0.0
+ftn-6204 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 215 
+  A loop starting at line 215 was vectorized.
+
+  216.            s_temp = 0.0
+ftn-6204 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 216 
+  A loop starting at line 216 was vectorized.
+
+  217.    
+  218.            call polydiff(2*m_dx-2,m_dx,w_temp(-m_dx+1:m_dx-1),denom)
+  219.            call pascal(2*m_dx-1,s_temp(-m_dx+1:m_dx-1))
+  220.    
+  221.            s_d1 = abs(radial_upwind)*s_temp*abs(w_temp(m_dx-1)/d_x)
+ftn-6262 ftn: VECTOR GYRO_RADIAL_OPERATORS, File = gyro_radial_operators.f90, Line = 221 
+  A loop starting at line 221 was not vectorized because it contains a call to a subroutine or function on line 221.
+
+  222.    
+  223.         endif
+  224.    
+  225.      endif
+  226.      !-----------------------------------
+  227.    
+  228.      !-----------------------------------
+  229.      ! Find tau-space gyroaverage:
+  230.      !
+  231.      call gyro_bessel_stencils
+  232.      !-----------------------------------
+  233.    
+  234.      if (debug_flag == 1 .and. i_proc == 0) then
+  235.         print *,'[gyro_radial_operators done]'
+  236.      endif
+  237.    
+  238.    end subroutine gyro_radial_operators
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 171, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 171, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 211, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 221, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 221, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+BLEND_F3
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 74, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CONJG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 52, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+DGETRF
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 44, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 184, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 195, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+GYRO_BESSEL_STENCILS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 231, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_RADIAL_OPERATORS
+
+Name  Messages
+----  --------
+GYRO_RADIAL_OPERATORS
+      Defined as:  Subroutine (line 11, file gyro_radial_operators.f90)
+
+      Interface:   None
+
+      Calls:       BLEND_F3 (Line 74, file gyro_radial_operators.f90)
+                   EXP(Intrinsic) (Line 44, file gyro_radial_operators.f90)
+                   EXP(Intrinsic) (Line 184, file gyro_radial_operators.f90)
+                   EXP(Intrinsic) (Line 195, file gyro_radial_operators.f90)
+                   CONJG(Intrinsic) (Line 52, file gyro_radial_operators.f90)
+                   POLYDIFF (Line 167, file gyro_radial_operators.f90)
+                   POLYDIFF (Line 218, file gyro_radial_operators.f90)
+                   PASCAL (Line 170, file gyro_radial_operators.f90)
+                   PASCAL (Line 219, file gyro_radial_operators.f90)
+                   ABS(Intrinsic) (Line 171, file gyro_radial_operators.f90)
+                   ABS(Intrinsic) (Line 171, file gyro_radial_operators.f90)
+                   ABS(Intrinsic) (Line 211, file gyro_radial_operators.f90)
+                   ABS(Intrinsic) (Line 221, file gyro_radial_operators.f90)
+                   ABS(Intrinsic) (Line 221, file gyro_radial_operators.f90)
+                   POLY2DIFF (Line 173, file gyro_radial_operators.f90)
+                   GYRO_BESSEL_STENCILS (Line 231, file gyro_radial_operators.f90)
+
+        Uses:      GYRO_GLOBALS
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_RADIAL_OPERATORS
+
+Name  Messages
+----  --------
+PASCAL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 170, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 219, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+POLY2DIFF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 173, file gyro_radial_operators.f90)
+
+Name  Messages
+----  --------
+POLYDIFF
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_RADIAL_OPERATORS (Line 167, file gyro_radial_operators.f90)
+                   GYRO_RADIAL_OPERATORS (Line 218, file gyro_radial_operators.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

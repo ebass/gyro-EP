@@ -1,0 +1,27 @@
+#---------------------------------------------------
+# DROP (Intel fortran, MVAPICH)
+#---------------------------------------------------
+
+# Compilers
+
+FC	= mpif90 -mod $(GACODE_ROOT)/modules -I $(GACODE_ROOT)/modules
+F77	= mpif90
+
+FOMP    = -openmp
+FMATH	= -r8 
+FOPT	= -O2
+FDEBUG	= -check bounds,uninit -fpe0 -ftrapuv
+
+# System math libraries
+
+LMATH=/opt/GotoBLAS2/libgoto2.a /usr/local/lib/librfftw.a /usr/local/lib/libfftw.a
+
+# OPTIONAL NetCDF:
+NETCDF=-L/usr/local/lib -lnetcdf -lcurl
+NETCDF_INC=/usr/local/include
+
+# Archive 
+
+ARCH = ar cr
+
+

@@ -1,0 +1,39 @@
+#---------------------------------------------------
+# Cray XE6 (edison.nersc.gov) [Intel ENV]
+#
+# EDISON SYSTEM INFO:
+# Intel compiler
+#---------------------------------------------------
+
+#  FIXED Hardware parameters
+CORES_PER_NODE=24
+NUMAS_PER_NODE=4
+
+# SLEPC_LIB and other environment variables are defined in:
+#include ${SLEPC_DIR}/conf/slepc_common_variables
+
+# Compilers and flags
+
+FC     = ftn -mod ${GACODE_ROOT}/modules -I ${GACODE_ROOT}/modules
+#FC     = ftn ${GACODE_ROOT}/modules -I ${GACODE_ROOT}/modules
+F77    = ${FC}
+
+FOMP   = -openmp
+FMATH  = -r8
+FOPT   = -O3
+FDEBUG = -check all 
+FPETSC = 
+#FPETSC = ${FC_LINKER_FLAGS} ${FC_INCLUDES} ${SLEPC_LIB}
+
+# System math libraries
+
+LMATH = -L/opt/fftw/3.3.0.1/x86_64/lib -Wl,-rpath=/opt/fftw/3.3.0.1/x86_64/lib \
+        -lfftw3_threads -lfftw3f_threads -lfftw3 -lfftw3f
+
+# OPTIONAL: netCDF (for gyro2gkv)
+NETCDF = ${NETCDF_DIR}/lib/libnetcdf.a ${NETCDF_DIR}/lib/libnetcdf.a
+NETCDF_INC = ${NETCDF_DIR}/include
+
+# Archive 
+ARCH = ar cr
+

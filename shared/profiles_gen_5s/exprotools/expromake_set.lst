@@ -1,0 +1,346 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_set.f90
+Compiled : 06/09/16  13:25:53
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include expromake_set.f90
+Program
+  Units  : EXPROMAKE_SET
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_set.f90
+Date     : 06/09/2016  13:25:53
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    subroutine expromake_set
+ftn-7413 ftn: CAUTION File = expromake_set.f90, Line = 1 
+  Due to the large size of this routine, use before definition analysis will be restricted to simple unaliased scalar variables.
+
+    2.    
+    3.      use expromake_globals
+    4.      use EXPRO_interface
+    5.    
+    6.      implicit none
+    7.    
+    8.      integer :: i, j
+    9.      real :: x
+   10.      real, dimension(:), allocatable :: chi_t
+   11.    
+   12.      if(set_exm_b_ref == 1) then
+   13.         EXPRO_b_ref = exm_b_ref
+   14.      endif
+   15.    
+   16.      if(set_exm_arho == 1) then
+   17.         EXPRO_arho = exm_arho
+   18.      endif
+   19.    
+   20.      if(set_exm_rho == 1) then
+   21.         do i=1,EXPRO_n_exp
+   22.            x = real(i-1)/(EXPRO_n_exp-1) 
+   23.            EXPRO_rho(i)  = x
+   24.         enddo
+   25.      endif
+   26.    
+   27.      if(set_exm_rmin == 1) then
+   28.         do i=1,EXPRO_n_exp
+   29.            x = real(i-1)/(EXPRO_n_exp-1) 
+   30.            EXPRO_rmin(i)  = exm_a_meters*x
+   31.         enddo
+   32.      endif
+   33.    
+   34.      if(set_exm_rmaj == 1) then
+   35.         EXPRO_rmaj = exm_rmaj
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 35 
+  A loop starting at line 35 was vectorized.
+
+   36.      endif
+   37.    
+   38.      if(set_exm_q == 1) then
+   39.         EXPRO_q = exm_q
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 39 
+  A loop starting at line 39 was vectorized.
+
+   40.      endif
+   41.    
+   42.      if(set_exm_kappa == 1) then
+   43.         EXPRO_kappa = exm_kappa
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 43 
+  A loop starting at line 43 was vectorized.
+
+   44.      endif
+   45.    
+   46.      if(set_exm_delta == 1) then
+   47.         EXPRO_delta = exm_delta
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 47 
+  A loop starting at line 47 was vectorized.
+
+   48.      endif
+   49.    
+   50.      if(set_exm_te == 1) then
+   51.         if(exm_te_model == 1) then
+   52.            EXPRO_te(:) = exm_te_axis
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 52 
+  A loop starting at line 52 was not vectorized because it contains a reference to a non-vector intrinsic on line 52.
+
+   53.         endif
+   54.         if(exm_te_model == 2) then
+   55.            do j=1,EXPRO_n_exp
+   56.               EXPRO_te(j) = exm_te_axis &
+   57.                    * exp(-EXPRO_rmin(j)/EXPRO_rmin(EXPRO_n_exp)*exm_alte) 
+   58.            enddo
+   59.         endif
+   60.      endif
+   61.    
+   62.      if(set_exm_ne == 1) then
+   63.         if(exm_ne_model == 1) then
+   64.            EXPRO_ne(:) = exm_ne_axis
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 64 
+  A loop starting at line 64 was not vectorized because it contains a reference to a non-vector intrinsic on line 64.
+
+   65.         endif
+   66.         if(exm_ne_model == 2) then
+   67.            do j=1,EXPRO_n_exp
+   68.               EXPRO_ne(j) = exm_ne_axis &
+   69.                    * exp(-EXPRO_rmin(j)/EXPRO_rmin(EXPRO_n_exp)*exm_alne) 
+   70.            enddo
+   71.         endif
+   72.      endif
+   73.    
+   74.      if(set_exm_z_eff == 1) then
+   75.         EXPRO_z_eff = exm_z_eff
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 75 
+  A loop starting at line 75 was vectorized.
+
+   76.      endif
+   77.    
+   78.      if(set_exm_w0 == 1) then
+   79.         EXPRO_w0 = exm_w0
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 79 
+  A loop starting at line 79 was vectorized.
+
+   80.      endif
+   81.      
+   82.      if(set_exm_flow_mom == 1) then
+   83.         EXPRO_flow_mom = exm_flow_mom
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 83 
+  A loop starting at line 83 was vectorized.
+
+   84.      endif
+   85.    
+   86.      if(set_exm_pow_e == 1) then
+   87.         EXPRO_pow_e = exm_pow_e
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 87 
+  A loop starting at line 87 was vectorized.
+
+   88.      endif
+   89.      
+   90.      if(set_exm_pow_i == 1) then
+   91.         EXPRO_pow_i = exm_pow_i
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 91 
+  A loop starting at line 91 was vectorized.
+
+   92.      endif
+   93.    
+   94.      if(set_exm_pow_ei == 1) then
+   95.         EXPRO_pow_ei = exm_pow_ei
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 95 
+  A loop starting at line 95 was vectorized.
+
+   96.      endif
+   97.    
+   98.      if(set_exm_zeta == 1) then
+   99.         EXPRO_zeta = exm_zeta
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 99 
+  A loop starting at line 99 was vectorized.
+
+  100.      endif
+  101.      
+  102.      if(set_exm_flow_beam == 1) then
+  103.         EXPRO_flow_beam = exm_flow_beam
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 103 
+  A loop starting at line 103 was vectorized.
+
+  104.      endif
+  105.    
+  106.      if(set_exm_flow_wall == 1) then
+  107.         EXPRO_flow_wall = exm_flow_wall
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 107 
+  A loop starting at line 107 was vectorized.
+
+  108.      endif
+  109.    
+  110.      if(set_exm_zmag == 1) then
+  111.         EXPRO_zmag = exm_zmag
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 111 
+  A loop starting at line 111 was vectorized.
+
+  112.      endif
+  113.    
+  114.      if(set_exm_ptot == 1) then
+  115.         EXPRO_ptot = exm_ptot
+ftn-6204 ftn: VECTOR File = expromake_set.f90, Line = 115 
+  A loop starting at line 115 was vectorized.
+
+  116.      endif
+  117.    
+  118.      if(set_exm_polflux == 1) then
+  119.         ! d psi = 1/q * d chi_t
+  120.         allocate(chi_t(EXPRO_n_exp))
+  121.         do i=1,EXPRO_n_exp
+  122.            chi_t(i) = 0.5 * EXPRO_b_ref * (EXPRO_arho*EXPRO_rho(i))**2
+  123.         enddo
+  124.         EXPRO_poloidalfluxover2pi(1) = 0.0
+  125.         do i=2,EXPRO_n_exp
+  126.            EXPRO_poloidalfluxover2pi(i) = EXPRO_poloidalfluxover2pi(i-1) &
+  127.                 + 1.0/(0.5*(EXPRO_q(i) + EXPRO_q(i+1))) &
+  128.                 * (chi_t(i) - chi_t(i-1))
+  129.         enddo
+  130.         deallocate(chi_t)
+  131.      endif
+  132.    
+  133.      do i=1,nions_max
+  134.    
+  135.         if(set_exm_ni(i) == 1) then
+  136.            if(exm_ni_model(i) == 1) then
+  137.               EXPRO_ni(i,:) = exm_ni_axis(i)
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 137 
+  A loop starting at line 137 was not vectorized because it contains a reference to a non-vector intrinsic on line 137.
+
+  138.            endif
+  139.            if(exm_ni_model(i) == 2) then
+  140.               do j=1,EXPRO_n_exp
+  141.                  EXPRO_ni(i,j) = exm_ni_axis(i) &
+  142.                       * exp(-EXPRO_rmin(j)/EXPRO_rmin(EXPRO_n_exp)*exm_alni(i)) 
+  143.               enddo
+  144.            endif
+  145.         endif
+  146.    
+  147.    
+  148.         if(set_exm_ti(i) == 1) then
+  149.            if(exm_ti_model(i) == 1) then
+  150.               EXPRO_ti(i,:) = exm_ti_axis(i)
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 150 
+  A loop starting at line 150 was not vectorized because it contains a reference to a non-vector intrinsic on line 150.
+
+  151.            endif
+  152.            if(exm_ti_model(i) == 2) then
+  153.               do j=1,EXPRO_n_exp
+  154.                  EXPRO_ti(i,j) = exm_ti_axis(i) &
+  155.                       * exp(-EXPRO_rmin(j)/EXPRO_rmin(EXPRO_n_exp)*exm_alti(i)) 
+  156.               enddo
+  157.            endif
+  158.         endif
+  159.    
+  160.         if(set_exm_vpol(i) == 1) then
+  161.            EXPRO_vpol(i,:) = exm_vpol(i)
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 161 
+  A loop starting at line 161 was not vectorized because it contains a reference to a non-vector intrinsic on line 161.
+
+  162.         endif
+  163.    
+  164.         if(set_exm_vtor(i) == 1) then
+  165.            EXPRO_vtor(i,:) = exm_vtor(i)
+ftn-6263 ftn: VECTOR File = expromake_set.f90, Line = 165 
+  A loop starting at line 165 was not vectorized because it contains a reference to a non-vector intrinsic on line 165.
+
+  166.         endif
+  167.    
+  168.      enddo
+  169.      
+  170.    end subroutine expromake_set
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPROMAKE_SET (Line 57, file expromake_set.f90)
+                   EXPROMAKE_SET (Line 69, file expromake_set.f90)
+                   EXPROMAKE_SET (Line 142, file expromake_set.f90)
+                   EXPROMAKE_SET (Line 155, file expromake_set.f90)
+
+Name  Messages
+----  --------
+EXPROMAKE_GLOBALS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+Name  Messages
+----  --------
+EXPROMAKE_SET
+      Defined as:  Subroutine (line 1, file expromake_set.f90)
+
+      Interface:   None
+
+      Calls:       REAL(Intrinsic) (Line 22, file expromake_set.f90)
+                   REAL(Intrinsic) (Line 29, file expromake_set.f90)
+                   EXP(Intrinsic) (Line 57, file expromake_set.f90)
+                   EXP(Intrinsic) (Line 69, file expromake_set.f90)
+                   EXP(Intrinsic) (Line 142, file expromake_set.f90)
+                   EXP(Intrinsic) (Line 155, file expromake_set.f90)
+
+        Uses:      EXPRO_INTERFACE
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     EXPROMAKE_SET
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   EXPROMAKE_SET (Line 22, file expromake_set.f90)
+                   EXPROMAKE_SET (Line 29, file expromake_set.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

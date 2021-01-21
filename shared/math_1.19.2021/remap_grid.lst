@@ -1,0 +1,219 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/remap_grid.f90
+Compiled : 01/19/21  14:38:39
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -c remap_grid.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : REMAP_GRID
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/remap_grid.f90
+Date     : 01/19/2021  14:38:39
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------
+    2.    ! remap_grid.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Generate nonuniform grid based on a weight 
+    6.    !  function.
+    7.    !
+    8.    ! NOTES:
+    9.    !  Given n_p "weight functions" f_p at points r_p 
+   10.    ! (possibly nonuniform), generate a nonuniform grid 
+   11.    ! r and uniform grid x (taken from r on input) 
+   12.    ! such that:
+   13.    !
+   14.    !        /      /
+   15.    !    L = | dx = | dr = x(n)-x(1) = r(n)-r(1)
+   16.    !        /      /
+   17.    !
+   18.    !  The grid spacings satisfy dx = f dr, and as 
+   19.    !  a consequence:
+   20.    !
+   21.    !             /
+   22.    !             | f dr = L
+   23.    !             /
+   24.    !
+   25.    !  These formulae have the implication that 
+   26.    !
+   27.    !             dx = constant = f dr
+   28.    ! 
+   29.    !  Also output is the array dxdr:
+   30.    !
+   31.    !                dxdr = dx / dr
+   32.    !
+   33.    ! REVISIONS
+   34.    ! 11 Mar 02: jc
+   35.    !  Created.
+   36.    !---------------------------------------------
+   37.    
+   38.    subroutine remap_grid(r_p,f_p,n_p,r,dxdr,x,n)
+   39.    
+   40.      !----------------------------------
+   41.      implicit none
+   42.      !
+   43.      integer, intent(in) :: n_p
+   44.      integer, intent(in) :: n
+   45.      !
+   46.      real, dimension(n_p), intent(in) :: r_p
+   47.      real, dimension(n_p), intent(in) :: f_p
+   48.      !
+   49.      real, dimension(n), intent(inout) :: r
+   50.      real, dimension(n), intent(inout) :: dxdr
+   51.      real, dimension(n), intent(inout) :: x
+   52.      !
+   53.      real, dimension(n_p) :: f_h
+   54.      !
+   55.      integer :: p
+   56.      integer :: i
+   57.      integer :: j
+   58.      !
+   59.      real :: sum0,sum1
+   60.      real :: length
+   61.      real :: dx
+   62.      real :: r0,r1
+   63.      real :: f0
+   64.      !
+   65.      !---------------------------------
+   66.      ! Integration intervals:
+   67.      !
+   68.      integer, parameter :: n_fine = 256
+   69.      !----------------------------------
+   70.    
+   71.      length = r(n)-r(1)
+   72.      dx = length/n_fine
+   73.    
+   74.      !                         /
+   75.      !  First, compute sum0 -> | f dr 
+   76.      !                         /
+   77.      
+   78.      sum0 = 0.0
+   79.      do p=1,n_fine
+   80.    
+   81.         r0 = r(1)+p*dx
+   82.    
+   83.         do j=1,n_p
+   84.            if (r_p(j) >= r0) exit
+   85.         enddo
+   86.    
+   87.         f0 = (f_p(j+1)*(r0-r_p(j))+f_p(j)*(r_p(j+1)-r0))/ & 
+   88.              (r_p(j+1)-r_p(j))
+   89.    
+   90.         sum0 = sum0+f0*dx
+   91.    
+   92.      enddo
+   93.    
+   94.      !                                 /
+   95.      ! Define an average f_h such that | dr f_h = 1
+   96.      !                                 /
+   97.    
+   98.      f_h(:) = length*f_p(:)/sum0
+ftn-6263 ftn: VECTOR REMAP_GRID, File = remap_grid.f90, Line = 98 
+  A loop starting at line 98 was not vectorized because it contains a reference to a non-vector intrinsic on line 98.
+
+   99.    
+  100.      x(:) = r(:)
+ftn-6263 ftn: VECTOR REMAP_GRID, File = remap_grid.f90, Line = 100 
+  A loop starting at line 100 was not vectorized because it contains a reference to a non-vector intrinsic on line 100.
+
+  101.    
+  102.      !                 r_i
+  103.      !                  /
+  104.      ! Solve (i-1) dx = | dr f_h(r)  for r_i. 
+  105.      !                  /  
+  106.      !                 r_1
+  107.    
+  108.      do i=1,n
+  109.    
+  110.         sum1 = x(1)-x(i)
+  111.    
+  112.         do p=1,n_fine
+  113.    
+  114.            r1 = x(1)+p*dx
+  115.            r0 = r1-dx
+  116.    
+  117.            do j=1,n_p
+  118.               if (r_p(j) > r1) exit
+  119.            enddo
+  120.    
+  121.            f0 = (f_h(j+1)*(r0-r_p(j))+f_h(j)*(r_p(j+1)-r0))/ & 
+  122.                 (r_p(j+1)-r_p(j))
+  123.    
+  124.            sum0 = sum1
+  125.            sum1 = sum1+f0*dx
+  126.    
+  127.            if (sum1 > 0.0) then
+  128.    
+  129.               ! Root is bracketed inside (r0,r1)
+  130.               
+  131.               ! Get r(i) by linear interpolation 
+  132.               ! (i.e, secant method).
+  133.    
+  134.               r(i) = r0-sum0*(r1-r0)/(sum1-sum0)
+  135.    
+  136.               dxdr(i) = (f_h(j+1)*(r(i)-r_p(j))+f_h(j)*(r_p(j+1)-r(i)))/ & 
+  137.                    (r_p(j+1)-r_p(j))
+  138.    
+  139.               goto 10
+  140.    
+  141.            endif
+  142.    
+  143.         enddo
+  144.    
+  145.    10   continue
+  146.    
+  147.      enddo ! i
+  148.    
+  149.    end subroutine remap_grid
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+REMAP_GRID
+      Defined as:  Subroutine (line 38, file remap_grid.f90)
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

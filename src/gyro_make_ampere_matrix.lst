@@ -1,0 +1,220 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_make_ampere_matrix.f90
+Compiled : 01/19/21  15:35:41
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_make_ampere_matrix.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_MAKE_AMPERE_MATRIX
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_make_ampere_matrix.f90
+Date     : 01/19/2021  15:35:41
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------
+    2.    ! gyro_make_ampere_matrix.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Define sparse form of Ampere matrix (also used 
+    6.    !  for A_par advance in the collision step) and 
+    7.    !  factorize using UMFPACK.
+    8.    !-----------------------------------------------------
+    9.    
+   10.    subroutine gyro_make_ampere_matrix
+   11.    
+   12.      use gyro_globals
+   13.      use gyro_collision_private
+   14.      use math_constants
+   15.    
+   16.      !------------------------
+   17.      implicit none
+   18.      !-----------------------
+   19.    
+   20.      ! Row dimension of sparse Ampere matrix
+   21.      n_ampere_row = n_x*n_blend
+   22.    
+   23.      ! radial band width
+   24.      n_x2 = 2*mg_dx-ig_dx+1
+   25.    
+   26.      if (boundary_method == 1) then
+   27.    
+   28.         ! nonzero elements in n=0 Ampere matrix:
+   29.         n_zero = (n_x-1)*n_x2*n_blend**2+n_x*n_blend
+   30.    
+   31.         ! nonzero elements in n>0 Ampere matrix:
+   32.         n_fini = n_x*n_x2*n_blend**2
+   33.    
+   34.      else
+   35.    
+   36.         ! nonzero elements in nonperiodic Ampere matrices:
+   37.         n_zero = (n_x*n_x2-mg_dx*(mg_dx+1))*n_blend**2
+   38.    
+   39.         ! same number of nonzeros in n>0 nonperiodic matrices:
+   40.         n_fini = n_zero
+   41.    
+   42.      endif
+   43.    
+   44.      if (n_1(in_1) == 0) then
+   45.         n_ampere = n_zero
+   46.      else
+   47.         n_ampere = n_fini
+   48.      endif
+   49.    
+   50.      lindx(2)  = 2*n_ampere
+   51.      lvalue(2) = n_ampere
+   52.    
+   53.      allocate(m_ampere(lvalue(2)))
+   54.      allocate(indx_ampere(lindx(2)))
+   55.    
+   56.      if (n_1(in_1) == 0 .and. boundary_method == 1) then
+   57.         n_x_max  = n_x-1
+   58.      else
+   59.         n_x_max  = n_x
+   60.      endif
+   61.    
+   62.      ! Ampere MAA matrix
+   63.      allocate(aa_mm(n_x,-mg_dx:mg_dx-ig_dx,n_blend,n_blend))
+   64.      call gyro_blend_ampere
+   65.      call gyro_make_jpar_elec(0)
+   66.    
+   67.      if (sparse_method == 1) then
+   68.         call gyro_sparse_solve_umfpack(n_ampere,n_ampere_row,2,0)
+   69.      else
+   70.         call gyro_sparse_solve_mumps(n_ampere,n_ampere_row,2,0)
+   71.      endif
+   72.    
+   73.      !---------------------------------------------
+   74.      ! These are large matrices and deallocation is
+   75.      ! important:
+   76.      !
+   77.      deallocate(aa_mm)
+   78.      !---------------------------------------------
+   79.    
+   80.      if (debug_flag == 1 .and. i_proc == 0) then
+   81.         print *,'[gyro_make_ampere_matrix done]'
+   82.      endif
+   83.    
+   84.    end subroutine gyro_make_ampere_matrix
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_BLEND_AMPERE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_COLLISION_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_MAKE_AMPERE_MATRIX
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_MAKE_AMPERE_MATRIX
+
+Name  Messages
+----  --------
+GYRO_MAKE_AMPERE_MATRIX
+      Defined as:  Subroutine (line 10, file gyro_make_ampere_matrix.f90)
+
+      Interface:   None
+
+      Calls:       GYRO_SPARSE_SOLVE_UMFPACK (Line 68, file gyro_make_ampere_matrix.f90)
+                   GYRO_SPARSE_SOLVE_MUMPS (Line 70, file gyro_make_ampere_matrix.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_COLLISION_PRIVATE
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+GYRO_MAKE_JPAR_ELEC
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_SPARSE_SOLVE_MUMPS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_MAKE_AMPERE_MATRIX (Line 70, file gyro_make_ampere_matrix.f90)
+
+Name  Messages
+----  --------
+GYRO_SPARSE_SOLVE_UMFPACK
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_MAKE_AMPERE_MATRIX (Line 68, file gyro_make_ampere_matrix.f90)
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_MAKE_AMPERE_MATRIX
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,1004 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_interface.f90
+Compiled : 01/19/21  15:35:26
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_interface.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_INTERFACE
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_interface.f90
+Date     : 01/19/2021  15:35:26
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-------------------------------------------------------------------------
+    2.    ! gyro_interface.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Provides interface description for GYRO.
+    6.    !
+    7.    ! CALLING SEQUENCE:
+    8.    !  call gyro_init(...)
+    9.    !  set gyro_*_in variables
+   10.    !  call gyro_run(...)
+   11.    !  get gyro_*_out variables
+   12.    !-------------------------------------------------------------------------
+   13.    
+   14.    module gyro_interface
+   15.    
+   16.      implicit none
+   17.    
+   18.      ! Input parameters (set to default values from python/gyro_dict.py)
+   19.      integer :: gyro_radial_grid_in = 6
+   20.      integer :: gyro_orbit_grid_in = 6
+   21.      integer :: gyro_pass_grid_in = 4
+   22.      integer :: gyro_trap_grid_in = 4
+   23.      integer :: gyro_energy_grid_in = 8
+   24.      integer :: gyro_blend_grid_in = 6
+   25.      integer :: gyro_blend_fit_order_in = 3
+   26.      integer :: gyro_theta_plot_in = 1
+   27.      integer :: gyro_toroidal_min_in = 30
+   28.      integer :: gyro_toroidal_grid_in = 1
+   29.      integer :: gyro_toroidal_sep_in = 10
+   30.      integer :: gyro_toroidal_reference_in = -1
+   31.      real    :: gyro_safety_factor_in = 2.0
+   32.      real    :: gyro_shear_in = 1.0
+   33.      real    :: gyro_delta_in = 0.0
+   34.      real    :: gyro_zeta_in = 0.0
+   35.      real    :: gyro_s_delta_in = 0.0
+   36.      real    :: gyro_s_zeta_in = 0.0
+   37.      real    :: gyro_kappa_in = 1.0
+   38.      real    :: gyro_s_kappa_in = 0.0
+   39.      real    :: gyro_shift_in = 0.0
+   40.      real    :: gyro_aspect_ratio_in = 3.0
+   41.      real    :: gyro_radius_in = 0.5
+   42.      real    :: gyro_box_multiplier_in = 1.0
+   43.      real    :: gyro_rho_star_in = 0.0025
+   44.      real    :: gyro_time_step_in = 0.2
+   45.      real    :: gyro_time_max_in = 15.0
+   46.      integer :: gyro_time_skip_in = 5
+   47.      integer :: gyro_boundary_method_in = 1
+   48.      integer :: gyro_radial_derivative_band_in = 2
+   49.      integer :: gyro_radial_gyro_band_in = 3
+   50.      integer :: gyro_explicit_damp_grid_in = 8
+   51.      real    :: gyro_explicit_damp_in = 1.0
+   52.      real    :: gyro_explicit_damp_elec_in = 1.0
+   53.      integer :: gyro_debug_flag_in = 0
+   54.      integer :: gyro_nonlinear_flag_in = 0
+   55.      real    :: gyro_amp_phi_n_in = 1.0e-4
+   56.      real    :: gyro_amp_phi_0_in = 0.0
+   57.      real    :: gyro_radial_upwind_in = 1.0
+   58.      integer :: gyro_electron_method_in = 1
+   59.      integer :: gyro_radial_profile_method_in = 1
+   60.      integer :: gyro_plot_u_flag_in = 1
+   61.      integer :: gyro_plot_epar_flag_in = 1
+   62.      integer :: gyro_plot_n_flag_in = 0
+   63.      integer :: gyro_plot_e_flag_in = 0
+   64.      integer :: gyro_plot_v_flag_in = 0
+   65.      real    :: gyro_z_eff_in = 1.0
+   66.      real    :: gyro_betae_unit_in = 0.0
+   67.      real    :: gyro_ampere_scale_in = 1.0
+   68.      integer :: gyro_n_field_in = 1
+   69.      integer :: gyro_source_flag_in = 0
+   70.      real    :: gyro_nu_source_in = 0.1
+   71.      integer :: gyro_verbose_flag_in = 0
+   72.      integer :: gyro_nonuniform_grid_flag_in = 0
+   73.      real    :: gyro_s_grid_in = 0.0
+   74.      real    :: gyro_gamma_e_in = 0.0
+   75.      real    :: gyro_nu_ei_in = 0.0
+   76.      real    :: gyro_nu_ei_scale_in = 1.0
+   77.      real    :: gyro_nu_ii_scale_in = 0.0
+   78.      real    :: gyro_nu_i_krook_in = 0.0
+   79.      real    :: gyro_plot_filter_in = 1.0
+   80.      integer :: gyro_n_source_in = 1
+   81.      integer :: gyro_flat_profile_flag_in = 0
+   82.      integer :: gyro_density_method_in = 1
+   83.      integer :: gyro_integrator_method_in = 1
+   84.      real    :: gyro_energy_max_in = 5.0
+   85.      real    :: gyro_mu_1_in = 1.0
+   86.      real    :: gyro_mu_2_in = 1.0
+   87.      real    :: gyro_mu_3_in = 1.0
+   88.      real    :: gyro_mu_4_in = 1.0
+   89.      real    :: gyro_mu_5_in = 1.0
+   90.      real    :: gyro_mu_electron_in = 60.0
+   91.      real    :: gyro_dlnndr_in = 1.0
+   92.      real    :: gyro_dlnndr_2_in = 1.0
+   93.      real    :: gyro_dlnndr_3_in = 1.0
+   94.      real    :: gyro_dlnndr_4_in = 1.0
+   95.      real    :: gyro_dlnndr_5_in = 1.0
+   96.      real    :: gyro_dlnndr_electron_in = 1.0
+   97.      real    :: gyro_dlntdr_in = 3.0
+   98.      real    :: gyro_dlntdr_2_in = 3.0
+   99.      real    :: gyro_dlntdr_3_in = 3.0
+  100.      real    :: gyro_dlntdr_4_in = 3.0
+  101.      real    :: gyro_dlntdr_5_in = 3.0
+  102.      real    :: gyro_dlntdr_electron_in = 3.0
+  103.      real    :: gyro_ni_over_ne_in = 1.0
+  104.      real    :: gyro_ni_over_ne_2_in = 0.0
+  105.      real    :: gyro_ni_over_ne_3_in = 0.0
+  106.      real    :: gyro_ni_over_ne_4_in = 0.0
+  107.      real    :: gyro_ni_over_ne_5_in = 0.0
+  108.      real    :: gyro_ti_over_te_in = 1.0
+  109.      real    :: gyro_ti_over_te_2_in = 1.0
+  110.      real    :: gyro_ti_over_te_3_in = 1.0
+  111.      real    :: gyro_ti_over_te_4_in = 1.0
+  112.      real    :: gyro_ti_over_te_5_in = 1.0
+  113.      real    :: gyro_eps_dlnndr_in = 0.0
+  114.      real    :: gyro_eps_dlnndr_2_in = 0.0
+  115.      real    :: gyro_eps_dlnndr_3_in = 0.0
+  116.      real    :: gyro_eps_dlnndr_4_in = 0.0
+  117.      real    :: gyro_eps_dlnndr_5_in = 0.0
+  118.      real    :: gyro_eps_dlnndr_electron_in = 0.0
+  119.      real    :: gyro_eps_dlntdr_in = 0.0
+  120.      real    :: gyro_eps_dlntdr_2_in = 0.0
+  121.      real    :: gyro_eps_dlntdr_3_in = 0.0
+  122.      real    :: gyro_eps_dlntdr_4_in = 0.0
+  123.      real    :: gyro_eps_dlntdr_5_in = 0.0
+  124.      real    :: gyro_eps_dlntdr_electron_in = 0.0
+  125.      real    :: gyro_z_in = 1.0
+  126.      real    :: gyro_z_2_in = 1.0
+  127.      real    :: gyro_z_3_in = 1.0
+  128.      real    :: gyro_z_4_in = 1.0
+  129.      real    :: gyro_z_5_in = 1.0
+  130.      real    :: gyro_orbit_upwind_in = 1.0
+  131.      real    :: gyro_orbit_upwind_2_in = 1.0
+  132.      real    :: gyro_orbit_upwind_3_in = 1.0
+  133.      real    :: gyro_orbit_upwind_4_in = 1.0
+  134.      real    :: gyro_orbit_upwind_5_in = 1.0
+  135.      real    :: gyro_orbit_upwind_electron_in = 1.0
+  136.      real    :: gyro_pgamma_in = 0.0
+  137.      real    :: gyro_pgamma_scale_in = 1.0
+  138.      real    :: gyro_mach_in = 0.0
+  139.      real    :: gyro_mach_scale_in = 1.0
+  140.      integer :: gyro_lindiff_method_in = 1
+  141.      integer :: gyro_trapdiff_flag_in = 0
+  142.      integer :: gyro_restart_new_flag_in = 1
+  143.      integer :: gyro_restart_data_skip_in = 10
+  144.      integer :: gyro_kill_i_parallel_flag_in = 0
+  145.      integer :: gyro_kill_i_drift_flag_in = 0
+  146.      integer :: gyro_kill_e_drift_flag_in = 0
+  147.      integer :: gyro_kill_coll_flag_in = 1
+  148.      real    :: gyro_doppler_scale_in = 1.0
+  149.      integer :: gyro_nl_method_in = 1
+  150.      integer :: gyro_kill_gyro_b_flag_in = 0
+  151.      integer :: gyro_velocity_output_flag_in = 0
+  152.      real    :: gyro_q_scale_in = 1.0
+  153.      integer :: gyro_dist_print_flag_in = 0
+  154.      integer :: gyro_nint_orb_s_in = 64
+  155.      integer :: gyro_nint_orb_do_in = 10
+  156.      integer :: gyro_udsymmetry_flag_in = 1
+  157.      integer :: gyro_gyro_method_in = 1
+  158.      integer :: gyro_sparse_method_in = 1
+  159.      integer :: gyro_n_mumps_max_in = 1
+  160.      integer :: gyro_n_study_in = 0
+  161.      real    :: gyro_amp_phi_study_in = 0.0
+  162.      real    :: gyro_lambda_debye_scale_in = 0.0
+  163.      real    :: gyro_lambda_debye_in = 0.0
+  164.      integer :: gyro_radial_grid_offset_in = 0
+  165.      integer :: gyro_theta_mult_in = 1
+  166.      integer :: gyro_silent_flag_in = 0
+  167.      integer :: gyro_nonlinear_transfer_flag_in = 0
+  168.      real    :: gyro_l_x_in = 64.0
+  169.      real    :: gyro_l_y_in = 64.0
+  170.      integer :: gyro_entropy_flag_in = 0
+  171.      integer :: gyro_ord_rbf_in = 3
+  172.      integer :: gyro_num_equil_flag_in = 0
+  173.      real    :: gyro_zmag_in = 0.0
+  174.      real    :: gyro_dzmag_in = 0.0
+  175.      integer :: gyro_output_flag_in = 1
+  176.      real    :: gyro_ipccw_in = -1.0
+  177.      real    :: gyro_btccw_in = -1.0
+  178.      integer :: gyro_geo_gradbcurv_flag_in = 0
+  179.      integer :: gyro_geo_fastionbeta_flag_in = 0
+  180.      real    :: gyro_geo_betaprime_scale_in = 1.0
+  181.      integer :: gyro_poisson_z_eff_flag_in = 1
+  182.      integer :: gyro_z_eff_method_in = 1
+  183.      integer :: gyro_truncation_method_in = 1
+  184.      real    :: gyro_fluxaverage_window_in = 0.9
+  185.      integer :: gyro_gkeigen_proc_mult_in = 1
+  186.      integer :: gyro_gkeigen_method_in = 1
+  187.      integer :: gyro_gkeigen_matrixonly_in = 0
+  188.      integer :: gyro_gkeigen_mwrite_flag_in = 0
+  189.      integer :: gyro_gkeigen_kspace_dim_in = 300
+  190.      integer :: gyro_gkeigen_n_values_in = 10
+  191.      integer :: gyro_gkeigen_iter_in = 100
+  192.      real    :: gyro_gkeigen_tol_in = 0.0000001
+  193.      real    :: gyro_gkeigen_omega_target_in = -0.3
+  194.      real    :: gyro_gkeigen_gamma_target_in = 0.12
+  195.      integer :: gyro_linsolve_method_in = 1
+  196.      integer :: gyro_fieldeigen_root_method_in = 1
+  197.      real    :: gyro_fieldeigen_wr_in = -0.3
+  198.      real    :: gyro_fieldeigen_wi_in = 0.2
+  199.      real    :: gyro_fieldeigen_tol_in = 1e-6
+  200.      integer :: gyro_reintegrate_flag_in = 0
+  201.      integer :: gyro_ic_method_in = 1
+  202.      integer :: gyro_zf_test_flag_in = 0
+  203.      integer :: gyro_lock_ti_flag_in = 0
+  204.    
+  205.      ! Inputs available via interface but not by INPUT
+  206.      integer :: gyro_n_fourier_geo_in = 0
+  207.      real, dimension(8,0:32) :: gyro_a_fourier_geo_in = 0.0
+  208.    
+  209.      ! Output parameters
+  210.      real, dimension(:), allocatable :: gyro_elec_pflux_out 
+  211.      real, dimension(:), allocatable :: gyro_elec_mflux_out 
+  212.      real, dimension(:), allocatable :: gyro_elec_eflux_out
+  213.      real, dimension(:), allocatable :: gyro_elec_expwd_out 
+  214.    
+  215.      real, dimension(:,:), allocatable :: gyro_ion_pflux_out
+  216.      real, dimension(:,:), allocatable :: gyro_ion_mflux_out
+  217.      real, dimension(:,:), allocatable :: gyro_ion_eflux_out
+  218.      real, dimension(:,:), allocatable :: gyro_ion_expwd_out
+  219.    
+  220.      real, dimension(:), allocatable :: gyro_r_out
+  221.    
+  222.      complex :: gyro_fieldeigen_omega_out
+  223.      real :: gyro_fieldeigen_error_out
+  224.    
+  225.      integer :: gyro_error_status_out
+  226.      character(len=80) :: gyro_error_message_out
+  227.    
+  228.    contains
+  229.    
+  230.      ! Map GLOBAL variables to INTERFACE parameters
+  231.      subroutine map_global2interface()
+  232.    
+  233.        use gyro_globals
+  234.    
+  235.        implicit none
+  236.    
+  237.        gyro_radial_grid_in = n_x
+  238.        gyro_orbit_grid_in = n_theta_section
+  239.        gyro_pass_grid_in = n_pass
+  240.        gyro_trap_grid_in = n_trap
+  241.        gyro_energy_grid_in = n_energy
+  242.        gyro_blend_grid_in = n_blend
+  243.        gyro_blend_fit_order_in = blend_fit_order
+  244.        gyro_theta_plot_in = n_theta_plot
+  245.        gyro_toroidal_min_in = n0
+  246.        gyro_toroidal_grid_in = n_n
+  247.        gyro_toroidal_sep_in = d_n
+  248.        gyro_toroidal_reference_in = n_ref
+  249.        gyro_safety_factor_in = q0
+  250.        gyro_shear_in = s0
+  251.        gyro_delta_in = delta0
+  252.        gyro_zeta_in = zeta0
+  253.        gyro_s_delta_in = s_delta0
+  254.        gyro_s_zeta_in = s_zeta0
+  255.        gyro_kappa_in = kappa0
+  256.        gyro_s_kappa_in = s_kappa0
+  257.        gyro_shift_in = drmaj0
+  258.        gyro_aspect_ratio_in = r_maj
+  259.        gyro_radius_in = r0
+  260.        gyro_box_multiplier_in = box_multiplier
+  261.        gyro_rho_star_in = rho_star
+  262.        gyro_time_step_in = dt
+  263.        gyro_time_max_in = time_max
+  264.        gyro_time_skip_in = time_skip
+  265.        gyro_boundary_method_in = boundary_method
+  266.        gyro_radial_derivative_band_in = m_dx
+  267.        gyro_radial_gyro_band_in = m_gyro
+  268.        gyro_explicit_damp_grid_in = n_explicit_damp
+  269.        gyro_explicit_damp_in = explicit_damp
+  270.        gyro_explicit_damp_elec_in = explicit_damp_elec
+  271.        gyro_debug_flag_in = debug_flag
+  272.        gyro_nonlinear_flag_in = nonlinear_flag
+  273.        gyro_amp_phi_n_in = amp_n
+  274.        gyro_amp_phi_0_in = amp_0
+  275.        gyro_radial_upwind_in = radial_upwind
+  276.        gyro_electron_method_in = electron_method
+  277.        gyro_radial_profile_method_in = radial_profile_method
+  278.        gyro_plot_u_flag_in = plot_u_flag
+  279.        gyro_plot_epar_flag_in = plot_epar_flag
+  280.        gyro_plot_n_flag_in = plot_n_flag
+  281.        gyro_plot_e_flag_in = plot_e_flag
+  282.        gyro_plot_v_flag_in = plot_v_flag
+  283.        gyro_z_eff_in = z_eff
+  284.        gyro_betae_unit_in = betae_unit
+  285.        gyro_ampere_scale_in = ampere_scale
+  286.        gyro_n_field_in = n_field
+  287.        gyro_source_flag_in = source_flag
+  288.        gyro_nu_source_in = nu_source
+  289.        gyro_verbose_flag_in = verbose_flag
+  290.        gyro_nonuniform_grid_flag_in = nonuniform_grid_flag
+  291.        gyro_s_grid_in = s_grid
+  292.        gyro_gamma_e_in = gamma_e
+  293.        gyro_nu_ei_in = nu_ei
+  294.        gyro_nu_ei_scale_in = nu_ei_scale
+  295.        gyro_nu_ii_scale_in = nu_ii_scale
+  296.        gyro_nu_i_krook_in = nu_i_krook
+  297.        gyro_plot_filter_in = plot_filter
+  298.        gyro_n_source_in = n_source
+  299.        gyro_flat_profile_flag_in = flat_profile_flag
+  300.        gyro_density_method_in = density_method
+  301.        gyro_integrator_method_in = integrator_method
+  302.        gyro_energy_max_in = energy_max
+  303.        gyro_mu_1_in = mu_vec(1)
+  304.        gyro_mu_2_in = mu_vec(2)
+  305.        gyro_mu_3_in = mu_vec(3)
+  306.        gyro_mu_4_in = mu_vec(4)
+  307.        gyro_mu_5_in = mu_vec(5)
+  308.        gyro_mu_electron_in = mu_vec(0)
+  309.        gyro_dlnndr_in = dlnndr_vec(1)
+  310.        gyro_dlnndr_2_in = dlnndr_vec(2)
+  311.        gyro_dlnndr_3_in = dlnndr_vec(3)
+  312.        gyro_dlnndr_4_in = dlnndr_vec(4)
+  313.        gyro_dlnndr_5_in = dlnndr_vec(5)
+  314.        gyro_dlnndr_electron_in = dlnndr_vec(0)
+  315.        gyro_dlntdr_in = dlntdr_vec(1)
+  316.        gyro_dlntdr_2_in = dlntdr_vec(2)
+  317.        gyro_dlntdr_3_in = dlntdr_vec(3)
+  318.        gyro_dlntdr_4_in = dlntdr_vec(4)
+  319.        gyro_dlntdr_5_in = dlntdr_vec(5)
+  320.        gyro_dlntdr_electron_in = dlntdr_vec(0)
+  321.        gyro_ni_over_ne_in = n_vec(1)
+  322.        gyro_ni_over_ne_2_in = n_vec(2)
+  323.        gyro_ni_over_ne_3_in = n_vec(3)
+  324.        gyro_ni_over_ne_4_in = n_vec(4)
+  325.        gyro_ni_over_ne_5_in = n_vec(5)
+  326.        gyro_ti_over_te_in = t_vec(1)
+  327.        gyro_ti_over_te_2_in = t_vec(2)
+  328.        gyro_ti_over_te_3_in = t_vec(3)
+  329.        gyro_ti_over_te_4_in = t_vec(4)
+  330.        gyro_ti_over_te_5_in = t_vec(5)
+  331.        gyro_eps_dlnndr_in = eps_dlnndr_vec(1)
+  332.        gyro_eps_dlnndr_2_in = eps_dlnndr_vec(2)
+  333.        gyro_eps_dlnndr_3_in = eps_dlnndr_vec(3)
+  334.        gyro_eps_dlnndr_4_in = eps_dlnndr_vec(4)
+  335.        gyro_eps_dlnndr_5_in = eps_dlnndr_vec(5)
+  336.        gyro_eps_dlnndr_electron_in = eps_dlnndr_vec(0)
+  337.        gyro_eps_dlntdr_in = eps_dlntdr_vec(1)
+  338.        gyro_eps_dlntdr_2_in = eps_dlntdr_vec(2)
+  339.        gyro_eps_dlntdr_3_in = eps_dlntdr_vec(3)
+  340.        gyro_eps_dlntdr_4_in = eps_dlntdr_vec(4)
+  341.        gyro_eps_dlntdr_5_in = eps_dlntdr_vec(5)
+  342.        gyro_eps_dlntdr_electron_in = eps_dlntdr_vec(0)
+  343.        gyro_z_in = z_vec(1)
+  344.        gyro_z_2_in = z_vec(2)
+  345.        gyro_z_3_in = z_vec(3)
+  346.        gyro_z_4_in = z_vec(4)
+  347.        gyro_z_5_in = z_vec(5)
+  348.        gyro_orbit_upwind_in = orbit_upwind_vec(1)
+  349.        gyro_orbit_upwind_2_in = orbit_upwind_vec(2)
+  350.        gyro_orbit_upwind_3_in = orbit_upwind_vec(3)
+  351.        gyro_orbit_upwind_4_in = orbit_upwind_vec(4)
+  352.        gyro_orbit_upwind_5_in = orbit_upwind_vec(5)
+  353.        gyro_orbit_upwind_electron_in = orbit_upwind_vec(0)
+  354.        gyro_pgamma_in = pgamma0
+  355.        gyro_pgamma_scale_in = pgamma0_scale
+  356.        gyro_mach_in = mach0
+  357.        gyro_mach_scale_in = mach0_scale
+  358.        gyro_lindiff_method_in = lindiff_method
+  359.        gyro_trapdiff_flag_in = trapdiff_flag
+  360.        gyro_restart_new_flag_in = restart_new_flag
+  361.        gyro_restart_data_skip_in = restart_data_skip
+  362.        gyro_kill_i_parallel_flag_in = kill_i_parallel_flag
+  363.        gyro_kill_i_drift_flag_in = kill_i_drift_flag
+  364.        gyro_kill_e_drift_flag_in = kill_e_drift_flag
+  365.        gyro_kill_coll_flag_in = kill_coll_flag
+  366.        gyro_doppler_scale_in = doppler_scale
+  367.        gyro_nl_method_in = nl_method
+  368.        gyro_kill_gyro_b_flag_in = kill_gyro_b_flag
+  369.        gyro_velocity_output_flag_in = velocity_output_flag
+  370.        gyro_q_scale_in = q_scale
+  371.        gyro_dist_print_flag_in = dist_print
+  372.        gyro_nint_orb_s_in = nint_ORB_s
+  373.        gyro_nint_orb_do_in = nint_ORB_do
+  374.        gyro_udsymmetry_flag_in = udsymmetry_flag
+  375.        gyro_gyro_method_in = gyro_method
+  376.        gyro_sparse_method_in = sparse_method
+  377.        gyro_n_mumps_max_in = n_mumps_max
+  378.        gyro_n_study_in = n_study
+  379.        gyro_amp_phi_study_in = amp_study
+  380.        gyro_lambda_debye_scale_in = lambda_debye_scale
+  381.        gyro_lambda_debye_in = lambda_debye
+  382.        gyro_radial_grid_offset_in = n_x_offset
+  383.        gyro_theta_mult_in = n_theta_mult
+  384.        gyro_silent_flag_in = silent_flag
+  385.        gyro_nonlinear_transfer_flag_in = nonlinear_transfer_flag
+  386.        gyro_l_x_in = l_x
+  387.        gyro_l_y_in = l_y
+  388.        gyro_entropy_flag_in = entropy_flag
+  389.        gyro_ord_rbf_in = ord_rbf
+  390.        gyro_num_equil_flag_in = num_equil_flag
+  391.        gyro_zmag_in = zmag0
+  392.        gyro_dzmag_in = dzmag0
+  393.        gyro_output_flag_in = output_flag
+  394.        gyro_ipccw_in = ipccw
+  395.        gyro_btccw_in = btccw
+  396.        gyro_geo_gradbcurv_flag_in = geo_gradbcurv_flag
+  397.        gyro_geo_fastionbeta_flag_in = geo_fastionbeta_flag
+  398.        gyro_geo_betaprime_scale_in = geo_betaprime_scale
+  399.        gyro_poisson_z_eff_flag_in = poisson_z_eff_flag
+  400.        gyro_z_eff_method_in = z_eff_method
+  401.        gyro_truncation_method_in = truncation_method
+  402.        gyro_fluxaverage_window_in = fluxaverage_window
+  403.        gyro_gkeigen_proc_mult_in = gkeigen_proc_mult
+  404.        gyro_gkeigen_method_in = gkeigen_method
+  405.        gyro_gkeigen_matrixonly_in = gkeigen_matrixonly
+  406.        gyro_gkeigen_mwrite_flag_in = gkeigen_mwrite_flag
+  407.        gyro_gkeigen_kspace_dim_in = gkeigen_kspace_dim
+  408.        gyro_gkeigen_n_values_in = gkeigen_n_values
+  409.        gyro_gkeigen_iter_in = gkeigen_iter
+  410.        gyro_gkeigen_tol_in = gkeigen_tol
+  411.        gyro_gkeigen_omega_target_in = gkeigen_omega_target
+  412.        gyro_gkeigen_gamma_target_in = gkeigen_gamma_target
+  413.        gyro_linsolve_method_in = linsolve_method
+  414.        gyro_fieldeigen_root_method_in = fieldeigen_root_method
+  415.        gyro_fieldeigen_wr_in = fieldeigen_wr
+  416.        gyro_fieldeigen_wi_in = fieldeigen_wi
+  417.        gyro_fieldeigen_tol_in = fieldeigen_tol
+  418.        gyro_reintegrate_flag_in = reintegrate_flag
+  419.        gyro_ic_method_in = ic_method
+  420.        gyro_zf_test_flag_in = zf_test_flag
+  421.        gyro_lock_ti_flag_in = lock_ti_flag
+  422.    
+  423.        gyro_n_fourier_geo_in = n_fourier_geo
+  424.        gyro_a_fourier_geo_in(:,:) = a_fourier_geo(:,:)
+ftn-6332 ftn: VECTOR MAP_GLOBAL2INTERFACE, File = gyro_interface.f90, Line = 424 
+  A loop starting at line 424 was not vectorized because it does not map well onto the target architecture.
+
+  425.    
+  426.        ! Allocate output arrays (deallocated in gyro_cleanup)
+  427.        if (.not.allocated(gyro_elec_pflux_out)) allocate(gyro_elec_pflux_out(n_x))
+  428.        if (.not.allocated(gyro_elec_mflux_out)) allocate(gyro_elec_mflux_out(n_x))
+  429.        if (.not.allocated(gyro_elec_eflux_out)) allocate(gyro_elec_eflux_out(n_x))
+  430.        if (.not.allocated(gyro_elec_expwd_out)) allocate(gyro_elec_expwd_out(n_x))
+  431.        if (.not.allocated(gyro_ion_pflux_out)) allocate(gyro_ion_pflux_out(n_x,5))
+  432.        if (.not.allocated(gyro_ion_mflux_out)) allocate(gyro_ion_mflux_out(n_x,5))
+  433.        if (.not.allocated(gyro_ion_eflux_out)) allocate(gyro_ion_eflux_out(n_x,5))
+  434.        if (.not.allocated(gyro_ion_expwd_out)) allocate(gyro_ion_expwd_out(n_x,5))
+  435.        if (.not.allocated(gyro_r_out)) allocate(gyro_r_out(n_x))
+  436.    
+  437.        if (debug_flag == 1 .and. i_proc == 0) then
+  438.           print *, '[map_global2interface done]'
+  439.        endif
+  440.    
+  441.      end subroutine map_global2interface
+  442.    
+  443.      ! Map INTERFACE parameters to GLOBAL variables
+  444.      subroutine map_interface2global()
+  445.    
+  446.        use gyro_globals
+  447.    
+  448.        implicit none
+  449.    
+  450.        n_x = gyro_radial_grid_in
+  451.        n_theta_section = gyro_orbit_grid_in
+  452.        n_pass = gyro_pass_grid_in
+  453.        n_trap = gyro_trap_grid_in
+  454.        n_energy = gyro_energy_grid_in
+  455.        n_blend = gyro_blend_grid_in
+  456.        blend_fit_order = gyro_blend_fit_order_in
+  457.        n_theta_plot = gyro_theta_plot_in
+  458.        n0 = gyro_toroidal_min_in
+  459.        n_n = gyro_toroidal_grid_in
+  460.        d_n = gyro_toroidal_sep_in
+  461.        n_ref = gyro_toroidal_reference_in
+  462.        q0 = gyro_safety_factor_in
+  463.        s0 = gyro_shear_in
+  464.        delta0 = gyro_delta_in
+  465.        zeta0 = gyro_zeta_in
+  466.        s_delta0 = gyro_s_delta_in
+  467.        s_zeta0 = gyro_s_zeta_in
+  468.        kappa0 = gyro_kappa_in
+  469.        s_kappa0 = gyro_s_kappa_in
+  470.        drmaj0 = gyro_shift_in
+  471.        r_maj = gyro_aspect_ratio_in
+  472.        r0 = gyro_radius_in
+  473.        box_multiplier = gyro_box_multiplier_in
+  474.        rho_star = gyro_rho_star_in
+  475.        dt = gyro_time_step_in
+  476.        time_max = gyro_time_max_in
+  477.        time_skip = gyro_time_skip_in
+  478.        boundary_method = gyro_boundary_method_in
+  479.        m_dx = gyro_radial_derivative_band_in
+  480.        m_gyro = gyro_radial_gyro_band_in
+  481.        n_explicit_damp = gyro_explicit_damp_grid_in
+  482.        explicit_damp = gyro_explicit_damp_in
+  483.        explicit_damp_elec = gyro_explicit_damp_elec_in
+  484.        debug_flag = gyro_debug_flag_in
+  485.        nonlinear_flag = gyro_nonlinear_flag_in
+  486.        amp_n = gyro_amp_phi_n_in
+  487.        amp_0 = gyro_amp_phi_0_in
+  488.        radial_upwind = gyro_radial_upwind_in
+  489.        electron_method = gyro_electron_method_in
+  490.        radial_profile_method = gyro_radial_profile_method_in
+  491.        plot_u_flag = gyro_plot_u_flag_in
+  492.        plot_epar_flag = gyro_plot_epar_flag_in
+  493.        plot_n_flag = gyro_plot_n_flag_in
+  494.        plot_e_flag = gyro_plot_e_flag_in
+  495.        plot_v_flag = gyro_plot_v_flag_in
+  496.        z_eff = gyro_z_eff_in
+  497.        betae_unit = gyro_betae_unit_in
+  498.        ampere_scale = gyro_ampere_scale_in
+  499.        n_field = gyro_n_field_in
+  500.        source_flag = gyro_source_flag_in
+  501.        nu_source = gyro_nu_source_in
+  502.        verbose_flag = gyro_verbose_flag_in
+  503.        nonuniform_grid_flag = gyro_nonuniform_grid_flag_in
+  504.        s_grid = gyro_s_grid_in
+  505.        gamma_e = gyro_gamma_e_in
+  506.        nu_ei = gyro_nu_ei_in
+  507.        nu_ei_scale = gyro_nu_ei_scale_in
+  508.        nu_ii_scale = gyro_nu_ii_scale_in
+  509.        nu_i_krook = gyro_nu_i_krook_in
+  510.        plot_filter = gyro_plot_filter_in
+  511.        n_source = gyro_n_source_in
+  512.        flat_profile_flag = gyro_flat_profile_flag_in
+  513.        density_method = gyro_density_method_in
+  514.        integrator_method = gyro_integrator_method_in
+  515.        energy_max = gyro_energy_max_in
+  516.        mu_vec(1) = gyro_mu_1_in
+  517.        mu_vec(2) = gyro_mu_2_in
+  518.        mu_vec(3) = gyro_mu_3_in
+  519.        mu_vec(4) = gyro_mu_4_in
+  520.        mu_vec(5) = gyro_mu_5_in
+  521.        mu_vec(0) = gyro_mu_electron_in
+  522.        dlnndr_vec(1) = gyro_dlnndr_in
+  523.        dlnndr_vec(2) = gyro_dlnndr_2_in
+  524.        dlnndr_vec(3) = gyro_dlnndr_3_in
+  525.        dlnndr_vec(4) = gyro_dlnndr_4_in
+  526.        dlnndr_vec(5) = gyro_dlnndr_5_in
+  527.        dlnndr_vec(0) = gyro_dlnndr_electron_in
+  528.        dlntdr_vec(1) = gyro_dlntdr_in
+  529.        dlntdr_vec(2) = gyro_dlntdr_2_in
+  530.        dlntdr_vec(3) = gyro_dlntdr_3_in
+  531.        dlntdr_vec(4) = gyro_dlntdr_4_in
+  532.        dlntdr_vec(5) = gyro_dlntdr_5_in
+  533.        dlntdr_vec(0) = gyro_dlntdr_electron_in
+  534.        n_vec(1) = gyro_ni_over_ne_in
+  535.        n_vec(2) = gyro_ni_over_ne_2_in
+  536.        n_vec(3) = gyro_ni_over_ne_3_in
+  537.        n_vec(4) = gyro_ni_over_ne_4_in
+  538.        n_vec(5) = gyro_ni_over_ne_5_in
+  539.        t_vec(1) = gyro_ti_over_te_in
+  540.        t_vec(2) = gyro_ti_over_te_2_in
+  541.        t_vec(3) = gyro_ti_over_te_3_in
+  542.        t_vec(4) = gyro_ti_over_te_4_in
+  543.        t_vec(5) = gyro_ti_over_te_5_in
+  544.        eps_dlnndr_vec(1) = gyro_eps_dlnndr_in
+  545.        eps_dlnndr_vec(2) = gyro_eps_dlnndr_2_in
+  546.        eps_dlnndr_vec(3) = gyro_eps_dlnndr_3_in
+  547.        eps_dlnndr_vec(4) = gyro_eps_dlnndr_4_in
+  548.        eps_dlnndr_vec(5) = gyro_eps_dlnndr_5_in
+  549.        eps_dlnndr_vec(0) = gyro_eps_dlnndr_electron_in
+  550.        eps_dlntdr_vec(1) = gyro_eps_dlntdr_in
+  551.        eps_dlntdr_vec(2) = gyro_eps_dlntdr_2_in
+  552.        eps_dlntdr_vec(3) = gyro_eps_dlntdr_3_in
+  553.        eps_dlntdr_vec(4) = gyro_eps_dlntdr_4_in
+  554.        eps_dlntdr_vec(5) = gyro_eps_dlntdr_5_in
+  555.        eps_dlntdr_vec(0) = gyro_eps_dlntdr_electron_in
+  556.        z_vec(1) = gyro_z_in
+  557.        z_vec(2) = gyro_z_2_in
+  558.        z_vec(3) = gyro_z_3_in
+  559.        z_vec(4) = gyro_z_4_in
+  560.        z_vec(5) = gyro_z_5_in
+  561.        orbit_upwind_vec(1) = gyro_orbit_upwind_in
+  562.        orbit_upwind_vec(2) = gyro_orbit_upwind_2_in
+  563.        orbit_upwind_vec(3) = gyro_orbit_upwind_3_in
+  564.        orbit_upwind_vec(4) = gyro_orbit_upwind_4_in
+  565.        orbit_upwind_vec(5) = gyro_orbit_upwind_5_in
+  566.        orbit_upwind_vec(0) = gyro_orbit_upwind_electron_in
+  567.        pgamma0 = gyro_pgamma_in
+  568.        pgamma0_scale = gyro_pgamma_scale_in
+  569.        mach0 = gyro_mach_in
+  570.        mach0_scale = gyro_mach_scale_in
+  571.        lindiff_method = gyro_lindiff_method_in
+  572.        trapdiff_flag = gyro_trapdiff_flag_in
+  573.        restart_new_flag = gyro_restart_new_flag_in
+  574.        restart_data_skip = gyro_restart_data_skip_in
+  575.        kill_i_parallel_flag = gyro_kill_i_parallel_flag_in
+  576.        kill_i_drift_flag = gyro_kill_i_drift_flag_in
+  577.        kill_e_drift_flag = gyro_kill_e_drift_flag_in
+  578.        kill_coll_flag = gyro_kill_coll_flag_in
+  579.        doppler_scale = gyro_doppler_scale_in
+  580.        nl_method = gyro_nl_method_in
+  581.        kill_gyro_b_flag = gyro_kill_gyro_b_flag_in
+  582.        velocity_output_flag = gyro_velocity_output_flag_in
+  583.        q_scale = gyro_q_scale_in
+  584.        dist_print = gyro_dist_print_flag_in
+  585.        nint_ORB_s = gyro_nint_orb_s_in
+  586.        nint_ORB_do = gyro_nint_orb_do_in
+  587.        udsymmetry_flag = gyro_udsymmetry_flag_in
+  588.        gyro_method = gyro_gyro_method_in
+  589.        sparse_method = gyro_sparse_method_in
+  590.        n_mumps_max = gyro_n_mumps_max_in
+  591.        n_study = gyro_n_study_in
+  592.        amp_study = gyro_amp_phi_study_in
+  593.        lambda_debye_scale = gyro_lambda_debye_scale_in
+  594.        lambda_debye = gyro_lambda_debye_in
+  595.        n_x_offset = gyro_radial_grid_offset_in
+  596.        n_theta_mult = gyro_theta_mult_in
+  597.        silent_flag = gyro_silent_flag_in
+  598.        nonlinear_transfer_flag = gyro_nonlinear_transfer_flag_in
+  599.        l_x = gyro_l_x_in
+  600.        l_y = gyro_l_y_in
+  601.        entropy_flag = gyro_entropy_flag_in
+  602.        ord_rbf = gyro_ord_rbf_in
+  603.        num_equil_flag = gyro_num_equil_flag_in
+  604.        zmag0 = gyro_zmag_in
+  605.        dzmag0 = gyro_dzmag_in
+  606.        output_flag = gyro_output_flag_in
+  607.        ipccw = gyro_ipccw_in
+  608.        btccw = gyro_btccw_in
+  609.        geo_gradbcurv_flag = gyro_geo_gradbcurv_flag_in
+  610.        geo_fastionbeta_flag = gyro_geo_fastionbeta_flag_in
+  611.        geo_betaprime_scale = gyro_geo_betaprime_scale_in
+  612.        poisson_z_eff_flag = gyro_poisson_z_eff_flag_in
+  613.        z_eff_method = gyro_z_eff_method_in
+  614.        truncation_method = gyro_truncation_method_in
+  615.        fluxaverage_window = gyro_fluxaverage_window_in
+  616.        gkeigen_proc_mult = gyro_gkeigen_proc_mult_in
+  617.        gkeigen_method = gyro_gkeigen_method_in
+  618.        gkeigen_matrixonly = gyro_gkeigen_matrixonly_in
+  619.        gkeigen_mwrite_flag = gyro_gkeigen_mwrite_flag_in
+  620.        gkeigen_kspace_dim = gyro_gkeigen_kspace_dim_in
+  621.        gkeigen_n_values = gyro_gkeigen_n_values_in
+  622.        gkeigen_iter = gyro_gkeigen_iter_in
+  623.        gkeigen_tol = gyro_gkeigen_tol_in
+  624.        gkeigen_omega_target = gyro_gkeigen_omega_target_in
+  625.        gkeigen_gamma_target = gyro_gkeigen_gamma_target_in
+  626.        linsolve_method = gyro_linsolve_method_in
+  627.        fieldeigen_root_method = gyro_fieldeigen_root_method_in
+  628.        fieldeigen_wr = gyro_fieldeigen_wr_in
+  629.        fieldeigen_wi = gyro_fieldeigen_wi_in
+  630.        fieldeigen_tol = gyro_fieldeigen_tol_in
+  631.        reintegrate_flag = gyro_reintegrate_flag_in
+  632.        ic_method = gyro_ic_method_in
+  633.        zf_test_flag = gyro_zf_test_flag_in
+  634.        lock_ti_flag = gyro_lock_ti_flag_in
+  635.    
+  636.        n_fourier_geo = gyro_n_fourier_geo_in
+  637.        a_fourier_geo(:,:) = gyro_a_fourier_geo_in(:,:)
+ftn-6332 ftn: VECTOR MAP_INTERFACE2GLOBAL, File = gyro_interface.f90, Line = 637 
+  A loop starting at line 637 was not vectorized because it does not map well onto the target architecture.
+
+  638.    
+  639.        if (debug_flag == 1 .and. i_proc == 0) then
+  640.           print *, '[map_interface2global done]'
+  641.        endif
+  642.    
+  643.      end subroutine map_interface2global
+  644.    
+  645.      subroutine interfacelocaldump
+  646.    
+  647.        use gyro_globals 
+  648.    
+  649.        implicit none
+  650.    
+  651.        if (i_proc > 0) return
+  652.    
+  653.        open(unit=1,file=trim(path)//'out.gyro.localdump',status='replace')
+  654.        write(1,20) 'RADIAL_GRID',gyro_radial_grid_in
+  655.        write(1,20) 'ORBIT_GRID',gyro_orbit_grid_in
+  656.        write(1,20) 'PASS_GRID',gyro_pass_grid_in
+  657.        write(1,20) 'TRAP_GRID',gyro_trap_grid_in
+  658.        write(1,20) 'ENERGY_GRID',gyro_energy_grid_in
+  659.        write(1,20) 'BLEND_GRID',gyro_blend_grid_in
+  660.        write(1,20) 'BLEND_FIT_ORDER',gyro_blend_fit_order_in
+  661.        write(1,20) 'THETA_PLOT',gyro_theta_plot_in
+  662.        write(1,20) 'TOROIDAL_MIN',gyro_toroidal_min_in
+  663.        write(1,20) 'TOROIDAL_GRID',gyro_toroidal_grid_in
+  664.        write(1,20) 'TOROIDAL_SEP',gyro_toroidal_sep_in
+  665.        write(1,20) 'TOROIDAL_REFERENCE',gyro_toroidal_reference_in
+  666.        write(1,30) 'SAFETY_FACTOR',gyro_safety_factor_in
+  667.        write(1,30) 'SHEAR',gyro_shear_in
+  668.        write(1,30) 'DELTA',gyro_delta_in
+  669.        write(1,30) 'ZETA',gyro_zeta_in
+  670.        write(1,30) 'S_DELTA',gyro_s_delta_in
+  671.        write(1,30) 'S_ZETA',gyro_s_zeta_in
+  672.        write(1,30) 'KAPPA',gyro_kappa_in
+  673.        write(1,30) 'S_KAPPA',gyro_s_kappa_in
+  674.        write(1,30) 'SHIFT',gyro_shift_in
+  675.        write(1,30) 'ASPECT_RATIO',gyro_aspect_ratio_in
+  676.        write(1,30) 'RADIUS',gyro_radius_in
+  677.        write(1,30) 'BOX_MULTIPLIER',gyro_box_multiplier_in
+  678.        write(1,30) 'RHO_STAR',gyro_rho_star_in
+  679.        write(1,30) 'TIME_STEP',gyro_time_step_in
+  680.        write(1,30) 'TIME_MAX',gyro_time_max_in
+  681.        write(1,20) 'TIME_SKIP',gyro_time_skip_in
+  682.        write(1,20) 'BOUNDARY_METHOD',gyro_boundary_method_in
+  683.        write(1,20) 'RADIAL_DERIVATIVE_BAND',gyro_radial_derivative_band_in
+  684.        write(1,20) 'RADIAL_GYRO_BAND',gyro_radial_gyro_band_in
+  685.        write(1,20) 'EXPLICIT_DAMP_GRID',gyro_explicit_damp_grid_in
+  686.        write(1,30) 'EXPLICIT_DAMP',gyro_explicit_damp_in
+  687.        write(1,30) 'EXPLICIT_DAMP_ELEC',gyro_explicit_damp_elec_in
+  688.        write(1,20) 'DEBUG_FLAG',gyro_debug_flag_in
+  689.        write(1,20) 'NONLINEAR_FLAG',gyro_nonlinear_flag_in
+  690.        write(1,30) 'AMP_PHI_N',gyro_amp_phi_n_in
+  691.        write(1,30) 'AMP_PHI_0',gyro_amp_phi_0_in
+  692.        write(1,30) 'RADIAL_UPWIND',gyro_radial_upwind_in
+  693.        write(1,20) 'ELECTRON_METHOD',gyro_electron_method_in
+  694.        write(1,20) 'RADIAL_PROFILE_METHOD',gyro_radial_profile_method_in
+  695.        write(1,20) 'PLOT_U_FLAG',gyro_plot_u_flag_in
+  696.        write(1,20) 'PLOT_EPAR_FLAG',gyro_plot_epar_flag_in
+  697.        write(1,20) 'PLOT_N_FLAG',gyro_plot_n_flag_in
+  698.        write(1,20) 'PLOT_E_FLAG',gyro_plot_e_flag_in
+  699.        write(1,20) 'PLOT_V_FLAG',gyro_plot_v_flag_in
+  700.        write(1,30) 'Z_EFF',gyro_z_eff_in
+  701.        write(1,30) 'BETAE_UNIT',gyro_betae_unit_in
+  702.        write(1,30) 'AMPERE_SCALE',gyro_ampere_scale_in
+  703.        write(1,20) 'N_FIELD',gyro_n_field_in
+  704.        write(1,20) 'SOURCE_FLAG',gyro_source_flag_in
+  705.        write(1,30) 'NU_SOURCE',gyro_nu_source_in
+  706.        write(1,20) 'VERBOSE_FLAG',gyro_verbose_flag_in
+  707.        write(1,20) 'NONUNIFORM_GRID_FLAG',gyro_nonuniform_grid_flag_in
+  708.        write(1,30) 'S_GRID',gyro_s_grid_in
+  709.        write(1,30) 'GAMMA_E',gyro_gamma_e_in
+  710.        write(1,30) 'NU_EI',gyro_nu_ei_in
+  711.        write(1,30) 'NU_EI_SCALE',gyro_nu_ei_scale_in
+  712.        write(1,30) 'NU_II_SCALE',gyro_nu_ii_scale_in
+  713.        write(1,30) 'NU_I_KROOK',gyro_nu_i_krook_in
+  714.        write(1,30) 'PLOT_FILTER',gyro_plot_filter_in
+  715.        write(1,20) 'N_SOURCE',gyro_n_source_in
+  716.        write(1,20) 'FLAT_PROFILE_FLAG',gyro_flat_profile_flag_in
+  717.        write(1,20) 'DENSITY_METHOD',gyro_density_method_in
+  718.        write(1,20) 'INTEGRATOR_METHOD',gyro_integrator_method_in
+  719.        write(1,30) 'ENERGY_MAX',gyro_energy_max_in
+  720.        write(1,30) 'MU',gyro_mu_1_in
+  721.        write(1,30) 'MU_2',gyro_mu_2_in
+  722.        write(1,30) 'MU_3',gyro_mu_3_in
+  723.        write(1,30) 'MU_4',gyro_mu_4_in
+  724.        write(1,30) 'MU_5',gyro_mu_5_in
+  725.        write(1,30) 'MU_ELECTRON',gyro_mu_electron_in
+  726.        write(1,30) 'DLNNDR',gyro_dlnndr_in
+  727.        write(1,30) 'DLNNDR_2',gyro_dlnndr_2_in
+  728.        write(1,30) 'DLNNDR_3',gyro_dlnndr_3_in
+  729.        write(1,30) 'DLNNDR_4',gyro_dlnndr_4_in
+  730.        write(1,30) 'DLNNDR_5',gyro_dlnndr_5_in
+  731.        write(1,30) 'DLNNDR_ELECTRON',gyro_dlnndr_electron_in
+  732.        write(1,30) 'DLNTDR',gyro_dlntdr_in
+  733.        write(1,30) 'DLNTDR_2',gyro_dlntdr_2_in
+  734.        write(1,30) 'DLNTDR_3',gyro_dlntdr_3_in
+  735.        write(1,30) 'DLNTDR_4',gyro_dlntdr_4_in
+  736.        write(1,30) 'DLNTDR_5',gyro_dlntdr_5_in
+  737.        write(1,30) 'DLNTDR_ELECTRON',gyro_dlntdr_electron_in
+  738.        write(1,30) 'NI_OVER_NE',gyro_ni_over_ne_in
+  739.        write(1,30) 'NI_OVER_NE_2',gyro_ni_over_ne_2_in
+  740.        write(1,30) 'NI_OVER_NE_3',gyro_ni_over_ne_3_in
+  741.        write(1,30) 'NI_OVER_NE_4',gyro_ni_over_ne_4_in
+  742.        write(1,30) 'NI_OVER_NE_5',gyro_ni_over_ne_5_in
+  743.        write(1,30) 'TI_OVER_TE',gyro_ti_over_te_in
+  744.        write(1,30) 'TI_OVER_TE_2',gyro_ti_over_te_2_in
+  745.        write(1,30) 'TI_OVER_TE_3',gyro_ti_over_te_3_in
+  746.        write(1,30) 'TI_OVER_TE_4',gyro_ti_over_te_4_in
+  747.        write(1,30) 'TI_OVER_TE_5',gyro_ti_over_te_5_in
+  748.        write(1,30) 'EPS_DLNNDR',gyro_eps_dlnndr_in
+  749.        write(1,30) 'EPS_DLNNDR_2',gyro_eps_dlnndr_2_in
+  750.        write(1,30) 'EPS_DLNNDR_3',gyro_eps_dlnndr_3_in
+  751.        write(1,30) 'EPS_DLNNDR_4',gyro_eps_dlnndr_4_in
+  752.        write(1,30) 'EPS_DLNNDR_5',gyro_eps_dlnndr_5_in
+  753.        write(1,30) 'EPS_DLNNDR_ELECTRON',gyro_eps_dlnndr_electron_in
+  754.        write(1,30) 'EPS_DLNTDR',gyro_eps_dlntdr_in
+  755.        write(1,30) 'EPS_DLNTDR_2',gyro_eps_dlntdr_2_in
+  756.        write(1,30) 'EPS_DLNTDR_3',gyro_eps_dlntdr_3_in
+  757.        write(1,30) 'EPS_DLNTDR_4',gyro_eps_dlntdr_4_in
+  758.        write(1,30) 'EPS_DLNTDR_5',gyro_eps_dlntdr_5_in
+  759.        write(1,30) 'EPS_DLNTDR_ELECTRON',gyro_eps_dlntdr_electron_in
+  760.        write(1,30) 'Z',gyro_z_in
+  761.        write(1,30) 'Z_2',gyro_z_2_in
+  762.        write(1,30) 'Z_3',gyro_z_3_in
+  763.        write(1,30) 'Z_4',gyro_z_4_in
+  764.        write(1,30) 'Z_5',gyro_z_5_in
+  765.        write(1,30) 'ORBIT_UPWIND',gyro_orbit_upwind_in
+  766.        write(1,30) 'ORBIT_UPWIND_2',gyro_orbit_upwind_2_in
+  767.        write(1,30) 'ORBIT_UPWIND_3',gyro_orbit_upwind_3_in
+  768.        write(1,30) 'ORBIT_UPWIND_4',gyro_orbit_upwind_4_in
+  769.        write(1,30) 'ORBIT_UPWIND_5',gyro_orbit_upwind_5_in
+  770.        write(1,30) 'ORBIT_UPWIND_ELECTRON',gyro_orbit_upwind_electron_in
+  771.        write(1,30) 'PGAMMA',gyro_pgamma_in
+  772.        write(1,30) 'PGAMMA_SCALE',gyro_pgamma_scale_in
+  773.        write(1,30) 'MACH',gyro_mach_in
+  774.        write(1,30) 'MACH_SCALE',gyro_mach_scale_in
+  775.        write(1,20) 'LINDIFF_METHOD',gyro_lindiff_method_in
+  776.        write(1,20) 'TRAPDIFF_FLAG',gyro_trapdiff_flag_in
+  777.        write(1,20) 'RESTART_NEW_FLAG',gyro_restart_new_flag_in
+  778.        write(1,20) 'RESTART_DATA_SKIP',gyro_restart_data_skip_in
+  779.        write(1,20) 'KILL_I_PARALLEL_FLAG',gyro_kill_i_parallel_flag_in
+  780.        write(1,20) 'KILL_I_DRIFT_FLAG',gyro_kill_i_drift_flag_in
+  781.        write(1,20) 'KILL_E_DRIFT_FLAG',gyro_kill_e_drift_flag_in
+  782.        write(1,20) 'KILL_COLL_FLAG',gyro_kill_coll_flag_in
+  783.        write(1,30) 'DOPPLER_SCALE',gyro_doppler_scale_in
+  784.        write(1,20) 'NL_METHOD',gyro_nl_method_in
+  785.        write(1,20) 'KILL_GYRO_B_FLAG',gyro_kill_gyro_b_flag_in
+  786.        write(1,20) 'VELOCITY_OUTPUT_FLAG',gyro_velocity_output_flag_in
+  787.        write(1,30) 'Q_SCALE',gyro_q_scale_in
+  788.        write(1,20) 'DIST_PRINT_FLAG',gyro_dist_print_flag_in
+  789.        write(1,20) 'NINT_ORB_S',gyro_nint_orb_s_in
+  790.        write(1,20) 'NINT_ORB_DO',gyro_nint_orb_do_in
+  791.        write(1,20) 'UDSYMMETRY_FLAG',gyro_udsymmetry_flag_in
+  792.        write(1,20) 'GYRO_METHOD',gyro_gyro_method_in
+  793.        write(1,20) 'SPARSE_METHOD',gyro_sparse_method_in
+  794.        write(1,20) 'N_MUMPS_MAX',gyro_n_mumps_max_in
+  795.        write(1,20) 'N_STUDY',gyro_n_study_in
+  796.        write(1,30) 'AMP_PHI_STUDY',gyro_amp_phi_study_in
+  797.        write(1,30) 'LAMBDA_DEBYE_SCALE',gyro_lambda_debye_scale_in
+  798.        write(1,30) 'LAMBDA_DEBYE',gyro_lambda_debye_in
+  799.        write(1,20) 'RADIAL_GRID_OFFSET',gyro_radial_grid_offset_in
+  800.        write(1,20) 'THETA_MULT',gyro_theta_mult_in
+  801.        write(1,20) 'SILENT_FLAG',gyro_silent_flag_in
+  802.        write(1,20) 'NONLINEAR_TRANSFER_FLAG',gyro_nonlinear_transfer_flag_in
+  803.        write(1,30) 'L_X',gyro_l_x_in
+  804.        write(1,30) 'L_Y',gyro_l_y_in
+  805.        write(1,20) 'ENTROPY_FLAG',gyro_entropy_flag_in
+  806.        write(1,20) 'ORD_RBF',gyro_ord_rbf_in
+  807.        write(1,20) 'NUM_EQUIL_FLAG',gyro_num_equil_flag_in
+  808.        write(1,30) 'ZMAG',gyro_zmag_in
+  809.        write(1,30) 'DZMAG',gyro_dzmag_in
+  810.        write(1,20) 'OUTPUT_FLAG',gyro_output_flag_in
+  811.        write(1,30) 'IPCCW',gyro_ipccw_in
+  812.        write(1,30) 'BTCCW',gyro_btccw_in
+  813.        write(1,20) 'GEO_GRADBCURV_FLAG',gyro_geo_gradbcurv_flag_in
+  814.        write(1,20) 'GEO_FASTIONBETA_FLAG',gyro_geo_fastionbeta_flag_in
+  815.        write(1,30) 'GEO_BETAPRIME_SCALE',gyro_geo_betaprime_scale_in
+  816.        write(1,20) 'POISSON_Z_EFF_FLAG',gyro_poisson_z_eff_flag_in
+  817.        write(1,20) 'Z_EFF_METHOD',gyro_z_eff_method_in
+  818.        write(1,20) 'TRUNCATION_METHOD',gyro_truncation_method_in
+  819.        write(1,30) 'FLUXAVE_WINDOW',gyro_fluxaverage_window_in
+  820.        write(1,20) 'LINSOLVE_METHOD',gyro_linsolve_method_in
+  821.        write(1,20) 'FIELDEIGEN_ROOT_METHOD',gyro_fieldeigen_root_method_in
+  822.        write(1,30) 'FIELDEIGEN_WR',gyro_fieldeigen_wr_in
+  823.        write(1,30) 'FIELDEIGEN_WI',gyro_fieldeigen_wi_in
+  824.        write(1,30) 'FIELDEIGEN_TOL',gyro_fieldeigen_tol_in
+  825.        write(1,20) 'REINTEGRATE_FLAG',gyro_reintegrate_flag_in
+  826.        write(1,20) 'IC_METHOD',gyro_ic_method_in
+  827.        write(1,20) 'ZF_TEST_FLAG',gyro_zf_test_flag_in
+  828.        write(1,20) 'LOCK_TI_FLAG',gyro_lock_ti_flag_in
+  829.        close(1)
+  830.    
+  831.    20  format(a,'=',i3)
+  832.    30  format(a,'=',1pe12.5)
+  833.    
+  834.      end subroutine interfacelocaldump
+  835.    
+  836.    end module gyro_interface
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 427, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 428, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 429, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 430, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 431, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 432, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 433, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 434, file gyro_interface.f90)
+                   MAP_GLOBAL2INTERFACE in GYRO_INTERFACE (Line 435, file gyro_interface.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_INTERFACE
+                   GYRO_INTERFACE
+                   GYRO_INTERFACE
+
+Name  Messages
+----  --------
+GYRO_INTERFACE
+      Defined as:  Module (line 14, file gyro_interface.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_GLOBALS
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+INTERFACELOCALDUMP in GYRO_INTERFACE
+      Defined as:  Subroutine (line 645, file gyro_interface.f90)
+
+      Interface:   None
+
+      Calls:       TRIM(Intrinsic) (Line 653, file gyro_interface.f90)
+
+Name  Messages
+----  --------
+MAP_GLOBAL2INTERFACE in GYRO_INTERFACE
+      Defined as:  Subroutine (line 231, file gyro_interface.f90)
+
+      Interface:   None
+
+      Calls:       ALLOCATED(Intrinsic) (Line 427, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 428, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 429, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 430, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 431, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 432, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 433, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 434, file gyro_interface.f90)
+                   ALLOCATED(Intrinsic) (Line 435, file gyro_interface.f90)
+
+Name  Messages
+----  --------
+MAP_INTERFACE2GLOBAL in GYRO_INTERFACE
+      Defined as:  Subroutine (line 444, file gyro_interface.f90)
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   INTERFACELOCALDUMP in GYRO_INTERFACE (Line 653, file gyro_interface.f90)
+
+Name  Messages
+----  --------
+_ALLOCATED(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

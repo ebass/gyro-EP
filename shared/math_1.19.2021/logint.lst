@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/math/logint.f90
+Compiled : 01/19/21  14:38:38
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -c logint.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : LOGINT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/math/logint.f90
+Date     : 01/19/2021  14:38:39
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------
+    2.    ! logint.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Given the (negative) logarithmic gradient f of a 
+    6.    !  function fi:
+    7.    !
+    8.    !                     x*
+    9.    !                     /
+   10.    !  fi(x) = fi(x*)exp[ | f(y) dy ]
+   11.    !                     /
+   12.    !                     x
+   13.    !  
+   14.    !  obtain fi by trapezoidal integration.  It is assumed 
+   15.    !  that fi(x*) is known.
+   16.    !
+   17.    ! NOTES:
+   18.    !      f(1:n) : (input) gradients
+   19.    !       fi(n) : (input) boundary condition
+   20.    !   fi(1:n-1) : (output) interior values
+   21.    !------------------------------------------------------
+   22.    
+   23.    subroutine logint(fi,f,r,n,i0)
+   24.    
+   25.      implicit none
+   26.    
+   27.      integer, intent(in) :: n
+   28.      integer, intent(in) :: i0
+   29.    
+   30.      real, intent(inout), dimension(n) :: fi
+   31.      real, intent(in), dimension(n) :: f
+   32.      real, intent(in),dimension(n) :: r
+   33.    
+   34.      integer :: i
+   35.    
+   36.    
+   37.      if (i0 > 1) then
+   38.         do i=i0,2,-1
+   39.            fi(i-1) = fi(i)*exp(0.5*(f(i)+f(i-1))*(r(i)-r(i-1)))
+   40.         enddo
+   41.      endif
+   42.    
+   43.      if (i0 < n) then
+   44.         do i=i0+1,n
+   45.            fi(i) = fi(i-1)*exp(-0.5*(f(i)+f(i-1))*(r(i)-r(i-1)))
+   46.         enddo
+   47.      endif
+   48.    
+   49.    end subroutine logint
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXP(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   LOGINT (Line 39, file logint.f90)
+                   LOGINT (Line 45, file logint.f90)
+
+Name  Messages
+----  --------
+LOGINT
+      Defined as:  Subroutine (line 23, file logint.f90)
+
+      Interface:   None
+
+      Calls:       EXP(Intrinsic) (Line 39, file logint.f90)
+                   EXP(Intrinsic) (Line 45, file logint.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

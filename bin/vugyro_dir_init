@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# SCRIPT:
+#  vugyro_dir_init 
+#
+# FUNCTION:
+#  Create list of gyro simulation directories
+#  for use by vugyro; save to ~/.vugyrorc
+
+# Generate directory/subdirectory list in .vugyrotmp
+ls -R $1 | grep ":" > ~/.tmp
+
+# Strip ':' left from ls 
+# (we choose not to use in-place flag, -i, for
+# maximum compatibility).
+#
+# sed -i 's/://g' $GYRO_DIR/.tmp
+sed 's/://g' ~/.tmp > ~/.tmp2
+mv ~/.tmp2 ~/.tmp
+
+if test -f ~/.vugyrorc 
+then
+   rm ~/.vugyrorc
+fi
+
+# Generate list of valid simulation directories
+# (i.e., ones that contain out.gyro.profile) 
+touch ~/.vugyrorc
+for i in `cat ~/.tmp`
+do
+   if test -f $i/out.gyro.profile
+   then
+      echo $i >> ~/.vugyrorc
+   fi
+done
+
+# Remove temporary file
+rm ~/.tmp

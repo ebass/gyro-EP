@@ -1,0 +1,487 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_bessel_operator.f90
+Compiled : 01/19/21  15:35:29
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_bessel_operator.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_BESSEL_OPERATOR
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_bessel_operator.f90
+Date     : 01/19/2021  15:35:30
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------------
+    2.    ! gyro_bessel_operator.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    ! Compute all the Bessel-function kernel (averaging) stencils
+    6.    ! to the required bandwidth (m_gyro). Truncation is accomplished
+    7.    ! by assuming functions are constant in the truncated region.
+    8.    !
+    9.    ! In the limit of maximal m_gyro (n_x/2), these are the
+   10.    ! pseudospectral operators.
+   11.    !
+   12.    ! NOTES:
+   13.    !
+   14.    ! itype=1: J_0(x)
+   15.    ! 2: J_0^2(x)
+   16.    ! 3: -(i/2)*k_x*rho*[ J_0(x)+J_2(x) ]
+   17.    ! 4: G_perp = (1/2)*[ J_0(x)+J_2(x) ]
+   18.    ! 5: G_perp^2(x)
+   19.    ! 6: G_perp(x)*J_0(x)
+   20.    ! 7: I_0(x^2)
+   21.    ! 8: i*k_x*rho*[ J_0(x)-J_1(x)/x ] / x^2
+   22.    !
+   23.    ! x = rho*sqrt((2*pi*p*a+u)^2+v^2)
+   24.    !
+   25.    ! kx -> pi_2*p*a + u
+   26.    ! ky -> v
+   27.    !
+   28.    !
+   29.    ! WARNING:
+   30.    !  RJBESL requires non-negative argument, so we need to operate on 
+   31.    !  argument with abs().
+   32.    !
+   33.    ! INPUT:
+   34.    !
+   35.    ! a = |grad(r)|/L
+   36.    ! u = k_theta*Gq*Theta
+   37.    ! v = k_theta*Gq
+   38.    !
+   39.    ! rho = v_perp/Omega_c (itype=1-6,8)
+   40.    ! rho = rhos_unit*sqrt(T)/(mu*z*b0) (itype=7)
+   41.    !------------------------------------------------------------------
+   42.    
+   43.    subroutine gyro_bessel_operator(rho,a,u,v,g,itype)
+   44.    
+   45.      use gyro_globals, only : z_gyro, i_gyro, m_gyro, n_x, truncation_method
+   46.      use math_constants
+   47.    
+   48.      !-----------------------------------------
+   49.      implicit none
+   50.      !
+   51.      real, intent(in) :: a
+   52.      real, intent(in) :: u
+   53.      real, intent(in) :: v
+   54.      real, intent(in) :: rho
+   55.      integer, intent(in) :: itype
+   56.      complex, intent(inout) :: g(-m_gyro:m_gyro-i_gyro)
+   57.      !
+   58.      integer :: p
+   59.      integer :: p0
+   60.      integer :: m
+   61.      !
+   62.      real :: x
+   63.      real :: func(-n_x/2:n_x/2-1)
+   64.      complex :: g0
+   65.      complex :: gp
+   66.      !
+   67.      real, external :: besei0
+   68.      !-----------------------------------------
+   69.    
+   70.      p0 = n_x/2
+   71.    
+   72.      select case (itype)
+   73.    
+   74.      case (1)
+   75.    
+   76.         ! J_0
+   77.         do p=-p0,p0-1
+   78.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+   79.            func(p) = bessel_j0(x)/n_x
+   80.         enddo
+   81.    
+   82.      case (2)
+   83.    
+   84.         ! J_0^2
+   85.         do p=-p0,p0-1
+   86.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+   87.            func(p) = bessel_j0(x)**2/n_x
+   88.         enddo
+   89.    
+   90.      case (3)
+   91.    
+   92.         ! -(i/2)*k_x*rho*[ J_0(z)+J_2(z) ]
+   93.    
+   94.         ! The factor -(i/2) will be applied outside this loop
+   95.         do p=-p0,p0-1
+   96.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+   97.            func(p) = (pi_2*p*a+u)*rho*(bessel_j0(x)+bessel_jn(2,x))/n_x
+   98.         enddo
+   99.    
+  100.      case (4)
+  101.    
+  102.         ! G = (1/2)*[ J_0(z)+J_2(z) ]
+  103.         do p=-p0,p0-1
+  104.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+  105.            func(p) = 0.5*(bessel_j0(x)+bessel_jn(2,x))/n_x
+  106.         enddo
+  107.    
+  108.      case (5)
+  109.    
+  110.         ! G^2
+  111.         do p=-p0,p0-1
+  112.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+  113.            func(p) = (0.5*(bessel_j0(x)+bessel_jn(2,x)))**2/n_x
+  114.         enddo
+  115.    
+  116.      case (6)
+  117.    
+  118.         ! G * J_0
+  119.         do p=-p0,p0-1
+  120.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+  121.            func(p) = 0.5*(bessel_j0(x)+bessel_jn(2,x))*bessel_j0(x)/n_x
+  122.         enddo
+  123.    
+  124.      case (7)
+  125.    
+  126.         ! I_0
+  127.         do p=-p0,p0-1
+  128.            x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+  129.            func(p) = besei0(x*x)/n_x
+  130.         enddo
+  131.    
+  132.      case (8)
+  133.    
+  134.         ! i*k_x*rho*[ J_0(x)-J_1(x)/x ] / x^2
+  135.    
+  136.         ! The factor i will be applied outside this loop
+  137.         if (u**2+v**2 > 1e-8) then
+  138.            do p=-p0,p0-1
+  139.               x = abs(rho)*sqrt((pi_2*p*a+u)**2+v**2)
+  140.               func(p) = (pi_2*p*a+u)*rho*(bessel_j0(x)-bessel_j1(x)/x)/x**2/n_x
+  141.            enddo
+  142.         else
+  143.            ! Case is n=0, which will ultimately give zero contribution so we 
+  144.            ! zero it here explicitly to avoid 0/0.
+  145.            func(:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 145 
+  A loop starting at line 145 was not vectorized because it contains a reference to a non-vector intrinsic on line 145.
+
+  146.         endif
+  147.    
+  148.      end select
+  149.    
+  150.      !-----------------------------------------------------------
+  151.      ! Real-space operators:
+  152.      !
+  153.      ! Construct real-space forms by summing over Fourier modes.
+  154.      ! Real-space gridpoints in truncated region are ignored.
+  155.      !
+  156.      do m=-m_gyro,m_gyro-i_gyro
+  157.         g0 = (0.0,0.0)
+  158.         do p=-p0,p0-1
+  159.            g0 = g0 + z_gyro(m,p)*func(p)
+  160.         enddo
+  161.         g(m) = g0
+  162.      enddo
+  163.      !-----------------------------------------------------------
+  164.    
+  165.      !-----------------------------------------------------------
+  166.      ! Final factors
+  167.      !
+  168.      ! Multiply by -i/2 for case 3
+  169.      if (itype == 3) g = -(i_c/2.0)*g
+ftn-6332 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 169 
+  A loop starting at line 169 was not vectorized because it does not map well onto the target architecture.
+
+  170.    
+  171.      ! Multiply by i for case 8
+  172.      if (itype == 8) g = i_c*g
+ftn-6332 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 172 
+  A loop starting at line 172 was not vectorized because it does not map well onto the target architecture.
+
+  173.      !-----------------------------------------------------------
+  174.    
+  175.    
+  176.      if (truncation_method == 1) then
+  177.    
+  178.         ! ORIGINAL METHOD
+  179.    
+  180.         ! Enforce reality if n=0:
+  181.         if (abs(u) <= epsilon(0.0)) then
+  182.            if (i_gyro /= 1) then
+  183.    
+  184.               ! Correct truncated gyroaverage
+  185.               g0 = sum(g(:))-1.0
+ftn-6263 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 185 
+  A loop starting at line 185 was not vectorized because it contains a reference to a non-vector intrinsic on line 185.
+
+  186.               g(0) = g(0)-g0
+  187.    
+  188.            endif
+  189.            g = real(g)
+ftn-6332 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 189 
+  A loop starting at line 189 was not vectorized because it does not map well onto the target architecture.
+
+  190.         endif
+  191.    
+  192.      else
+  193.    
+  194.         ! ALTERNATIVE METHOD
+  195.    
+  196.         !-----------------------------------------------------------
+  197.         ! Make end-coefficients equal to sum of neglected ones.
+  198.         ! This is equivalent to assuming that functions are
+  199.         ! constant over the truncated region.
+  200.         !
+  201.         if (m_gyro < p0) then
+  202.            do m=-p0,-m_gyro-1
+  203.               g0 = (0.0,0.0)
+  204.               do p=-p0,p0-1
+  205.                  g0 = g0 + z_gyro(m,p)*func(p)
+  206.               enddo
+  207.               ! Periodic point (give 1/2 this bit to other end)
+  208.               if (m == -p0) then
+  209.                  gp = g0/2.0
+  210.                  g(-m_gyro) = g(-m_gyro)+gp
+  211.               else
+  212.                  g(-m_gyro) = g(-m_gyro)+g0
+  213.               endif
+  214.            enddo
+  215.            do m=m_gyro+1,p0-1
+  216.               g0 = (0.0,0.0)
+  217.               do p=-p0,p0-1
+  218.                  g0 = g0 + z_gyro(m,p)*func(p)
+  219.               enddo
+  220.               g(m_gyro) = g(m_gyro)+g0
+  221.            enddo
+  222.            ! Ficticious m=p0 gets half the contribution from m=-p0:
+  223.            g(m_gyro) = g(m_gyro)+gp
+  224.         endif
+  225.         !-----------------------------------------------------------
+  226.    
+  227.         ! Enforce reality if n=0:
+  228.         if (abs(u) <= epsilon(0.0)) g = real(g)
+ftn-6332 ftn: VECTOR GYRO_BESSEL_OPERATOR, File = gyro_bessel_operator.f90, Line = 228 
+  A loop starting at line 228 was not vectorized because it does not map well onto the target architecture.
+
+  229.    
+  230.      endif
+  231.    
+  232.    end subroutine gyro_bessel_operator
+  233.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 78, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 86, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 96, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 104, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 112, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 120, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 128, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 139, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 181, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 228, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+BESEI0
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 129, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+BESSEL_J0(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 79, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 87, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 97, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 105, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 113, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 121, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 121, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 140, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+BESSEL_J1(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 140, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+BESSEL_JN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 97, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 105, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 113, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 121, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+EPSILON(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 181, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 228, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+GYRO_BESSEL_OPERATOR
+      Defined as:  Subroutine (line 43, file gyro_bessel_operator.f90)
+
+      Interface:   None
+
+      Calls:       BESEI0 (Line 129, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 78, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 86, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 96, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 104, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 112, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 120, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 128, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 139, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 181, file gyro_bessel_operator.f90)
+                   ABS(Intrinsic) (Line 228, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 78, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 86, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 96, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 104, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 112, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 120, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 128, file gyro_bessel_operator.f90)
+                   SQRT(Intrinsic) (Line 139, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 79, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 87, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 97, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 105, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 113, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 121, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 121, file gyro_bessel_operator.f90)
+                   BESSEL_J0(Intrinsic) (Line 140, file gyro_bessel_operator.f90)
+                   BESSEL_JN(Intrinsic) (Line 97, file gyro_bessel_operator.f90)
+                   BESSEL_JN(Intrinsic) (Line 105, file gyro_bessel_operator.f90)
+                   BESSEL_JN(Intrinsic) (Line 113, file gyro_bessel_operator.f90)
+                   BESSEL_JN(Intrinsic) (Line 121, file gyro_bessel_operator.f90)
+                   BESSEL_J1(Intrinsic) (Line 140, file gyro_bessel_operator.f90)
+                   EPSILON(Intrinsic) (Line 181, file gyro_bessel_operator.f90)
+                   EPSILON(Intrinsic) (Line 228, file gyro_bessel_operator.f90)
+                   SUM(Intrinsic) (Line 185, file gyro_bessel_operator.f90)
+                   REAL(Intrinsic) (Line 189, file gyro_bessel_operator.f90)
+                   REAL(Intrinsic) (Line 228, file gyro_bessel_operator.f90)
+
+        Uses:      GYRO_GLOBALS
+                   MATH_CONSTANTS
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BESSEL_OPERATOR
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BESSEL_OPERATOR
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 189, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 228, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 78, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 86, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 96, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 104, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 112, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 120, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 128, file gyro_bessel_operator.f90)
+                   GYRO_BESSEL_OPERATOR (Line 139, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BESSEL_OPERATOR (Line 185, file gyro_bessel_operator.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

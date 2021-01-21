@@ -1,0 +1,10 @@
+#--------------------------------------------
+# Environment variable setup for gyro-EP
+#--------------------------------------------
+#!/bin/bash
+
+export PATH=${PATH}:$GYROEP_ROOT/bin
+export PATH=${PATH}:$GYROEP_ROOT/shared/bin
+
+export PYTHONPATH=${PYTHONPATH}:$GYROEP_ROOT/shared/python
+

@@ -1,0 +1,479 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_read_omfit.f90
+Compiled : 01/19/21  15:34:59
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/netcdf/4.6.3.2/CRAYCLANG/9.0/include
+           -c prgen_read_omfit.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : PRGEN_READ_OMFIT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_read_omfit.f90
+Date     : 01/19/2021  15:34:59
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !----------------------------------------------------------------
+    2.    ! prgen_read_omfit.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Read data from OMFIT flux-surface mapper and fit to 
+    6.    !  geometry coefficients.
+    7.    !----------------------------------------------------------------
+    8.    
+    9.    subroutine prgen_read_omfit
+   10.    
+   11.      use prgen_globals
+   12.    
+   13.      implicit none
+   14.    
+   15.      integer :: i,i1,i2
+   16.      integer :: ip
+   17.      integer :: ntot
+   18.      real :: fa,fb
+   19.      character (len=1) :: a
+   20.      integer, dimension(:), allocatable :: narcv
+   21.      real, dimension(:), allocatable :: r_raw,z_raw,l_raw
+   22.      real, dimension(:,:), allocatable :: r2,z2
+   23.      real, dimension(:), allocatable :: sqdpsi
+   24.      real, dimension(:), allocatable :: psi
+   25.      real, dimension(:), allocatable :: q_omfit
+   26.      real, dimension(:), allocatable :: p_omfit
+   27.      real, dimension(:,:), allocatable :: gvec
+   28.      real, dimension(:,:,:), allocatable :: g3vec
+   29.      real, dimension(:,:,:), allocatable :: g3rho
+   30.    
+   31.      !----------------------------------------------------------------
+   32.      ! Read gfile header info
+   33.      !
+   34.      open(unit=1,file='gfile',status='old')
+   35.      read(1,'(a)') efit_header
+   36.      close(1) 
+   37.      !----------------------------------------------------------------
+   38.    
+   39.      !----------------------------------------------------------------
+   40.      ! Read the OMFIT mapper file
+   41.      open(unit=1,file='out.omfit.fluxsurf',status='old')
+   42.    
+   43.      do i=1,8
+   44.         read(1,*) a
+   45.      enddo
+   46.      read(1,*) nsurf
+   47.    
+   48.      allocate(narcv(nsurf))
+   49.      read(1,*) narcv(:)
+   50.    
+   51.      ntot = sum(narcv)
+ftn-6297 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 51 
+  A loop starting at line 51 was not vectorized because a recurrence was found at line 51.
+
+   52.      narc = narcv(1)
+   53.    
+   54.      allocate(psi(nsurf))
+   55.      allocate(q_omfit(nsurf))
+   56.      allocate(p_omfit(nsurf))
+   57.      allocate(r_raw(ntot))
+   58.      allocate(z_raw(ntot))
+   59.      allocate(l_raw(ntot))
+   60.    
+   61.      read(1,*) psi(:)
+   62.      read(1,*) q_omfit(:)
+   63.      read(1,*) p_omfit(:)
+   64.      read(1,*) r_raw(:)
+   65.      read(1,*) z_raw(:)
+   66.      read(1,*) l_raw(:)
+   67.      close(1)
+   68.    
+   69.      psi(:) = psi(:)-psi(1)
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 69 
+  A loop starting at line 69 was not vectorized because it contains a reference to a non-vector intrinsic on line 69.
+
+   70.    
+   71.      allocate(r2(narc,nsurf))
+   72.      allocate(z2(narc,nsurf))
+   73.    
+   74.      ! Repack data into 2D array
+   75.    
+   76.      do i=1,nsurf
+   77.         if (i == 1) then
+   78.            i1 = 1
+   79.         else
+   80.            i1 = sum(narcv(1:(i-1)))+1
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 80 
+  A loop starting at line 80 was not vectorized because it contains a reference to a non-vector intrinsic on line 80.
+
+   81.         endif
+   82.         i2 = sum(narcv(1:i))
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 82 
+  A loop starting at line 82 was not vectorized because it contains a reference to a non-vector intrinsic on line 82.
+
+   83.         ! Reverse order
+   84.         r2(:,i) = r_raw(i2:i1:-1)
+ftn-6262 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 84 
+  A loop starting at line 84 was not vectorized because it contains a call to a subroutine or function on line 84.
+
+   85.         z2(:,i) = z_raw(i2:i1:-1)
+ftn-6262 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 85 
+  A loop starting at line 85 was not vectorized because it contains a call to a subroutine or function on line 85.
+
+   86.      enddo
+   87.    
+   88.      deallocate(r_raw)
+   89.      deallocate(z_raw)
+   90.      deallocate(l_raw)
+   91.      deallocate(narcv)
+   92.      !----------------------------------------------------------------
+   93.    
+   94.      !----------------------------------------------------------------
+   95.      ! Correct flux variation in profile data (ITERDB, etc) 
+   96.      !
+   97.      if (format_type == 0 .or. format_type == 7) then
+   98.         ! Case 1: raw gfile mode ; dpsi is undefined
+   99.         dpsi_data = psi(nsurf)
+  100.         dpsi_efit = psi(nsurf)
+  101.         do i=1,nx
+  102.            dpsi(i) = (i-1)*dpsi_efit/(nx-1)
+  103.         enddo
+  104.      else
+  105.         ! Case 2: typical case 
+  106.         dpsi_data = dpsi(nx)
+  107.         dpsi_efit = psi(nsurf)
+  108.    
+  109.         ! Ensure max(dpsi) = max(gato_psi) 
+  110.         dpsi(:)  = dpsi(:)*dpsi_efit/dpsi_data
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 110 
+  A loop starting at line 110 was not vectorized because it contains a reference to a non-vector intrinsic on line 110.
+
+  111.         ! Extra insurance against roundoff
+  112.         dpsi(nx) = dpsi_efit 
+  113.      endif
+  114.      !----------------------------------------------------------------
+  115.    
+  116.      !----------------------------------------------------------------
+  117.      ! Get Miller-style (model shape) coefficients using 
+  118.      ! fluxfit routines:
+  119.      !
+  120.      ! 1  r (cm)
+  121.      ! 2  z_mag (cm)
+  122.      ! 3  R0 (cm)
+  123.      ! 4  kappa
+  124.      ! 5  delta
+  125.      ! 6  zeta
+  126.      !
+  127.      call fluxfit_driver(1,1,nsurf,narc,r2,z2,verbose_flag)
+  128.      !
+  129.      allocate(gvec(6,nsurf))
+  130.      !
+  131.      open(unit=1,file='fluxfit.profile',status='old')
+  132.      read(1,*) a
+  133.      read(1,*) gvec(:,:)
+  134.      close(1)
+  135.    
+  136.      allocate(sqdpsi(nx))
+  137.      sqdpsi = sqrt(dpsi)
+ftn-6209 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 137 
+  A loop starting at line 137 was partially vectorized.
+
+  138.    
+  139.      ! Explicitly set rmin=0 at origin
+  140.      gvec(1,1) = 0.0
+  141.    
+  142.      ! Use extrapolation to get values of shape parameters at origin
+  143.      do i=2,6
+  144.         call bound_extrap(fa,fb,gvec(i,:),psi,nsurf)
+                                           ^                
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 144, Column = 34 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  145.         gvec(i,1) = fa
+  146.      enddo
+  147.    
+  148.      ! Map shape coefficients onto poloidal flux (dpsi) grid:
+  149.      call cub_spline(sqrt(psi),gvec(1,:),nsurf,sqdpsi,rmin,nx)
+                            ^                                         
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 149, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                           
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 149, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  150.      call cub_spline(sqrt(psi),gvec(2,:),nsurf,sqdpsi,zmag,nx)
+                            ^                                         
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 150, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                           
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 150, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  151.      call cub_spline(sqrt(psi),gvec(3,:),nsurf,sqdpsi,rmaj,nx)
+                            ^                                         
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 151, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                           
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 151, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  152.      call cub_spline(sqrt(psi),gvec(4,:),nsurf,sqdpsi,kappa,nx)
+                            ^                                          
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 152, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                            
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 152, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  153.      call cub_spline(sqrt(psi),gvec(5,:),nsurf,sqdpsi,delta,nx)
+                            ^                                          
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 153, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                            
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 153, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  154.      call cub_spline(sqrt(psi),gvec(6,:),nsurf,sqdpsi,zeta,nx)
+                            ^                                         
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 154, Column = 19 
+  This argument produces a copy in to a temporary variable.
+
+                                          ^                           
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 154, Column = 33 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  155.    
+  156.      ! Map q and p into poloidal flux grid
+  157.      if (nop_flag == 0) then
+  158.         print '(a)','INFO: (prgen) Using total pressure from gfile.'
+  159.         call cub_spline(sqrt(psi),p_omfit,nsurf,sqdpsi,p_tot,nx)
+                               ^                                        
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 159, Column = 22 
+  This argument produces a copy in to a temporary variable.
+
+  160.      endif
+  161.      if (noq_flag == 0) then 
+  162.         print '(a)','INFO: (prgen) Using safety factor (q) from gfile.'
+  163.         call cub_spline(sqrt(psi),q_omfit,nsurf,sqdpsi,q,nx)
+                               ^                                    
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 163, Column = 22 
+  This argument produces a copy in to a temporary variable.
+
+  164.      endif
+  165.    
+  166.      ! Explicitly set rmin=0 at origin
+  167.      rmin(1) = 0.0
+  168.    
+  169.      deallocate(gvec)
+  170.      !----------------------------------------------------------------
+  171.    
+  172.      !----------------------------------------------------------------
+  173.      ! Get general geometry coefficients
+  174.      !
+  175.      call fluxfit_driver(2,nfourier,nsurf,narc,r2,z2,verbose_flag)
+  176.    
+  177.      allocate(g3vec(4,0:nfourier,nsurf))
+  178.      allocate(g3rho(4,0:nfourier,nx))
+  179.    
+  180.      open(unit=1,file='fluxfit.geo',status='old')
+  181.      read(1,*) ip
+  182.      read(1,*) g3vec(:,:,:)
+  183.      close(1)
+  184.    
+  185.      ! Explicitly set rmin=0 at origin
+  186.      g3vec(:,1:nfourier,1) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 186 
+  A loop starting at line 186 was not vectorized because it contains a reference to a non-vector intrinsic on line 186.
+
+  187.    
+  188.      ! Extrapolate centers (R0,Z0) to origin
+  189.      do i=1,4
+  190.         call bound_extrap(fa,fb,g3vec(i,0,:),psi,nsurf)
+                                            ^                  
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 190, Column = 35 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  191.         g3vec(i,0,1) = fa
+  192.      enddo
+  193.    
+  194.      ! Map Fourier coefficients onto poloidal flux (dpsi) grid 
+  195.      do i=1,4
+  196.         do ip=0,nfourier
+  197.            call cub_spline(sqrt(psi),g3vec(i,ip,:),nsurf,sqdpsi,g3rho(i,ip,:),nx)
+                                  ^                                                      
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 197, Column = 25 
+  This argument produces a copy in to a temporary variable.
+
+                                                 ^                                       
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 197, Column = 40 
+  This argument produces a copy in and copy out to a temporary variable.
+
+                                                                            ^            
+ftn-1438 ftn: CAUTION PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 197, Column = 67 
+  This argument produces a copy in and copy out to a temporary variable.
+
+  198.         enddo
+  199.      enddo
+  200.    
+  201.      ! Explicitly set rmin=0 at origin
+  202.      g3rho(:,1:nfourier,1) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_READ_OMFIT, File = prgen_read_omfit.f90, Line = 202 
+  A loop starting at line 202 was not vectorized because it contains a reference to a non-vector intrinsic on line 202.
+
+  203.    
+  204.      open(unit=1,file='input.profiles.geo',status='replace')
+  205.      write(1,'(a)') '# input.profiles.geo'
+  206.      write(1,'(a)') '#'
+  207.      write(1,'(a)') '# See https://fusion.gat.com/theory/input.profiles.geo for complete documentation.'
+  208.      write(1,'(a)') '#'
+  209.      write(1,'(a)') '# File format:'
+  210.      write(1,'(a)') '#-------------------'
+  211.      write(1,'(a)') '# nfourier'
+  212.      write(1,'(a)') '# a[4,0:nfourier,nx]'  
+  213.      write(1,'(a)') '#-------------------'
+  214.      write(1,'(a)') '#'
+  215.      write(1,'(a)') '# NOTE: nx=EXPRO_n_exp is defined in input.profiles'
+  216.      write(1,*) nfourier
+  217.      write(1,'(1pe20.13)') g3rho(:,:,:)
+  218.      close(1)
+  219.      !----------------------------------------------------------------
+  220.    
+  221.      ! Clean up
+  222.      deallocate(g3vec)
+  223.      deallocate(g3rho)
+  224.      deallocate(r2)
+  225.      deallocate(z2)
+  226.      deallocate(psi)
+  227.      deallocate(q_omfit)
+  228.      deallocate(p_omfit)
+  229.    
+  230.    end subroutine prgen_read_omfit
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+BOUND_EXTRAP
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CUB_SPLINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_OMFIT (Line 159, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 163, file prgen_read_omfit.f90)
+
+Name  Messages
+----  --------
+FLUXFIT_DRIVER
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_OMFIT (Line 127, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 175, file prgen_read_omfit.f90)
+
+Name  Messages
+----  --------
+PRGEN_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_READ_OMFIT
+
+Name  Messages
+----  --------
+PRGEN_READ_OMFIT
+      Defined as:  Subroutine (line 9, file prgen_read_omfit.f90)
+
+      Interface:   None
+
+      Calls:       SUM(Intrinsic) (Line 51, file prgen_read_omfit.f90)
+                   SUM(Intrinsic) (Line 80, file prgen_read_omfit.f90)
+                   SUM(Intrinsic) (Line 82, file prgen_read_omfit.f90)
+                   FLUXFIT_DRIVER (Line 127, file prgen_read_omfit.f90)
+                   FLUXFIT_DRIVER (Line 175, file prgen_read_omfit.f90)
+                   SQRT(Intrinsic) (Line 137, file prgen_read_omfit.f90)
+                   SQRT(Intrinsic) (Line 159, file prgen_read_omfit.f90)
+                   SQRT(Intrinsic) (Line 163, file prgen_read_omfit.f90)
+                   CUB_SPLINE (Line 159, file prgen_read_omfit.f90)
+                   CUB_SPLINE (Line 163, file prgen_read_omfit.f90)
+
+        Uses:      PRGEN_GLOBALS
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_OMFIT (Line 137, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 159, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 163, file prgen_read_omfit.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_READ_OMFIT (Line 51, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 80, file prgen_read_omfit.f90)
+                   PRGEN_READ_OMFIT (Line 82, file prgen_read_omfit.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

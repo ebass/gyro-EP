@@ -1,0 +1,282 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_timestep_explicit.f90
+Compiled : 01/19/21  15:35:53
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_timestep_explicit.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_TIMESTEP_EXPLICIT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_timestep_explicit.f90
+Date     : 01/19/2021  15:35:53
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------
+    2.    ! gyro_timestep_explicit.f90 
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Explicit integrators.
+    6.    !-----------------------------------------------------------
+    7.    
+    8.    subroutine gyro_timestep_explicit
+    9.    
+   10.      use gyro_globals
+   11.      use gyro_pointers
+   12.    
+   13.      !--------------------------------------------------------------
+   14.      implicit none
+   15.      !
+   16.      complex, dimension(:,:,:,:), allocatable :: rhse_1
+   17.      complex, dimension(:,:,:,:), allocatable :: rhse_2
+   18.      complex, dimension(:,:,:,:), allocatable :: rhse_3
+   19.      !--------------------------------------------------------------
+   20.    
+   21.      allocate(rhse_1(n_stack,n_x,n_nek_loc_1,n_kinetic))
+   22.      allocate(rhse_2(n_stack,n_x,n_nek_loc_1,n_kinetic))
+   23.      allocate(rhse_3(n_stack,n_x,n_nek_loc_1,n_kinetic))
+   24.    
+   25.    
+   26.      if (integrator_method == 1) then
+   27.    
+   28.         !---------
+   29.         ! RK2
+   30.         !---------
+   31.    
+   32.         h_0 = h
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 32 
+  A loop starting at line 32 was not vectorized because it does not map well onto the target architecture.
+
+   33.    
+   34.         ! Stage 1
+   35.    
+   36.         call gyro_rhs_total
+   37.         rhse_1 = rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 37 
+  A loop starting at line 37 was not vectorized because it does not map well onto the target architecture.
+
+   38.    
+   39.         h = h_0+dt*rhse_1
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 39 
+  A loop starting at line 39 was not vectorized because it does not map well onto the target architecture.
+
+   40.         call gyro_field_solve_explicit
+   41.    
+   42.         ! Stage 2
+   43.    
+   44.         call gyro_rhs_total
+   45.         rhse_2 = rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 45 
+  A loop starting at line 45 was not vectorized because it does not map well onto the target architecture.
+
+   46.    
+   47.         rhs = 0.5*(rhse_1+rhse_2)
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 47 
+  A loop starting at line 47 was not vectorized because it does not map well onto the target architecture.
+
+   48.         h   = h_0+dt*rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 48 
+  A loop starting at line 48 was not vectorized because it does not map well onto the target architecture.
+
+   49.         call gyro_field_solve_explicit
+   50.    
+   51.         ! Error estimate
+   52.    
+   53.         h_err = 0.5*dt*(-rhse_1+rhse_2)
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 53 
+  A loop starting at line 53 was not vectorized because it does not map well onto the target architecture.
+
+   54.    
+   55.      else 
+   56.    
+   57.         !---------
+   58.         ! RK4
+   59.         !---------
+   60.    
+   61.         h_0 = h
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 61 
+  A loop starting at line 61 was not vectorized because it does not map well onto the target architecture.
+
+   62.    
+   63.         ! Stage 1
+   64.    
+   65.         call gyro_rhs_total
+   66.         rhse_1 = rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 66 
+  A loop starting at line 66 was not vectorized because it does not map well onto the target architecture.
+
+   67.    
+   68.         h = h_0+0.5*dt*rhse_1
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 68 
+  A loop starting at line 68 was not vectorized because it does not map well onto the target architecture.
+
+   69.         call gyro_field_solve_explicit
+   70.    
+   71.         ! Stage 2
+   72.    
+   73.         call gyro_rhs_total
+   74.         rhse_2 = rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 74 
+  A loop starting at line 74 was not vectorized because it does not map well onto the target architecture.
+
+   75.    
+   76.         h = h_0+0.5*dt*rhse_2
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 76 
+  A loop starting at line 76 was not vectorized because it does not map well onto the target architecture.
+
+   77.         call gyro_field_solve_explicit
+   78.    
+   79.         ! Stage 3
+   80.    
+   81.         call gyro_rhs_total
+   82.         rhse_3 = rhs
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 82 
+  A loop starting at line 82 was not vectorized because it does not map well onto the target architecture.
+
+   83.    
+   84.         h = h_0+dt*rhse_3
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 84 
+  A loop starting at line 84 was not vectorized because it does not map well onto the target architecture.
+
+   85.         call gyro_field_solve_explicit
+   86.    
+   87.         ! Stage 4
+   88.    
+   89.         call gyro_rhs_total
+   90.    
+   91.         h = h_0+dt*(rhse_1+2.0*(rhse_2+rhse_3)+rhs)/6.0
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 91 
+  A loop starting at line 91 was not vectorized because it does not map well onto the target architecture.
+
+   92.         call gyro_field_solve_explicit
+   93.    
+   94.         ! Error estimate
+   95.    
+   96.         h_err = dt*(-rhse_1+rhse_2+rhse_3-rhs)/12.0
+ftn-6332 ftn: VECTOR GYRO_TIMESTEP_EXPLICIT, File = gyro_timestep_explicit.f90, Line = 96 
+  A loop starting at line 96 was not vectorized because it does not map well onto the target architecture.
+
+   97.    
+   98.      endif
+   99.    
+  100.      deallocate(rhse_1)
+  101.      deallocate(rhse_2)
+  102.      deallocate(rhse_3)
+  103.    
+  104.    end subroutine gyro_timestep_explicit
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_FIELD_SOLVE_EXPLICIT
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_TIMESTEP_EXPLICIT (Line 40, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 49, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 69, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 77, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 85, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 92, file gyro_timestep_explicit.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_TIMESTEP_EXPLICIT
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_TIMESTEP_EXPLICIT
+
+Name  Messages
+----  --------
+GYRO_RHS_TOTAL
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_TIMESTEP_EXPLICIT (Line 36, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 44, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 65, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 73, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 81, file gyro_timestep_explicit.f90)
+                   GYRO_TIMESTEP_EXPLICIT (Line 89, file gyro_timestep_explicit.f90)
+
+Name  Messages
+----  --------
+GYRO_TIMESTEP_EXPLICIT
+      Defined as:  Subroutine (line 8, file gyro_timestep_explicit.f90)
+
+      Interface:   None
+
+      Calls:       GYRO_RHS_TOTAL (Line 36, file gyro_timestep_explicit.f90)
+                   GYRO_RHS_TOTAL (Line 44, file gyro_timestep_explicit.f90)
+                   GYRO_RHS_TOTAL (Line 65, file gyro_timestep_explicit.f90)
+                   GYRO_RHS_TOTAL (Line 73, file gyro_timestep_explicit.f90)
+                   GYRO_RHS_TOTAL (Line 81, file gyro_timestep_explicit.f90)
+                   GYRO_RHS_TOTAL (Line 89, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 40, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 49, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 69, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 77, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 85, file gyro_timestep_explicit.f90)
+                   GYRO_FIELD_SOLVE_EXPLICIT (Line 92, file gyro_timestep_explicit.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_POINTERS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

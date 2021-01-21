@@ -1,0 +1,721 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/GEO/GEO_do.f90
+Compiled : 06/09/16  13:24:30
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include GEO_do.f90
+Program
+  Units  : GEO_DO
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/GEO/GEO_do.f90
+Date     : 06/09/2016  13:24:31
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------
+    2.    ! GEO_do.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Calculation of geometry coefficients for 
+    6.    !  Miller local equilibrium model.
+    7.    !
+    8.    !  See usage description in GEO_interface.f90
+    9.    !------------------------------------------------
+   10.     
+   11.    subroutine GEO_do()
+ftn-7413 ftn: CAUTION File = GEO_do.f90, Line = 11 
+  Due to the large size of this routine, use before definition analysis will be restricted to simple unaliased scalar variables.
+
+   12.    
+   13.      use GEO_interface,&
+   14.           b => GEOV_b, &
+   15.           dbdt2 => GEOV_dbdt2, &
+   16.           bp => GEOV_bp, &
+   17.           bt => GEOV_bt, &
+   18.           gcos1 => GEOV_gcos1, &
+   19.           gcos2 => GEOV_gcos2, &
+   20.           g_theta => GEOV_g_theta, &
+   21.           grad_r => GEOV_grad_r, &
+   22.           gq => GEOV_gq, &
+   23.           dbdt => GEOV_dbdt, &
+   24.           gsin => GEOV_gsin, &
+   25.           captheta => GEOV_captheta, &
+   26.           nu => GEOV_nu, &
+   27.           thetav => GEOV_theta, &
+   28.           l_t => GEOV_l_t, &
+   29.           nsin => GEOV_nsin, &
+   30.           usin => GEOV_usin, &
+   31.           ucos => GEOV_ucos, &
+   32.           bigr => GEOV_bigr, &
+   33.           bigr_r => GEOV_bigr_r, &
+   34.           bigr_t => GEOV_bigr_t
+   35.    
+   36.      !-----------------------------------------------------------
+   37.      implicit none
+   38.      !
+   39.      integer :: n_theta
+   40.      integer :: ny
+   41.      integer :: i
+   42.      integer :: n
+   43.      !
+   44.      integer, dimension(:), allocatable :: ic
+   45.      !
+   46.      real :: theta
+   47.      real :: d_theta
+   48.      real :: a
+   49.      real :: a_t
+   50.      real :: a_tt
+   51.      real :: x
+   52.      real :: bigr_tt
+   53.      real :: bigz_tt
+   54.      real :: bigz_r
+   55.      real :: g_tt
+   56.      real :: jac_r
+   57.      real :: f
+   58.      real :: f_prime
+   59.      real :: c 
+   60.      real :: pi_2
+   61.      real :: denom
+   62.      !
+   63.      real :: b1
+   64.      real :: b2
+   65.      real :: b3
+   66.      real :: b4
+   67.      real :: b5
+   68.      !
+   69.      real, dimension(:), allocatable :: bigz
+   70.      real, dimension(:), allocatable :: bigz_t
+   71.      real, dimension(:), allocatable :: r_c
+   72.      real, dimension(:), allocatable :: bigz_l
+   73.      real, dimension(:), allocatable :: dbdl
+   74.      real, dimension(:,:), allocatable :: e
+   75.      real, dimension(:,:), allocatable :: ei
+   76.      real, dimension(:), allocatable :: loop
+   77.      real, dimension(:), allocatable :: a_R,b_R,a_Z,b_Z
+   78.      real, dimension(:), allocatable :: a_Rp,b_Rp,a_Zp,b_Zp
+   79.      !
+   80.      !-----------------------------------------------------------
+   81.        
+   82.      !-----------------------------------------------------------
+   83.      ! Check for missing value
+   84.      !
+   85.      if (abs(GEO_signb_in) < 1e-10) then
+   86.         print *,'bad value for GEO_signb_in'
+   87.         stop
+   88.      endif
+   89.      !-----------------------------------------------------------
+   90.         
+   91.      !-----------------------------------------------------------
+   92.      ! If we are using the s-alpha model, just compute stuff 
+   93.      ! directly and exit:
+   94.      !
+   95.      if (GEO_model_in == -1) then
+   96.         return
+   97.      endif
+   98.      !-----------------------------------------------------------
+   99.    
+  100.      !-----------------------------------------------------------
+  101.      ! Setup for case of general geomtry
+  102.      !
+  103.      ny = GEO_nfourier_in
+  104.      !
+  105.      allocate(a_R(0:ny))
+  106.      allocate(b_R(0:ny))
+  107.      allocate(a_Z(0:ny))
+  108.      allocate(b_Z(0:ny))
+  109.      allocate(a_Rp(0:ny))
+  110.      allocate(b_Rp(0:ny))
+  111.      allocate(a_Zp(0:ny))
+  112.      allocate(b_Zp(0:ny))
+  113.      !
+  114.      a_R(:)  = GEO_fourier_in(1,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 114 
+  A loop starting at line 114 was not vectorized because it contains a call to a subroutine or function on line 114.
+
+  115.      b_R(:)  = GEO_fourier_in(2,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 115 
+  A loop starting at line 115 was not vectorized because it contains a call to a subroutine or function on line 115.
+
+  116.      a_Z(:)  = GEO_fourier_in(3,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 116 
+  A loop starting at line 116 was not vectorized because it contains a call to a subroutine or function on line 116.
+
+  117.      b_Z(:)  = GEO_fourier_in(4,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 117 
+  A loop starting at line 117 was not vectorized because it contains a call to a subroutine or function on line 117.
+
+  118.      a_Rp(:) = GEO_fourier_in(5,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 118 
+  A loop starting at line 118 was not vectorized because it contains a call to a subroutine or function on line 118.
+
+  119.      b_Rp(:) = GEO_fourier_in(6,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 119 
+  A loop starting at line 119 was not vectorized because it contains a call to a subroutine or function on line 119.
+
+  120.      a_Zp(:) = GEO_fourier_in(7,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 120 
+  A loop starting at line 120 was not vectorized because it contains a call to a subroutine or function on line 120.
+
+  121.      b_Zp(:) = GEO_fourier_in(8,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 121 
+  A loop starting at line 121 was not vectorized because it contains a call to a subroutine or function on line 121.
+
+  122.      !-----------------------------------------------------------
+  123.     
+  124.      !-----------------------------------------------------------
+  125.      ! Allocate internal variables
+  126.      !
+  127.      n_theta = GEO_ntheta_in
+  128.      !
+  129.      allocate(bigz(n_theta))
+  130.      allocate(bigz_t(n_theta))
+  131.      allocate(r_c(n_theta))
+  132.      allocate(dbdl(n_theta))
+  133.      allocate(bigz_l(n_theta))
+  134.      allocate(e(n_theta,4))
+  135.      allocate(ic(2-n_theta:2*n_theta-2))
+  136.      allocate(ei(n_theta,4))
+  137.      allocate(loop(4))
+  138.      !-----------------------------------------------------------
+  139.    
+  140.      pi_2 = 8.0*atan(1.0)
+  141.    
+  142.      do i=1,n_theta-1
+  143.         ic(i) = i
+  144.         ic(i-(n_theta-1)) = i
+  145.         ic(i+(n_theta-1)) = i
+  146.      enddo
+  147.    
+  148.      d_theta = pi_2/(n_theta-1)
+  149.    
+  150.      !------------------------------------------------------------------
+  151.      ! Compute fundamental geometric quantities (basic derivatives
+  152.      ! like dl/dt) and metric elements (g_tt).
+  153.      !
+  154.      do i=1,n_theta
+  155.    
+  156.         theta = -0.5*pi_2+(i-1)*d_theta
+  157.    
+  158.         thetav(i) = theta
+  159.    
+  160.         if (GEO_model_in == 0) then
+  161.    
+  162.            !-----------------------------------------
+  163.            ! Generalized Miller-type parameterization
+  164.            !-----------------------------------------
+  165.    
+  166.            x = asin(GEO_delta_in)
+  167.    
+  168.            ! A
+  169.            ! dA/dtheta
+  170.            ! d^2A/dtheta^2
+  171.            a    = theta+x*sin(theta)
+  172.            a_t  = 1.0+x*cos(theta)
+  173.            a_tt = -x*sin(theta)
+  174.    
+  175.            ! R(theta)
+  176.            ! dR/dr
+  177.            ! dR/dtheta
+  178.            ! d^2R/dtheta^2
+  179.            bigr(i) = GEO_rmaj_in+GEO_rmin_in*cos(a)
+  180.            bigr_r(i) = GEO_drmaj_in+cos(a)-GEO_s_delta_in/cos(x)*sin(theta)*sin(a)
+  181.            bigr_t(i) = -GEO_rmin_in*a_t*sin(a)
+  182.            bigr_tt = -GEO_rmin_in*a_t**2*cos(a)-GEO_rmin_in*a_tt*sin(a)
+  183.    
+  184.            !-----------------------------------------------------------
+  185.    
+  186.            ! A
+  187.            ! dA/dtheta
+  188.            ! d^2A/dtheta^2
+  189.            a    = theta+GEO_zeta_in*sin(2*theta)
+  190.            a_t  = 1.0+2*GEO_zeta_in*cos(2*theta)
+  191.            a_tt = -4*GEO_zeta_in*sin(2*theta)
+  192.    
+  193.            ! Z(theta)
+  194.            ! dZ/dr
+  195.            ! dZ/dtheta
+  196.            ! d^2Z/dtheta^2
+  197.            bigz(i) = GEO_zmag_in+GEO_kappa_in*GEO_rmin_in*sin(a)
+  198.            bigz_r  = GEO_dzmag_in+GEO_kappa_in*(1.0+GEO_s_kappa_in)*sin(a)+&
+  199.                 GEO_kappa_in*GEO_s_zeta_in*cos(a)*sin(2*theta)
+  200.            bigz_t(i) = GEO_kappa_in*GEO_rmin_in*cos(a)*a_t
+  201.            bigz_tt = -GEO_kappa_in*GEO_rmin_in*sin(a)*a_t**2+&
+  202.                 GEO_kappa_in*GEO_rmin_in*cos(a)*a_tt
+  203.    
+  204.         else
+  205.    
+  206.            !-----------------------------------------
+  207.            ! Fourier-expansion (completely general)
+  208.            !-----------------------------------------
+  209.    
+  210.            bigr(i)   = 0.5*a_R(0)
+  211.            bigr_r(i) = 0.5*a_Rp(0)
+  212.            bigr_t(i) = 0.0
+  213.            bigr_tt   = 0.0
+  214.            do n=1,ny
+  215.               bigr(i) = bigr(i)+a_R(n)*cos(n*theta)+b_R(n)*sin(n*theta)        
+  216.               bigr_r(i)  = bigr_r(i)+a_Rp(n)*cos(n*theta)+b_Rp(n)*sin(n*theta)        
+  217.               bigr_t(i)  = bigr_t(i)-n*a_R(n)*sin(n*theta)+n*b_R(n)*cos(n*theta) 
+  218.               bigr_tt = bigr_tt-n*n*(a_R(n)*cos(n*theta)+b_R(n)*sin(n*theta)) 
+  219.            enddo
+  220.    
+  221.            bigz(i)  = 0.5*a_Z(0)
+  222.            bigz_r   = 0.5*a_Zp(0)
+  223.            bigz_t(i) = 0.0
+  224.            bigz_tt   = 0.0
+  225.            do n=1,ny
+  226.               bigz(i) = bigz(i)+a_Z(n)*cos(n*theta)+b_Z(n)*sin(n*theta)        
+  227.               bigz_r  = bigz_r+a_Zp(n)*cos(n*theta)+b_Zp(n)*sin(n*theta)        
+  228.               bigz_t(i)  = bigz_t(i)-n*a_Z(n)*sin(n*theta)+n*b_Z(n)*cos(n*theta) 
+  229.               bigz_tt = bigz_tt-n*n*(a_Z(n)*cos(n*theta)+b_Z(n)*sin(n*theta)) 
+  230.            enddo
+  231.    
+  232.         endif
+  233.    
+  234.         g_tt = bigr_t(i)**2+bigz_t(i)**2
+  235.    
+  236.         jac_r = bigr(i)*(bigr_r(i)*bigz_t(i)-bigr_t(i)*bigz_r)
+  237.    
+  238.         grad_r(i) = bigr(i)*sqrt(g_tt)/jac_r
+  239.    
+  240.         l_t(i) = sqrt(g_tt)
+  241.    
+  242.         ! 1/(du/dl)
+  243.         r_c(i) = l_t(i)**3/(bigr_t(i)*bigz_tt-bigz_t(i)*bigr_tt)
+  244.    
+  245.         ! cos(u)
+  246.         bigz_l(i) = bigz_t(i)/l_t(i)
+  247.    
+  248.         nsin(i) = (bigr_r(i)*bigr_t(i)+bigz_r*bigz_t(i))/l_t(i)
+  249.    
+  250.      enddo
+  251.      !------------------------------------------------------------------
+  252.    
+  253.      !------------------------------------------------------------------
+  254.      ! Loop integral (1 to n_theta-1) to compute f
+  255.      !
+  256.      c = 0.0
+  257.      do i=1,n_theta-1
+  258.         c = c+l_t(i)/(bigr(i)*grad_r(i))
+  259.      enddo
+  260.      f = GEO_rmin_in/(c*d_theta/pi_2)
+  261.      !
+  262.      ! Loop integral to compute V'
+  263.      !
+  264.      c = 0.0
+  265.      do i=1,n_theta-1
+  266.         c = c+l_t(i)*bigr(i)/grad_r(i)
+  267.      enddo
+  268.      GEO_volume_prime = pi_2*c*d_theta
+  269.      !------------------------------------------------------------------
+  270.    
+  271.      !------------------------------------------------------------------
+  272.      ! bt (toroidal field, Bt) 
+  273.      ! bp (poloidal field, Bp) 
+  274.      ! b  (total field, B)
+  275.      !
+  276.      do i=1,n_theta
+  277.         bt(i) = f/bigr(i)
+  278.         bp(i) = (GEO_rmin_in/GEO_q_in)*grad_r(i)/bigr(i)
+  279.         b(i)  = GEO_signb_in*sqrt(bt(i)**2+bp(i)**2)
+  280.      enddo
+  281.      !------------------------------------------------------------------
+  282.    
+  283.      !------------------------------------------------------------------
+  284.      ! dbdl  (db/dl)
+  285.      ! dbdt  (db/d(theta))
+  286.      ! dbdt2 (d^2b/dt^2)
+  287.      ! gsin  (generalized sine)
+  288.      ! gcos1 (generalized cosine)
+  289.      ! gcos2 
+  290.      ! g_theta    (G_theta)
+  291.      ! gq    (G_q)
+  292.      !
+  293.      !
+  294.      ! Use 5-point stencils for derivatives.  We get poor 
+  295.      ! accuracy for db/dt without this.
+  296.      ! 
+  297.      do i=1,n_theta
+  298.    
+  299.         b5 = b(ic(i+2))
+  300.         b4 = b(ic(i+1))
+  301.         b3 = b(ic(i))
+  302.         b2 = b(ic(i-1))
+  303.         b1 = b(ic(i-2))
+  304.    
+  305.         dbdt(i)  = (-b5+8.0*b4-8.0*b2+b1)/(12.0*d_theta)
+  306.         dbdl(i)  = dbdt(i)/l_t(i)
+  307.         dbdt2(i) = (-b5+16.0*b4-30.0*b3+16.0*b2-b1)/(12.0*d_theta**2)
+  308.         gsin(i)  = bt(i)*GEO_rmaj_in*dbdl(i)/b(i)**2
+  309.         gcos1(i) = (bt(i)**2/bigr(i)*bigz_l(i)+bp(i)**2/r_c(i))*GEO_rmaj_in/b(i)**2
+  310.         gcos2(i) = 0.5*(GEO_rmaj_in/b(i)**2)*grad_r(i)*(-GEO_beta_star_in)
+  311.         g_theta(i)    = bigr(i)*b(i)*l_t(i)/(GEO_rmin_in*GEO_rmaj_in*grad_r(i))
+  312.         gq(i)    = GEO_rmin_in*b(i)/(GEO_q_in*bigr(i)*bp(i))
+  313.    
+  314.         usin(i)  = -bigr_t(i)/l_t(i)
+  315.         ucos(i)  = (bt(i)/b(i))*bigz_l(i)
+  316.    
+  317.      enddo
+  318.      !------------------------------------------------------------------
+  319.    
+  320.      !------------------------------------------------------------------
+  321.      ! Compute integrands for E1,E2,E3 and E4=nu
+  322.      !
+  323.      do i=1,n_theta
+  324.         c = d_theta*l_t(i)/(bigr(i)*grad_r(i))
+  325.         ei(i,1) = c*2.0*bt(i)/bp(i)*(GEO_rmin_in/r_c(i)-GEO_rmin_in*bigz_l(i)/bigr(i))
+  326.         ei(i,2) = c*b(i)**2/bp(i)**2
+  327.         ei(i,3) = c*grad_r(i)*0.5/bp(i)**2*(bt(i)/bp(i))     
+  328.         ei(i,4) = -c*grad_r(i)*(bt(i)/bp(i))     
+  329.      enddo
+  330.      !------------------------------------------------------------------
+  331.    
+  332.      !------------------------------------------------------------------
+  333.      ! Compute integrals E1,E2,E3,E4=nu from integrands
+  334.      !
+  335.      e(n_theta/2+1,:) = 0.0
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 335 
+  A loop starting at line 335 was not vectorized because it contains a reference to a non-vector intrinsic on line 335.
+
+  336.      do i=n_theta/2+2,n_theta
+  337.         e(i,:) = e(i-1,:)+0.5*(ei(i-1,:)+ei(i,:))
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 337 
+  A loop starting at line 337 was not vectorized because it contains a call to a subroutine or function on line 337.
+
+  338.      enddo
+  339.      do i=n_theta/2,1,-1
+  340.         e(i,:) = e(i+1,:)-0.5*(ei(i+1,:)+ei(i,:))
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 340 
+  A loop starting at line 340 was not vectorized because it contains a call to a subroutine or function on line 340.
+
+  341.      enddo
+  342.      !------------------------------------------------------------------
+  343.    
+  344.      !------------------------------------------------------------------
+  345.      ! Compute f_prime = df/d(psi) (units 1/length). 
+  346.      !
+  347.      ! (conceptually, ff_prime is determined from q and s).
+  348.      !
+  349.      loop(:) = e(n_theta,:)-e(1,:)
+ftn-6262 ftn: VECTOR File = GEO_do.f90, Line = 349 
+  A loop starting at line 349 was not vectorized because it contains a call to a subroutine or function on line 349.
+
+  350.      !
+  351.      f_prime = (pi_2*GEO_q_in*GEO_s_in/GEO_rmin_in-loop(1)/GEO_rmin_in-&
+  352.           loop(3)*(-GEO_beta_star_in))/loop(2)
+  353.    
+  354.      do i=1,n_theta
+  355.         nu(i)    = e(i,4)
+  356.         captheta(i) = bp(i)/b(i)*grad_r(i)*bigr(i)* & 
+  357.              (e(i,1)/GEO_rmin_in+e(i,2)*f_prime+e(i,3)*(-GEO_beta_star_in))
+  358.      enddo
+  359.      !------------------------------------------------------------------
+  360.    
+  361.      !-----------------------------------------------------------
+  362.      ! Scalar variables contained in GEO_interface:
+  363.      !
+  364.      ! NOTE: Flux-surface average:
+  365.      !
+  366.      !        /
+  367.      !        | d(theta) G_theta/B f 
+  368.      !        /
+  369.      ! <f> = -----------------------
+  370.      !        /
+  371.      !        | d(theta) G_theta/B
+  372.      !        /
+  373.    
+  374.      !
+  375.      ! (1) Loop integrals (1 to n_theta-1) to compute 
+  376.      !     flux-surface averages:
+  377.      !
+  378.      ! Denominator:
+  379.    
+  380.      denom = sum(g_theta(1:n_theta-1)/b(1:n_theta-1))
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 380 
+  A loop starting at line 380 was not vectorized because it contains a reference to a non-vector intrinsic on line 380.
+
+  381.    
+  382.      GEO_fluxsurfave_grad_r = sum(grad_r(1:n_theta-1)*g_theta(1:n_theta-1)/ &
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 382 
+  A loop starting at line 382 was not vectorized because it contains a reference to a non-vector intrinsic on line 382.
+
+  383.           b(1:n_theta-1))/denom
+  384.    
+  385.      GEO_fluxsurfave_grad_r2 = sum(grad_r(1:n_theta-1)**2*g_theta(1:n_theta-1)/ &
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 385 
+  A loop starting at line 385 was not vectorized because it contains a reference to a non-vector intrinsic on line 385.
+
+  386.           b(1:n_theta-1))/denom
+  387.    
+  388.      ! theta(i) = 0 for i = n_theta/2+1
+  389.    
+  390.      GEO_grad_r0   = grad_r(n_theta/2+1)
+  391.      GEO_ffprime   = f*f_prime
+  392.      GEO_beta_star = GEO_beta_star_in
+  393.      GEO_f         = f
+  394.      !
+  395.      ! pre-factor of 0.5 comes from triangular element in phi-direction:
+  396.      ! dV = (0.5*R*dphi)*(R*dZ) 
+  397.      !
+  398.      GEO_volume    = 0.5*pi_2*sum(bigz_t(1:n_theta-1)*bigr(1:n_theta-1)**2)*d_theta
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 398 
+  A loop starting at line 398 was not vectorized because it contains a reference to a non-vector intrinsic on line 398.
+
+  399.      !-----------------------------------------------------------
+  400.    
+  401.      !-----------------------------------------------------------
+  402.      ! Straight field-line angle
+  403.      !
+  404.      GEOV_theta_nc(1) = thetav(1)
+  405.      do i=2,n_theta
+  406.         GEOV_theta_nc(i) = GEOV_theta_nc(i-1)+0.5*(g_theta(i)+g_theta(i-1))*d_theta
+  407.      enddo
+  408.      GEOV_theta_nc(:) = -0.5*pi_2+pi_2*(0.5*pi_2+GEOV_theta_nc(:))/(0.5*pi_2+GEOV_theta_nc(n_theta))
+ftn-6263 ftn: VECTOR File = GEO_do.f90, Line = 408 
+  A loop starting at line 408 was not vectorized because it contains a reference to a non-vector intrinsic on line 408.
+
+  409.      !-----------------------------------------------------------
+  410.    
+  411.      !-----------------------------------------------------------
+  412.      ! Deallocate internal variables
+  413.      !
+  414.      deallocate(bigz)
+  415.      deallocate(bigz_t)
+  416.      deallocate(r_c)
+  417.      deallocate(dbdl)
+  418.      deallocate(bigz_l)
+  419.      deallocate(e)
+  420.      deallocate(ic)
+  421.      deallocate(ei)
+  422.      deallocate(loop)
+  423.      !
+  424.      deallocate(a_R)
+  425.      deallocate(b_R)
+  426.      deallocate(a_Z)
+  427.      deallocate(b_Z)
+  428.      deallocate(a_Rp)
+  429.      deallocate(b_Rp)
+  430.      deallocate(a_Zp)
+  431.      deallocate(b_Zp)
+  432.      !-----------------------------------------------------------
+  433.    
+  434.    end subroutine GEO_do
+  435.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 85, file GEO_do.f90)
+
+Name  Messages
+----  --------
+ASIN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 166, file GEO_do.f90)
+
+Name  Messages
+----  --------
+ATAN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 140, file GEO_do.f90)
+
+Name  Messages
+----  --------
+COS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 172, file GEO_do.f90)
+                   GEO_DO (Line 179, file GEO_do.f90)
+                   GEO_DO (Line 180, file GEO_do.f90)
+                   GEO_DO (Line 180, file GEO_do.f90)
+                   GEO_DO (Line 182, file GEO_do.f90)
+                   GEO_DO (Line 190, file GEO_do.f90)
+                   GEO_DO (Line 199, file GEO_do.f90)
+                   GEO_DO (Line 200, file GEO_do.f90)
+                   GEO_DO (Line 202, file GEO_do.f90)
+                   GEO_DO (Line 215, file GEO_do.f90)
+                   GEO_DO (Line 216, file GEO_do.f90)
+                   GEO_DO (Line 217, file GEO_do.f90)
+                   GEO_DO (Line 218, file GEO_do.f90)
+                   GEO_DO (Line 226, file GEO_do.f90)
+                   GEO_DO (Line 227, file GEO_do.f90)
+                   GEO_DO (Line 228, file GEO_do.f90)
+                   GEO_DO (Line 229, file GEO_do.f90)
+
+Name  Messages
+----  --------
+GEO_DO
+      Defined as:  Subroutine (line 11, file GEO_do.f90)
+
+      Interface:   None
+
+      Calls:       ABS(Intrinsic) (Line 85, file GEO_do.f90)
+                   ATAN(Intrinsic) (Line 140, file GEO_do.f90)
+                   ASIN(Intrinsic) (Line 166, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 171, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 173, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 180, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 180, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 181, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 182, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 189, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 191, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 197, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 198, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 199, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 201, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 215, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 216, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 217, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 218, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 226, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 227, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 228, file GEO_do.f90)
+                   SIN(Intrinsic) (Line 229, file GEO_do.f90)
+                   COS(Intrinsic) (Line 172, file GEO_do.f90)
+                   COS(Intrinsic) (Line 179, file GEO_do.f90)
+                   COS(Intrinsic) (Line 180, file GEO_do.f90)
+                   COS(Intrinsic) (Line 180, file GEO_do.f90)
+                   COS(Intrinsic) (Line 182, file GEO_do.f90)
+                   COS(Intrinsic) (Line 190, file GEO_do.f90)
+                   COS(Intrinsic) (Line 199, file GEO_do.f90)
+                   COS(Intrinsic) (Line 200, file GEO_do.f90)
+                   COS(Intrinsic) (Line 202, file GEO_do.f90)
+                   COS(Intrinsic) (Line 215, file GEO_do.f90)
+                   COS(Intrinsic) (Line 216, file GEO_do.f90)
+                   COS(Intrinsic) (Line 217, file GEO_do.f90)
+                   COS(Intrinsic) (Line 218, file GEO_do.f90)
+                   COS(Intrinsic) (Line 226, file GEO_do.f90)
+                   COS(Intrinsic) (Line 227, file GEO_do.f90)
+                   COS(Intrinsic) (Line 228, file GEO_do.f90)
+                   COS(Intrinsic) (Line 229, file GEO_do.f90)
+                   SQRT(Intrinsic) (Line 238, file GEO_do.f90)
+                   SQRT(Intrinsic) (Line 240, file GEO_do.f90)
+                   SQRT(Intrinsic) (Line 279, file GEO_do.f90)
+                   SUM(Intrinsic) (Line 380, file GEO_do.f90)
+                   SUM(Intrinsic) (Line 382, file GEO_do.f90)
+                   SUM(Intrinsic) (Line 385, file GEO_do.f90)
+                   SUM(Intrinsic) (Line 398, file GEO_do.f90)
+
+Name  Messages
+----  --------
+GEO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+Name  Messages
+----  --------
+SIN(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 171, file GEO_do.f90)
+                   GEO_DO (Line 173, file GEO_do.f90)
+                   GEO_DO (Line 180, file GEO_do.f90)
+                   GEO_DO (Line 180, file GEO_do.f90)
+                   GEO_DO (Line 181, file GEO_do.f90)
+                   GEO_DO (Line 182, file GEO_do.f90)
+                   GEO_DO (Line 189, file GEO_do.f90)
+                   GEO_DO (Line 191, file GEO_do.f90)
+                   GEO_DO (Line 197, file GEO_do.f90)
+                   GEO_DO (Line 198, file GEO_do.f90)
+                   GEO_DO (Line 199, file GEO_do.f90)
+                   GEO_DO (Line 201, file GEO_do.f90)
+                   GEO_DO (Line 215, file GEO_do.f90)
+                   GEO_DO (Line 216, file GEO_do.f90)
+                   GEO_DO (Line 217, file GEO_do.f90)
+                   GEO_DO (Line 218, file GEO_do.f90)
+                   GEO_DO (Line 226, file GEO_do.f90)
+                   GEO_DO (Line 227, file GEO_do.f90)
+                   GEO_DO (Line 228, file GEO_do.f90)
+                   GEO_DO (Line 229, file GEO_do.f90)
+
+Name  Messages
+----  --------
+SQRT(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 238, file GEO_do.f90)
+                   GEO_DO (Line 240, file GEO_do.f90)
+                   GEO_DO (Line 279, file GEO_do.f90)
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GEO_DO (Line 380, file GEO_do.f90)
+                   GEO_DO (Line 382, file GEO_do.f90)
+                   GEO_DO (Line 385, file GEO_do.f90)
+                   GEO_DO (Line 398, file GEO_do.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,619 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/GKEIGEN/GKEIGEN_split_comm.f90
+Compiled : 01/19/21  15:35:59
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -c GKEIGEN_split_comm.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GKEIGEN_SPLIT_COMM
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/GKEIGEN/GKEIGEN_split_comm.f90
+Date     : 01/19/2021  15:35:59
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------
+    2.    ! GKEIGEN_split_com.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !   Split the MPI communicator into
+    6.    !   gkeigen_proc_mult separate instances
+    7.    !   of GYRO_COMM_WORLD.
+    8.    !------------------------------------------
+    9.    
+   10.    subroutine GKEIGEN_split_comm
+   11.    
+   12.      use gyro_globals
+   13.      use mpi
+   14.    
+   15.      integer :: ierr
+   16.    
+   17.      !----------------------------------------------------------------
+   18.      ! Split the communicator into gkeigen_proc_mult parallel instances
+   19.      ! of gyro each calculating a fraction of the columns of the
+   20.      ! gkeigen matrix.
+   21.      !
+   22.      ! j_proc_tot : processor rank in MPI_COMM_WORLD
+   23.      ! i_proc     : processor rank in GYRO_COMM_WORLD
+   24.      ! n_proc     : (total process)/gkeigen_proc_mult
+   25.      !               number of processes in each GYRO_COMM_WORLD
+   26.      !
+   27.      ! If gkeigen_proc_mult > 1, the user must specify a processor 
+   28.      ! number that is an integer N such that:
+   29.      !
+   30.      !        N = (n_proc)*(gkeigen_proc_mult)
+   31.      ! and
+   32.      !
+   33.      !        n_nek = (n_proc)*M, where M is any integer.
+   34.      !
+   35.      if ((linsolve_method/=2) .AND. (gkeigen_proc_mult/=1)) then
+   36.        gkeigen_proc_mult = 1
+   37.        call send_line('gkeigen_proc_mult reset to 1 (non-GKEIGEN run)')
+   38.      endif
+   39.    
+   40.      gkeigen_j_set = Mod(i_proc,gkeigen_proc_mult)
+   41.    
+   42.      call MPI_COMM_SPLIT(GYRO_COMM_WORLD,&
+   43.           gkeigen_j_set,&
+   44.           i_proc,&
+   45.           GKEIGEN_J_SUBSET, &
+   46.           i_err)
+   47.      !
+   48.      GYRO_COMM_WORLD = GKEIGEN_J_SUBSET
+   49.    
+   50.      !---------------------------------------------------------------
+   51.      ! Reset process ranks if MPI_COMM_WORLD was split.
+   52.      call MPI_COMM_RANK(GYRO_COMM_WORLD,i_proc,i_err)
+   53.      call MPI_COMM_SIZE(GYRO_COMM_WORLD,n_proc,i_err)
+   54.      !---------------------------------------------------------------
+   55.    
+   56.      call MPI_COMM_RANK(MPI_COMM_WORLD,j_proc_tot,i_err)
+   57.      call MPI_COMM_SIZE(MPI_COMM_WORLD,n_proc_tot,i_err)
+   58.    
+   59.      ! Generate a separate communicator for all process sharing
+   60.      ! the same value of i_proc for use in MPI_ALLTOALL.
+   61.      call MPI_COMM_SPLIT(MPI_COMM_WORLD,&
+   62.                          i_proc,&
+   63.                          j_proc_tot,&
+   64.                          GYRO_COMM_UNIPROC,&
+   65.                          ierr)
+   66.    
+   67.      if (debug_flag == 1) then
+   68.        call send_line('[GKEIGEN_split_comm done]')
+   69.      endif
+   70.    
+   71.    end subroutine GKEIGEN_split_comm
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     GKEIGEN_SPLIT_COMM               Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     GKEIGEN_SPLIT_COMM               Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     GKEIGEN_SPLIT_COMM               Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     GKEIGEN_SPLIT_COMM               Block is used from MPI_CONSTANTS
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     GKEIGEN_SPLIT_COMM               Block is used from MPI_CONSTANTS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GKEIGEN_SPLIT_COMM
+      Defined as:  Subroutine (line 10, file GKEIGEN_split_comm.f90)
+
+      Interface:   None
+
+      Calls:       SEND_LINE (Line 37, file GKEIGEN_split_comm.f90)
+                   SEND_LINE (Line 68, file GKEIGEN_split_comm.f90)
+                   MOD(Intrinsic) (Line 40, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_SPLIT (Line 42, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_SPLIT (Line 61, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_RANK (Line 52, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_RANK (Line 56, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_SIZE (Line 53, file GKEIGEN_split_comm.f90)
+                   MPI_COMM_SIZE (Line 57, file GKEIGEN_split_comm.f90)
+
+        Uses:      GYRO_GLOBALS
+                   MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GKEIGEN_SPLIT_COMM
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MOD(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GKEIGEN_SPLIT_COMM (Line 40, file GKEIGEN_split_comm.f90)
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     GKEIGEN_SPLIT_COMM
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     GKEIGEN_SPLIT_COMM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_COMM_RANK
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GKEIGEN_SPLIT_COMM (Line 52, file GKEIGEN_split_comm.f90)
+                   GKEIGEN_SPLIT_COMM (Line 56, file GKEIGEN_split_comm.f90)
+
+Name  Messages
+----  --------
+MPI_COMM_SIZE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GKEIGEN_SPLIT_COMM (Line 53, file GKEIGEN_split_comm.f90)
+                   GKEIGEN_SPLIT_COMM (Line 57, file GKEIGEN_split_comm.f90)
+
+Name  Messages
+----  --------
+MPI_COMM_SPLIT
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GKEIGEN_SPLIT_COMM (Line 42, file GKEIGEN_split_comm.f90)
+                   GKEIGEN_SPLIT_COMM (Line 61, file GKEIGEN_split_comm.f90)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GKEIGEN_SPLIT_COMM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     GKEIGEN_SPLIT_COMM  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SEND_LINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GKEIGEN_SPLIT_COMM (Line 37, file GKEIGEN_split_comm.f90)
+                   GKEIGEN_SPLIT_COMM (Line 68, file GKEIGEN_split_comm.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

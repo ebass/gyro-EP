@@ -1,0 +1,456 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/locpargen/locpargen.f90
+Compiled : 06/09/16  13:25:29
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include locpargen.f90
+Program
+  Units  : LOCPARGEN
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/locpargen/locpargen.f90
+Date     : 06/09/2016  13:25:29
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! locpargen.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Generate list of local parameters given input radius or 
+    6.    !  input rho.
+    7.    !------------------------------------------------------------
+    8.    
+    9.    program locpargen
+ftn-7413 ftn: CAUTION File = locpargen.f90, Line = 9 
+  Due to the large size of this routine, use before definition analysis will be restricted to simple unaliased scalar variables.
+
+   10.    
+   11.      use EXPRO_interface
+   12.    
+   13.      implicit none
+   14.    
+   15.      real :: r0
+   16.      real :: rho0
+   17.      real :: psi0
+   18.      real :: a
+   19.      real, dimension(1) :: x
+   20.      real, dimension(1) :: y
+   21.      real, dimension(3) :: z
+   22.      real, dimension(:), allocatable :: x_vec
+   23.    
+   24.    
+   25.      open(unit=1,file='input.locpargen',status='old')
+   26.      read(1,*) r0
+   27.      read(1,*) rho0
+   28.      read(1,*) psi0
+   29.      read(1,*) z(1)
+   30.      read(1,*) z(2)
+   31.      read(1,*) z(3)
+   32.      close(1)
+   33.    
+   34.      EXPRO_ctrl_density_method = 1
+   35.      EXPRO_ctrl_z(1:3) = z(1:3)
+ftn-6204 ftn: VECTOR File = locpargen.f90, Line = 35 
+  A loop starting at line 35 was vectorized.
+
+   36.      EXPRO_ctrl_numeq_flag = 0 
+   37.      EXPRO_ctrl_signq = (-1)*(-1)
+   38.      EXPRO_ctrl_signb = -(-1)
+   39.      EXPRO_ctrl_rotation_method = 1
+   40.    
+   41.      call EXPRO_alloc('./',1) 
+   42.      call EXPRO_read
+   43.    
+   44.      print *
+   45.      print '(a)','Local input parameters'
+   46.      print *
+   47.    
+   48.      allocate(x_vec(EXPRO_n_exp))
+   49.    
+   50.      ! Minor radius
+   51.      a = EXPRO_rmin(EXPRO_n_exp)
+   52.    
+   53.      if (r0 > 0.0) then
+   54.    
+   55.         ! Use local radius (r/a)
+   56.    
+   57.         x(1)  = r0
+   58.         x_vec = EXPRO_rmin/a
+ftn-6209 ftn: VECTOR File = locpargen.f90, Line = 58 
+  A loop starting at line 58 was partially vectorized.
+
+   59.    
+   60.         ! RADIUS
+   61.         print 10,'RADIUS=',r0
+   62.    
+   63.      else if (rho0 > 0.0) then
+   64.    
+   65.         ! Use local rho
+   66.    
+   67.         x(1)  = rho0
+   68.         x_vec = EXPRO_rho
+ftn-6209 ftn: VECTOR File = locpargen.f90, Line = 68 
+  A loop starting at line 68 was partially vectorized.
+
+   69.    
+   70.         ! RADIUS
+   71.         call cub_spline(x_vec,EXPRO_rmin/a,EXPRO_n_exp,x,y,1)
+                                               ^                     
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 71, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+   72.         print 10,'RADIUS=',y(1)
+   73.    
+   74.      else 
+   75.    
+   76.         ! Use local psi_N
+   77.    
+   78.         x(1)  = psi0*EXPRO_poloidalfluxover2pi(EXPRO_n_exp)
+   79.         x_vec = EXPRO_poloidalfluxover2pi
+ftn-6209 ftn: VECTOR File = locpargen.f90, Line = 79 
+  A loop starting at line 79 was partially vectorized.
+
+   80.    
+   81.         ! RADIUS
+   82.         call cub_spline(x_vec,EXPRO_rmin/a,EXPRO_n_exp,x,y,1)
+                                               ^                     
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 82, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+   83.         print 10,'RADIUS=',y(1)
+   84.    
+   85.      endif
+   86.    
+   87.    
+   88.      ! ASPECT_RATIO
+   89.      call cub_spline(x_vec,EXPRO_rmaj/a,EXPRO_n_exp,x,y,1)
+                                            ^                     
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 89, Column = 35 
+  This argument produces a copy in to a temporary variable.
+
+   90.      print 10,'ASPECT_RATIO=',y(1)
+   91.    
+   92.      ! SHIFT
+   93.      call cub_spline(x_vec,EXPRO_drmaj,EXPRO_n_exp,x,y,1)
+   94.      print 10,'SHIFT=',y(1)
+   95.    
+   96.      ! ZMAG
+   97.      call cub_spline(x_vec,EXPRO_zmag/a,EXPRO_n_exp,x,y,1)
+                                            ^                     
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 97, Column = 35 
+  This argument produces a copy in to a temporary variable.
+
+   98.      print 10,'ZMAG=',y(1)
+   99.    
+  100.      ! DZMAG
+  101.      call cub_spline(x_vec,EXPRO_dzmag,EXPRO_n_exp,x,y,1)
+  102.      print 10,'DZMAG=',y(1)
+  103.    
+  104.      ! SHEAR
+  105.      call cub_spline(x_vec,EXPRO_s,EXPRO_n_exp,x,y,1)
+  106.      print 10,'SHEAR=',y(1)
+  107.    
+  108.      ! SAFETY_FACTOR
+  109.      call cub_spline(x_vec,EXPRO_q,EXPRO_n_exp,x,y,1)
+  110.      print 10,'SAFETY_FACTOR=',y(1)
+  111.    
+  112.      ! KAPPA
+  113.      call cub_spline(x_vec,EXPRO_kappa,EXPRO_n_exp,x,y,1)
+  114.      print 10,'KAPPA=',y(1)
+  115.    
+  116.      ! S_KAPPA
+  117.      call cub_spline(x_vec,EXPRO_skappa,EXPRO_n_exp,x,y,1)
+  118.      print 10,'S_KAPPA=',y(1)
+  119.    
+  120.      ! DELTA
+  121.      call cub_spline(x_vec,EXPRO_delta,EXPRO_n_exp,x,y,1)
+  122.      print 10,'DELTA=',y(1)
+  123.    
+  124.      ! S_DELTA
+  125.      call cub_spline(x_vec,EXPRO_sdelta,EXPRO_n_exp,x,y,1)
+  126.      print 10,'S_DELTA=',y(1)
+  127.    
+  128.      ! ZETA
+  129.      call cub_spline(x_vec,EXPRO_zeta,EXPRO_n_exp,x,y,1)
+  130.      print 10,'ZETA=',y(1)
+  131.    
+  132.      ! S_ZETA
+  133.      call cub_spline(x_vec,EXPRO_szeta,EXPRO_n_exp,x,y,1)
+  134.      print 10,'S_ZETA=',y(1)
+  135.    
+  136.      ! TI_OVER_TE
+  137.      call cub_spline(x_vec,EXPRO_ti(1,:)/EXPRO_te,EXPRO_n_exp,x,y,1)
+                                               ^                            
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 137, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+  138.      print 10,'TI_OVER_TE=',y(1)
+  139.    
+  140.      ! TI_OVER_TE_2
+  141.      call cub_spline(x_vec,EXPRO_ti(2,:)/EXPRO_te,EXPRO_n_exp,x,y,1)
+                                               ^                            
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 141, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+  142.      print 10,'TI_OVER_TE_2=',y(1)
+  143.    
+  144.      ! NI_OVER_NE
+  145.      call cub_spline(x_vec,EXPRO_ni(1,:)/EXPRO_ne,EXPRO_n_exp,x,y,1)
+                                               ^                            
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 145, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+  146.      print 10,'NI_OVER_NE=',y(1)
+  147.    
+  148.      ! NI_OVER_NE_2
+  149.      call cub_spline(x_vec,EXPRO_ni(2,:)/EXPRO_ne,EXPRO_n_exp,x,y,1)
+                                               ^                            
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 149, Column = 38 
+  This argument produces a copy in to a temporary variable.
+
+  150.      print 10,'NI_OVER_NE_2=',y(1)
+  151.    
+  152.      ! DLNNDR
+  153.      call cub_spline(x_vec,a*EXPRO_dlnnidr(1,:),EXPRO_n_exp,x,y,1)
+                                   ^                                      
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 153, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  154.      print 10,'DLNNDR=',y(1)
+  155.    
+  156.      ! DLNNDR_2
+  157.      call cub_spline(x_vec,a*EXPRO_dlnnidr(2,:),EXPRO_n_exp,x,y,1)
+                                   ^                                      
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 157, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  158.      print 10,'DLNNDR_2=',y(1)
+  159.    
+  160.      ! DLNNDR_ELECTRON
+  161.      call cub_spline(x_vec,a*EXPRO_dlnnedr,EXPRO_n_exp,x,y,1)
+                                   ^                                 
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 161, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  162.      print 10,'DLNNDR_ELECTRON=',y(1)
+  163.    
+  164.      ! DLNTDR
+  165.      call cub_spline(x_vec,a*EXPRO_dlntidr(1,:),EXPRO_n_exp,x,y,1)
+                                   ^                                      
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 165, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  166.      print 10,'DLNTDR=',y(1)
+  167.    
+  168.      ! DLNTDR_2
+  169.      call cub_spline(x_vec,a*EXPRO_dlntidr(2,:),EXPRO_n_exp,x,y,1)
+                                   ^                                      
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 169, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  170.      print 10,'DLNTDR_2=',y(1)
+  171.    
+  172.      ! DLNTDR_ELECTRON
+  173.      call cub_spline(x_vec,a*EXPRO_dlntedr,EXPRO_n_exp,x,y,1)
+                                   ^                                 
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 173, Column = 26 
+  This argument produces a copy in to a temporary variable.
+
+  174.      print 10,'DLNTDR_ELECTRON=',y(1)
+  175.    
+  176.      ! GAMMA_E
+  177.      call cub_spline(x_vec,EXPRO_gamma_e*a/EXPRO_cs,EXPRO_n_exp,x,y,1)
+                                                 ^                            
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 177, Column = 40 
+  This argument produces a copy in to a temporary variable.
+
+  178.      print 10,'GAMMA_E=',y(1)
+  179.    
+  180.      ! RHO_STAR
+  181.      call cub_spline(x_vec,EXPRO_rhos/a,EXPRO_n_exp,x,y,1)
+                                            ^                     
+ftn-1438 ftn: CAUTION LOCPARGEN, File = locpargen.f90, Line = 181, Column = 35 
+  This argument produces a copy in to a temporary variable.
+
+  182.      print 10,'RHO_STAR=',y(1)
+  183.    
+  184.      print *
+  185.      print '(a)','Additional quantities'
+  186.      print *
+  187.    
+  188.      !---------------------------------------
+  189.      ! Some added physical quantities
+  190.      call cub_spline(x_vec,EXPRO_rho,EXPRO_n_exp,x,y,1)
+  191.      print 10,'rho         : ',y(1)
+  192.      call cub_spline(x_vec,EXPRO_rmin,EXPRO_n_exp,x,y,1)
+  193.      print 10,'rmin [m]    : ',y(1)
+  194.      call cub_spline(x_vec,EXPRO_poloidalfluxover2pi,EXPRO_n_exp,x,y,1)
+  195.      if (EXPRO_poloidalfluxover2pi(EXPRO_n_exp) > 0.0) then
+  196.         print 10,'psi_N       : ',y(1)/EXPRO_poloidalfluxover2pi(EXPRO_n_exp)
+  197.      else
+  198.         print '(a)','psi_N       : UNAVAILABLE'
+  199.      endif
+  200.      call cub_spline(x_vec,EXPRO_bunit,EXPRO_n_exp,x,y,1)
+  201.      print 10,'B_unit [T]  : ',y(1)
+  202.      call cub_spline(x_vec,EXPRO_cs,EXPRO_n_exp,x,y,1)
+  203.      print 10,'c_s   [m/s] : ',y(1)
+  204.      call cub_spline(x_vec,EXPRO_rhos,EXPRO_n_exp,x,y,1)
+  205.      print 10,'rhos   [m]  : ',y(1)
+  206.      !---------------------------------------
+  207.    
+  208.      call EXPRO_alloc('./',0) 
+  209.    
+  210.    10 format(a,sp,1pe12.5)
+  211.    
+  212.    end program locpargen
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CUB_SPLINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   LOCPARGEN (Line 71, file locpargen.f90)
+                   LOCPARGEN (Line 82, file locpargen.f90)
+                   LOCPARGEN (Line 89, file locpargen.f90)
+                   LOCPARGEN (Line 93, file locpargen.f90)
+                   LOCPARGEN (Line 97, file locpargen.f90)
+                   LOCPARGEN (Line 101, file locpargen.f90)
+                   LOCPARGEN (Line 105, file locpargen.f90)
+                   LOCPARGEN (Line 109, file locpargen.f90)
+                   LOCPARGEN (Line 113, file locpargen.f90)
+                   LOCPARGEN (Line 117, file locpargen.f90)
+                   LOCPARGEN (Line 121, file locpargen.f90)
+                   LOCPARGEN (Line 125, file locpargen.f90)
+                   LOCPARGEN (Line 129, file locpargen.f90)
+                   LOCPARGEN (Line 133, file locpargen.f90)
+                   LOCPARGEN (Line 137, file locpargen.f90)
+                   LOCPARGEN (Line 141, file locpargen.f90)
+                   LOCPARGEN (Line 145, file locpargen.f90)
+                   LOCPARGEN (Line 149, file locpargen.f90)
+                   LOCPARGEN (Line 153, file locpargen.f90)
+                   LOCPARGEN (Line 157, file locpargen.f90)
+                   LOCPARGEN (Line 161, file locpargen.f90)
+                   LOCPARGEN (Line 165, file locpargen.f90)
+                   LOCPARGEN (Line 169, file locpargen.f90)
+                   LOCPARGEN (Line 173, file locpargen.f90)
+                   LOCPARGEN (Line 177, file locpargen.f90)
+                   LOCPARGEN (Line 181, file locpargen.f90)
+                   LOCPARGEN (Line 190, file locpargen.f90)
+                   LOCPARGEN (Line 192, file locpargen.f90)
+                   LOCPARGEN (Line 194, file locpargen.f90)
+                   LOCPARGEN (Line 200, file locpargen.f90)
+                   LOCPARGEN (Line 202, file locpargen.f90)
+                   LOCPARGEN (Line 204, file locpargen.f90)
+
+Name  Messages
+----  --------
+EXPRO_ALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   LOCPARGEN (Line 41, file locpargen.f90)
+                   LOCPARGEN (Line 208, file locpargen.f90)
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+Name  Messages
+----  --------
+EXPRO_READ
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   LOCPARGEN (Line 42, file locpargen.f90)
+
+Name  Messages
+----  --------
+LOCPARGEN
+      Defined as:  Program (line 9, file locpargen.f90)
+
+      Calls:       EXPRO_ALLOC (Line 41, file locpargen.f90)
+                   EXPRO_ALLOC (Line 208, file locpargen.f90)
+                   EXPRO_READ (Line 42, file locpargen.f90)
+                   CUB_SPLINE (Line 71, file locpargen.f90)
+                   CUB_SPLINE (Line 82, file locpargen.f90)
+                   CUB_SPLINE (Line 89, file locpargen.f90)
+                   CUB_SPLINE (Line 93, file locpargen.f90)
+                   CUB_SPLINE (Line 97, file locpargen.f90)
+                   CUB_SPLINE (Line 101, file locpargen.f90)
+                   CUB_SPLINE (Line 105, file locpargen.f90)
+                   CUB_SPLINE (Line 109, file locpargen.f90)
+                   CUB_SPLINE (Line 113, file locpargen.f90)
+                   CUB_SPLINE (Line 117, file locpargen.f90)
+                   CUB_SPLINE (Line 121, file locpargen.f90)
+                   CUB_SPLINE (Line 125, file locpargen.f90)
+                   CUB_SPLINE (Line 129, file locpargen.f90)
+                   CUB_SPLINE (Line 133, file locpargen.f90)
+                   CUB_SPLINE (Line 137, file locpargen.f90)
+                   CUB_SPLINE (Line 141, file locpargen.f90)
+                   CUB_SPLINE (Line 145, file locpargen.f90)
+                   CUB_SPLINE (Line 149, file locpargen.f90)
+                   CUB_SPLINE (Line 153, file locpargen.f90)
+                   CUB_SPLINE (Line 157, file locpargen.f90)
+                   CUB_SPLINE (Line 161, file locpargen.f90)
+                   CUB_SPLINE (Line 165, file locpargen.f90)
+                   CUB_SPLINE (Line 169, file locpargen.f90)
+                   CUB_SPLINE (Line 173, file locpargen.f90)
+                   CUB_SPLINE (Line 177, file locpargen.f90)
+                   CUB_SPLINE (Line 181, file locpargen.f90)
+                   CUB_SPLINE (Line 190, file locpargen.f90)
+                   CUB_SPLINE (Line 192, file locpargen.f90)
+                   CUB_SPLINE (Line 194, file locpargen.f90)
+                   CUB_SPLINE (Line 200, file locpargen.f90)
+                   CUB_SPLINE (Line 202, file locpargen.f90)
+                   CUB_SPLINE (Line 204, file locpargen.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

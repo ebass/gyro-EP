@@ -1,0 +1,296 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_inputprofiles.f90
+Compiled : 01/19/21  15:34:58
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/netcdf/4.6.3.2/CRAYCLANG/9.0/include
+           -c prgen_map_inputprofiles.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : PRGEN_MAP_INPUTPROFILES
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_inputprofiles.f90
+Date     : 01/19/2021  15:34:58
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! prgen_map_inputprofiles.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Map input profiles plus gfile data.
+    6.    !------------------------------------------------------------
+    7.    
+    8.    subroutine prgen_map_inputprofiles
+    9.    
+   10.      use prgen_globals
+   11.      use EXPRO_interface
+   12.    
+   13.      implicit none
+   14.    
+   15.      integer :: i
+   16.      real :: xnew(nx)
+   17.    
+   18.      ! Compute rho, bref and arho based on GATO dpsi and q.
+   19.      call prgen_get_chi(nx,q,kappa,rmin,dpsi,rho,EXPRO_b_ref,EXPRO_arho)
+   20.    
+   21.      ! Align with new (GATO) rho grid, not old rho grid, EXPRO_rho:
+   22.      call cub_spline(EXPRO_rho,EXPRO_te,nx,rho,xnew,nx)
+   23.      EXPRO_te = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 23 
+  A loop starting at line 23 was partially vectorized.
+
+   24.      call cub_spline(EXPRO_rho,EXPRO_ne,nx,rho,xnew,nx)
+   25.      EXPRO_ne = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 25 
+  A loop starting at line 25 was partially vectorized.
+
+   26.      call cub_spline(EXPRO_rho,EXPRO_z_eff,nx,rho,xnew,nx)
+   27.      EXPRO_z_eff = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 27 
+  A loop starting at line 27 was partially vectorized.
+
+   28.      call cub_spline(EXPRO_rho,EXPRO_w0,nx,rho,xnew,nx)
+   29.      EXPRO_w0 = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 29 
+  A loop starting at line 29 was partially vectorized.
+
+   30.      call cub_spline(EXPRO_rho,EXPRO_flow_mom,nx,rho,xnew,nx)
+   31.      EXPRO_flow_mom = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 31 
+  A loop starting at line 31 was partially vectorized.
+
+   32.      call cub_spline(EXPRO_rho,EXPRO_pow_e,nx,rho,xnew,nx)
+   33.      EXPRO_pow_e = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 33 
+  A loop starting at line 33 was partially vectorized.
+
+   34.      call cub_spline(EXPRO_rho,EXPRO_pow_i,nx,rho,xnew,nx)
+   35.      EXPRO_pow_i = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 35 
+  A loop starting at line 35 was partially vectorized.
+
+   36.      call cub_spline(EXPRO_rho,EXPRO_pow_ei,nx,rho,xnew,nx)
+   37.      EXPRO_pow_ei = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 37 
+  A loop starting at line 37 was partially vectorized.
+
+   38.      call cub_spline(EXPRO_rho,EXPRO_flow_beam,nx,rho,xnew,nx)
+   39.      EXPRO_flow_beam = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 39 
+  A loop starting at line 39 was partially vectorized.
+
+   40.      call cub_spline(EXPRO_rho,EXPRO_flow_wall,nx,rho,xnew,nx)
+   41.      EXPRO_flow_wall = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 41 
+  A loop starting at line 41 was partially vectorized.
+
+   42.      call cub_spline(EXPRO_rho,EXPRO_ptot,nx,rho,xnew,nx)
+   43.      EXPRO_ptot = xnew
+ftn-6209 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 43 
+  A loop starting at line 43 was partially vectorized.
+
+   44.      do i=1,5
+   45.         call cub_spline(EXPRO_rho,EXPRO_ni(i,:),nx,rho,xnew,nx)
+                                                 ^                     
+ftn-1438 ftn: CAUTION PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 45, Column = 40 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   46.         EXPRO_ni(i,:) = xnew(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 46 
+  A loop starting at line 46 was not vectorized because it contains a call to a subroutine or function on line 46.
+
+   47.         call cub_spline(EXPRO_rho,EXPRO_ti(i,:),nx,rho,xnew,nx)
+                                                 ^                     
+ftn-1438 ftn: CAUTION PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 47, Column = 40 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   48.         EXPRO_ti(i,:) = xnew(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 48 
+  A loop starting at line 48 was not vectorized because it contains a call to a subroutine or function on line 48.
+
+   49.         call cub_spline(EXPRO_rho,EXPRO_vtor(i,:),nx,rho,xnew,nx)
+                                                   ^                     
+ftn-1438 ftn: CAUTION PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 49, Column = 42 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   50.         EXPRO_vtor(i,:) = xnew(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 50 
+  A loop starting at line 50 was not vectorized because it contains a call to a subroutine or function on line 50.
+
+   51.         call cub_spline(EXPRO_rho,EXPRO_vpol(i,:),nx,rho,xnew,nx)
+                                                   ^                     
+ftn-1438 ftn: CAUTION PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 51, Column = 42 
+  This argument produces a copy in and copy out to a temporary variable.
+
+   52.         EXPRO_vpol(i,:) = xnew(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 52 
+  A loop starting at line 52 was not vectorized because it contains a call to a subroutine or function on line 52.
+
+   53.      enddo
+   54.    
+   55.      !---------------------------------------------------------
+   56.      ! Map profile data into EXPRO interface.
+   57.      ! NOTE: EXPRO_alloc already called in prgen_read_inputprofiles
+   58.      !
+   59.      EXPRO_rho(:)  = rho(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 59 
+  A loop starting at line 59 was not vectorized because it contains a call to a subroutine or function on line 59.
+
+   60.      EXPRO_rmin(:) = rmin
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 60 
+  A loop starting at line 60 was not vectorized because it contains a call to a subroutine or function on line 60.
+
+   61.      EXPRO_rmaj(:) = rmaj(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 61 
+  A loop starting at line 61 was not vectorized because it contains a call to a subroutine or function on line 61.
+
+   62.      ! COORDINATES: set sign of q
+   63.      EXPRO_q(:)     = abs(q(:))*ipccw*btccw
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 63 
+  A loop starting at line 63 was not vectorized because it contains a call to a subroutine or function on line 63.
+
+   64.      EXPRO_kappa(:) = kappa(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 64 
+  A loop starting at line 64 was not vectorized because it contains a call to a subroutine or function on line 64.
+
+   65.      EXPRO_delta(:) = delta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 65 
+  A loop starting at line 65 was not vectorized because it contains a call to a subroutine or function on line 65.
+
+   66.      EXPRO_zeta(:)  = zeta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 66 
+  A loop starting at line 66 was not vectorized because it contains a call to a subroutine or function on line 66.
+
+   67.      EXPRO_zmag(:)  = zmag(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 67 
+  A loop starting at line 67 was not vectorized because it contains a call to a subroutine or function on line 67.
+
+   68.      ! COORDINATES: set sign of poloidal flux
+   69.      EXPRO_polflux = abs(dpsi(:))*(-ipccw)
+ftn-6262 ftn: VECTOR PRGEN_MAP_INPUTPROFILES, File = prgen_map_inputprofiles.f90, Line = 69 
+  A loop starting at line 69 was not vectorized because it contains a call to a subroutine or function on line 69.
+
+   70.    
+   71.    end subroutine prgen_map_inputprofiles
+   72.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_INPUTPROFILES (Line 63, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 69, file prgen_map_inputprofiles.f90)
+
+Name  Messages
+----  --------
+CUB_SPLINE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_INPUTPROFILES (Line 24, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 26, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 28, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 30, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 32, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 34, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 36, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 38, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 40, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 42, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 47, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 49, file prgen_map_inputprofiles.f90)
+                   PRGEN_MAP_INPUTPROFILES (Line 51, file prgen_map_inputprofiles.f90)
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_INPUTPROFILES
+
+Name  Messages
+----  --------
+PRGEN_GET_CHI
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+PRGEN_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_INPUTPROFILES
+
+Name  Messages
+----  --------
+PRGEN_MAP_INPUTPROFILES
+      Defined as:  Subroutine (line 8, file prgen_map_inputprofiles.f90)
+
+      Interface:   None
+
+      Calls:       CUB_SPLINE (Line 24, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 26, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 28, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 30, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 32, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 34, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 36, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 38, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 40, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 42, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 47, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 49, file prgen_map_inputprofiles.f90)
+                   CUB_SPLINE (Line 51, file prgen_map_inputprofiles.f90)
+                   ABS(Intrinsic) (Line 63, file prgen_map_inputprofiles.f90)
+                   ABS(Intrinsic) (Line 69, file prgen_map_inputprofiles.f90)
+
+        Uses:      PRGEN_GLOBALS
+                   EXPRO_INTERFACE
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

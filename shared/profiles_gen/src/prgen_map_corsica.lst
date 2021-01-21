@@ -1,0 +1,243 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_corsica.f90
+Compiled : 01/19/21  15:34:57
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/netcdf/4.6.3.2/CRAYCLANG/9.0/include
+           -c prgen_map_corsica.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : PRGEN_MAP_CORSICA
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/shared/profiles_gen/src/prgen_map_corsica.f90
+Date     : 01/19/2021  15:34:57
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------------------
+    2.    ! prgen_map_corsica.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Map native corsica data onto input.profiles standard.  
+    6.    !------------------------------------------------------------
+    7.    
+    8.    subroutine prgen_map_corsica
+    9.    
+   10.      use prgen_globals
+   11.      use EXPRO_interface
+   12.      
+   13.      implicit none
+   14.    
+   15.      ! Compute rho, bref and arho:
+   16.      ! Ignore corsica input "rho", "rmin", and "q"; use gato and corsica poloidal
+   17.      ! flux
+   18.      call prgen_get_chi(nx,q,kappa,rmin,dpsi,rho,corsica_bref,corsica_arho)
+   19.    
+   20.      !---------------------------------------------------------
+   21.      ! Map profile data onto single array:
+   22.      !
+   23.      EXPRO_n_exp = corsica_nvals
+   24.      call EXPRO_alloc('./',1)
+   25.      !
+   26.      EXPRO_rho(:)       = rho(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 26 
+  A loop starting at line 26 was not vectorized because it contains a call to a subroutine or function on line 26.
+
+   27.      EXPRO_rmin(:)      = rmin(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 27 
+  A loop starting at line 27 was not vectorized because it contains a call to a subroutine or function on line 27.
+
+   28.      EXPRO_rmaj(:)      = rmaj(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 28 
+  A loop starting at line 28 was not vectorized because it contains a call to a subroutine or function on line 28.
+
+   29.      EXPRO_q(:)         = q(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 29 
+  A loop starting at line 29 was not vectorized because it contains a call to a subroutine or function on line 29.
+
+   30.      EXPRO_kappa(:)     = kappa(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 30 
+  A loop starting at line 30 was not vectorized because it contains a call to a subroutine or function on line 30.
+
+   31.      EXPRO_delta(:)     = delta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 31 
+  A loop starting at line 31 was not vectorized because it contains a call to a subroutine or function on line 31.
+
+   32.      EXPRO_te(:)        = corsica_te(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 32 
+  A loop starting at line 32 was not vectorized because it contains a call to a subroutine or function on line 32.
+
+   33.      EXPRO_ne(:)        = corsica_ne(:)*10.
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 33 
+  A loop starting at line 33 was not vectorized because it contains a call to a subroutine or function on line 33.
+
+   34.      EXPRO_z_eff(:)     = corsica_zeff(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 34 
+  A loop starting at line 34 was not vectorized because it contains a call to a subroutine or function on line 34.
+
+   35.      EXPRO_w0(:)        = 0.0      ! omega
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 35 
+  A loop starting at line 35 was not vectorized because it contains a reference to a non-vector intrinsic on line 35.
+
+   36.      EXPRO_flow_mom(:)  = 0.0      ! flow_mom
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 36 
+  A loop starting at line 36 was not vectorized because it contains a reference to a non-vector intrinsic on line 36.
+
+   37.      EXPRO_pow_e(:)     = 0.0      ! pow_e
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 37 
+  A loop starting at line 37 was not vectorized because it contains a reference to a non-vector intrinsic on line 37.
+
+   38.      EXPRO_pow_i(:)     = 0.0      ! pow_i 
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 38 
+  A loop starting at line 38 was not vectorized because it contains a reference to a non-vector intrinsic on line 38.
+
+   39.      EXPRO_pow_ei(:)    = 0.0      ! pow_ei_exp
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 39 
+  A loop starting at line 39 was not vectorized because it contains a reference to a non-vector intrinsic on line 39.
+
+   40.      EXPRO_zeta(:)      = zeta(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 40 
+  A loop starting at line 40 was not vectorized because it contains a call to a subroutine or function on line 40.
+
+   41.      EXPRO_flow_beam(:) = 0.0      ! flow_beam
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 41 
+  A loop starting at line 41 was not vectorized because it contains a reference to a non-vector intrinsic on line 41.
+
+   42.      EXPRO_flow_wall(:) = 0.0      ! flow_wall_exp
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 42 
+  A loop starting at line 42 was not vectorized because it contains a reference to a non-vector intrinsic on line 42.
+
+   43.      EXPRO_zmag(:)      = zmag(:)  
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 43 
+  A loop starting at line 43 was not vectorized because it contains a call to a subroutine or function on line 43.
+
+   44.      EXPRO_ptot(:)      = p_tot(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 44 
+  A loop starting at line 44 was not vectorized because it contains a call to a subroutine or function on line 44.
+
+   45.      EXPRO_polflux(:)   = dpsi(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 45 
+  A loop starting at line 45 was not vectorized because it contains a call to a subroutine or function on line 45.
+
+   46.    
+   47.      ! Construct ion densities and temperatures assuming corsica ion species
+   48.      ! (n D+T) is two species, each with 1/2 n_corsica and same temperature
+   49.    
+   50.      ! ni
+   51.      EXPRO_ni(1,:) = 0.5 * corsica_ndt(:)*10.0
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 51 
+  A loop starting at line 51 was not vectorized because it contains a call to a subroutine or function on line 51.
+
+   52.      EXPRO_ni(2,:) = 0.5 * corsica_ndt(:)*10.0
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 52 
+  A loop starting at line 52 was not vectorized because it contains a call to a subroutine or function on line 52.
+
+   53.      
+   54.      ! ti
+   55.      EXPRO_ti(1,:) = corsica_ti(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 55 
+  A loop starting at line 55 was not vectorized because it contains a call to a subroutine or function on line 55.
+
+   56.      EXPRO_ti(2,:) = corsica_ti(:)
+ftn-6262 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 56 
+  A loop starting at line 56 was not vectorized because it contains a call to a subroutine or function on line 56.
+
+   57.    
+   58.      ! vphi
+   59.      EXPRO_vtor(:,:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 59 
+  A loop starting at line 59 was not vectorized because it contains a reference to a non-vector intrinsic on line 59.
+
+   60.    
+   61.      ! vpol
+   62.      EXPRO_vpol(:,:) = 0.0
+ftn-6263 ftn: VECTOR PRGEN_MAP_CORSICA, File = prgen_map_corsica.f90, Line = 62 
+  A loop starting at line 62 was not vectorized because it contains a reference to a non-vector intrinsic on line 62.
+
+   63.      
+   64.    end subroutine prgen_map_corsica
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXPRO_ALLOC
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_CORSICA (Line 24, file prgen_map_corsica.f90)
+
+Name  Messages
+----  --------
+EXPRO_INTERFACE
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_CORSICA
+
+Name  Messages
+----  --------
+PRGEN_GET_CHI
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   PRGEN_MAP_CORSICA (Line 18, file prgen_map_corsica.f90)
+
+Name  Messages
+----  --------
+PRGEN_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     PRGEN_MAP_CORSICA
+
+Name  Messages
+----  --------
+PRGEN_MAP_CORSICA
+      Defined as:  Subroutine (line 8, file prgen_map_corsica.f90)
+
+      Interface:   None
+
+      Calls:       PRGEN_GET_CHI (Line 18, file prgen_map_corsica.f90)
+                   EXPRO_ALLOC (Line 24, file prgen_map_corsica.f90)
+
+        Uses:      PRGEN_GLOBALS
+                   EXPRO_INTERFACE
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

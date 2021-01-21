@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# SCRIPT:
+#  gyro.GFORTRAN_OSX_BELLI
+#
+# FUNCTION:
+#  Parallel execution script.
+
+simdir=${1}
+nmpi=${2}
+exec=${3}
+nomp=${4}
+numa=${5}
+mpinuma=${6}
+
+echo $simdir
+
+cd $simdir
+export OMP_NUM_THREADS=$nomp 
+mpirun -np $nmpi $exec
+

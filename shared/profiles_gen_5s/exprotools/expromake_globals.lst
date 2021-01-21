@@ -1,0 +1,143 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_globals.f90
+Compiled : 06/09/16  13:25:53
+Compiler : Version 8.4.3
+Ftnlx    : Version 8413 (libcif 84006)
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=ivybridge -hstatic -D__CRAYXC
+           -D__CRAY_IVYBRIDGE -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries
+           -em -J/global/homes/b/bassem/gacode_waltz_NBI_edison/modules
+           -sreal64 -eD -Ktrap=fp -m1 -c
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/include -I/usr/include -ef
+           -I/opt/cray/fftw/3.3.4.6/sandybridge/include
+           -I/opt/cray/libsci/13.3.0/CRAY/8.3/x86_64/include
+           -I/opt/cray/mpt/7.3.1/gni/sma/include
+           -I/opt/cray/mpt/7.3.1/gni/mpich-cray/8.3/include
+           -I/opt/cray/netcdf/4.3.3.1/CRAY/8.3/include
+           -I/opt/cray/hdf5/1.8.16/CRAY/8.3/include
+           -I/opt/cray/rca/1.0.0-2.0502.57212.2.56.ari/include
+           -I/opt/cray/alps/5.2.3-2.0502.9295.14.14.ari/include
+           -I/opt/cray/xpmem/0.1-2.0502.57015.1.15.ari/include
+           -I/opt/cray/gni-headers/4.0-1.0502.10317.9.2.ari/include
+           -I/opt/cray/dmapp/7.0.1-1.0502.10246.8.47.ari/include
+           -I/opt/cray/pmi/5.0.10-1.0000.11050.0.0.ari/include
+           -I/opt/cray/ugni/6.0-1.0502.10245.9.9.ari/include
+           -I/opt/cray/udreg/2.3.2-1.0502.9889.2.20.ari/include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/../include
+           -I/opt/cray/cce/8.4.3/craylibs/x86-64/pkgconfig/..//include
+           -I/usr/local/include
+           -I/opt/cray/wlm_detect/1.0-1.0502.57063.1.1.ari/include
+           -I/opt/cray/krca/1.0.0-2.0502.57202.2.45.ari/include
+           -I/opt/cray-hss-devel/7.2.0/include expromake_globals.f90
+Program
+  Units  : EXPROMAKE_GLOBALS
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gacode_waltz_NBI_edison/shared/profiles_gen/exprotools/expromake_globals.f90
+Date     : 06/09/2016  13:25:53
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    module expromake_globals
+    2.    
+    3.      integer,parameter :: nions_max=5
+    4.    
+    5.      ! Input variables
+    6.    
+    7.      integer :: nx      ! used only if input.profiles created from scratch
+    8.      real :: exm_b_ref
+    9.      real :: exm_arho
+   10.      real :: exm_a_meters
+   11.      real :: exm_rmaj
+   12.      real :: exm_q
+   13.      real :: exm_kappa
+   14.      real :: exm_delta
+   15.      real :: exm_te_axis
+   16.      real :: exm_ne_axis
+   17.      real :: exm_mu_e
+   18.      real :: exm_z_eff
+   19.      real :: exm_w0
+   20.      real :: exm_zeta
+   21.      real :: exm_zmag
+   22.      real, dimension(nions_max) :: exm_ni_axis
+   23.      real, dimension(nions_max) :: exm_ti_axis
+   24.      integer, dimension(nions_max) :: exm_z
+   25.      real, dimension(nions_max) :: exm_mu
+   26.      
+   27.      ! Models
+   28.      integer :: exm_te_model
+   29.      real :: exm_alte
+   30.      integer :: exm_ne_model
+   31.      real :: exm_alne
+   32.      integer, dimension(nions_max) :: exm_ti_model
+   33.      real, dimension(nions_max) :: exm_alti
+   34.      integer, dimension(nions_max) :: exm_ni_model
+   35.      real, dimension(nions_max) :: exm_alni
+   36.    
+   37.      ! Set flags
+   38.      integer :: set_exm_b_ref
+   39.      integer :: set_exm_arho
+   40.      integer :: set_exm_rho
+   41.      integer :: set_exm_rmin
+   42.      integer :: set_exm_rmaj
+   43.      integer :: set_exm_q
+   44.      integer :: set_exm_kappa
+   45.      integer :: set_exm_delta
+   46.      integer :: set_exm_te
+   47.      integer :: set_exm_ne
+   48.      integer :: set_exm_z_eff
+   49.      integer :: set_exm_w0
+   50.      integer :: set_exm_zeta
+   51.      integer :: set_exm_zmag
+   52.      integer, dimension(nions_max) :: set_exm_ni
+   53.      integer, dimension(nions_max) :: set_exm_ti
+   54.      
+   55.    
+   56.      ! parameters not presently controllable from input
+   57.      real :: exm_flow_mom  = 0.0
+   58.      real :: exm_pow_e     = 0.0
+   59.      real :: exm_pow_i     = 0.0
+   60.      real :: exm_pow_ei    = 0.0
+   61.      real :: exm_flow_beam = 0.0
+   62.      real :: exm_flow_wall = 0.0
+   63.      real :: exm_ptot      = 0.0
+   64.      real, dimension(nions_max) :: exm_vpol = 0.0
+   65.      real, dimension(nions_max) :: exm_vtor = 0.0
+   66.    
+   67.      integer :: set_exm_flow_mom  
+   68.      integer :: set_exm_pow_e     
+   69.      integer :: set_exm_pow_i    
+   70.      integer :: set_exm_pow_ei    
+   71.      integer :: set_exm_flow_beam 
+   72.      integer :: set_exm_flow_wall 
+   73.      integer :: set_exm_ptot     
+   74.      integer :: set_exm_polflux   
+   75.      integer, dimension(nions_max) :: set_exm_vpol    
+   76.      integer, dimension(nions_max) :: set_exm_vtor    
+   77.    
+   78.    end module expromake_globals
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+EXPROMAKE_GLOBALS
+      Defined as:  Module (line 1, file expromake_globals.f90)
+
+                   Does not use any module and is not used by any procedure.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

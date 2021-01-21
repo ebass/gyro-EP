@@ -1,0 +1,553 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_build_sparse_maxwell.f90
+Compiled : 01/19/21  15:35:32
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_build_sparse_maxwell.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_BUILD_SPARSE_MAXWELL
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_build_sparse_maxwell.f90
+Date     : 01/19/2021  15:35:32
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-------------------------------------------------------
+    2.    ! gyro_build_sparse_maxwell.f90 [caller: sparse_solve_*]
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Fill elements of sparse Maxwell matrix.
+    6.    ! 
+    7.    ! NOTES:
+    8.    !  The Maxwell matrix has the block structure:
+    9.    !  
+   10.    !                 / M(1,1)  M(1,2) M(1,3) \
+   11.    !     m_maxwell = |                       |
+   12.    !                 | M(2,1)  M(2,2) M(2,3) |    
+   13.    !                 |                       |
+   14.    !                 \ M(3,1)  M(3,2) M(3,3) /
+   15.    !
+   16.    !                                / phi   \
+   17.    !  This acts on a field vector = |       |
+   18.    !                                | A_par |
+   19.    !                                |       |
+   20.    !                                \ B_par /
+   21.    ! 
+   22.    !-------------------------------------------------------
+   23.    
+   24.    subroutine gyro_build_sparse_maxwell
+   25.    
+   26.      use gyro_globals
+   27.      use math_constants
+   28.      use gyro_maxwell_private
+   29.    
+   30.      !------------------------
+   31.      implicit none
+   32.      !------------------------
+   33.    
+   34.    
+   35.      ! Zero only the in_1 components:
+   36.      m_maxwell(:)    = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_BUILD_SPARSE_MAXWELL, File = gyro_build_sparse_maxwell.f90, Line = 36 
+  A loop starting at line 36 was not vectorized because it contains a reference to a non-vector intrinsic on line 36.
+
+   37.      indx_maxwell(:) = 0
+ftn-6263 ftn: VECTOR GYRO_BUILD_SPARSE_MAXWELL, File = gyro_build_sparse_maxwell.f90, Line = 37 
+  A loop starting at line 37 was not vectorized because it contains a reference to a non-vector intrinsic on line 37.
+
+   38.    
+   39.      k_counter = 0
+   40.    
+   41.      !-----------------------------------------------------------
+   42.      ! Compute block M(1,1) 
+   43.      !
+   44.      do i=1,n_x_max
+   45.         do i_diff=-m_gyro,m_gyro-i_gyro
+   46.    
+   47.            ip = i_loop(i+i_diff)
+   48.    
+   49.            if (ip >= 1 .and. ip <= n_x) then
+   50.    
+   51.               do j=1,n_blend
+   52.                  do jp=1,n_blend
+   53.    
+   54.                     val = ap_mm(i,i_diff,j,jp)
+   55.    
+   56.                     if (i_diff == 0 .and. electron_method == 2) then
+   57.                        val = val-imp(i,j,jp,1) 
+   58.                     endif
+   59.    
+   60.                     ij  = i + (j-1)*n_x
+   61.                     ijp = ip + (jp-1)*n_x
+   62.    
+   63.                     k_counter = k_counter+1
+   64.    
+   65.                     indx_maxwell(k_counter)           = ij
+   66.                     indx_maxwell(k_counter+n_maxwell) = ijp
+   67.    
+   68.                     m_maxwell(k_counter) = m_maxwell(k_counter)+val
+   69.    
+   70.                  enddo ! j
+   71.               enddo ! jp
+   72.    
+   73.            endif
+   74.    
+   75.         enddo ! i_diff
+   76.      enddo ! i
+   77.    
+   78.      !--------------------------------------
+   79.      ! Continue past here for EM simulations.
+   80.      !--------------------------------------
+   81.    
+   82.      ! First A_parallel
+   83.    
+   84.      if (n_field > 1) then 
+   85.    
+   86.         !-----------------------------------------------------------
+   87.         ! Compute block M(2,2)
+   88.         !
+   89.         do i=1,n_x_max
+   90.            do i_diff=-mg_dx,mg_dx-ig_dx
+   91.    
+   92.               ip = i_loop(i+i_diff)
+   93.    
+   94.               if (ip >= 1 .and. ip <= n_x) then
+   95.    
+   96.                  do j=1,n_blend
+   97.                     do jp=1,n_blend
+   98.    
+   99.                        val = aa_mm(i,i_diff,j,jp) 
+  100.    
+  101.                        if (i_diff == 0) then
+  102.                           val = val-imp(i,j,jp,4)
+  103.                        endif
+  104.    
+  105.                        ij  = i + (j-1)*n_x + n_x*n_blend
+  106.                        ijp = ip + (jp-1)*n_x + n_x*n_blend
+  107.    
+  108.                        k_counter = k_counter+1
+  109.    
+  110.                        indx_maxwell(k_counter)           = ij
+  111.                        indx_maxwell(k_counter+n_maxwell) = ijp
+  112.    
+  113.                        m_maxwell(k_counter) = val
+  114.    
+  115.                     enddo ! jp
+  116.                  enddo ! j
+  117.    
+  118.               endif
+  119.    
+  120.            enddo ! ip
+  121.         enddo ! i
+  122.         !-----------------------------------------------------------
+  123.    
+  124.    
+  125.         !-----------------------------------------------------------
+  126.         ! Compute block M(1,2)
+  127.         !
+  128.         do i=1,n_x_max
+  129.            do j=1,n_blend
+  130.               do jp=1,n_blend
+  131.    
+  132.                  ij  = i + (j-1)*n_x
+  133.                  ijp = i + (jp-1)*n_x + n_x*n_blend
+  134.    
+  135.                  k_counter = k_counter+1
+  136.    
+  137.                  indx_maxwell(k_counter)           = ij
+  138.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  139.    
+  140.                  m_maxwell(k_counter) = -imp(i,j,jp,2)
+  141.    
+  142.               enddo ! jp
+  143.            enddo ! j
+  144.         enddo ! i
+  145.         !-----------------------------------------------------------
+  146.    
+  147.         !-----------------------------------------------------------
+  148.         ! Compute block M(2,1)
+  149.         !
+  150.         do i=1,n_x_max
+  151.            do j=1,n_blend
+  152.               do jp=1,n_blend
+  153.    
+  154.                  ij  = i + (j-1)*n_x + n_x*n_blend
+  155.                  ijp = i + (jp-1)*n_x 
+  156.    
+  157.                  k_counter = k_counter+1
+  158.    
+  159.                  indx_maxwell(k_counter)           = ij
+  160.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  161.    
+  162.                  m_maxwell(k_counter) = -imp(i,j,jp,3)
+  163.    
+  164.               enddo ! jp
+  165.            enddo ! j
+  166.         enddo ! i
+  167.         !-----------------------------------------------------------
+  168.    
+  169.      endif
+  170.    
+  171.      ! Now B_par
+  172.    
+  173.      if (n_field > 2) then
+  174.    
+  175.         !-----------------------------------------------------------
+  176.         ! Compute block M(3,3)
+  177.         !
+  178.         do i=1,n_x_max
+  179.            do i_diff=-m_gyro,m_gyro-i_gyro
+  180.    
+  181.               ip = i_loop(i+i_diff)
+  182.    
+  183.               if (ip >= 1 .and. ip <= n_x) then
+  184.    
+  185.                  do j=1,n_blend
+  186.                     do jp=1,n_blend
+  187.    
+  188.                        val = ab_mm(i,i_diff,j,jp)
+  189.    
+  190.                        if (i_diff == 0) then
+  191.                           val = val-imp(i,j,jp,8) 
+  192.                        endif
+  193.    
+  194.                        ij  = i + (j-1)*n_x   + 2*n_x*n_blend
+  195.                        ijp = ip + (jp-1)*n_x + 2*n_x*n_blend
+  196.    
+  197.                        k_counter = k_counter+1
+  198.    
+  199.                        indx_maxwell(k_counter)           = ij
+  200.                        indx_maxwell(k_counter+n_maxwell) = ijp
+  201.    
+  202.                        m_maxwell(k_counter) = val
+  203.    
+  204.                     enddo ! jp
+  205.                  enddo ! j
+  206.    
+  207.               endif
+  208.    
+  209.            enddo ! i_diff
+  210.         enddo ! i
+  211.         !-----------------------------------------------------------
+  212.    
+  213.         !-----------------------------------------------------------
+  214.         ! Compute block M(1,3)
+  215.         !
+  216.         do i=1,n_x_max
+  217.            do i_diff=-m_gyro,m_gyro-i_gyro
+  218.    
+  219.               ip = i_loop(i+i_diff)
+  220.    
+  221.               if (ip >= 1 .and. ip <= n_x) then
+  222.    
+  223.                  do j=1,n_blend
+  224.                     do jp=1,n_blend
+  225.    
+  226.                        val = -2.0*abp_mm(i,i_diff,j,jp)
+  227.    
+  228.                        if (i_diff == 0) then
+  229.                           val = val+2.0*imp(i,j,jp,6) 
+  230.                        endif
+  231.    
+  232.                        ij  = i + (j-1)*n_x
+  233.                        ijp = ip + (jp-1)*n_x + 2*n_x*n_blend
+  234.    
+  235.                        k_counter = k_counter+1
+  236.    
+  237.                        indx_maxwell(k_counter)           = ij
+  238.                        indx_maxwell(k_counter+n_maxwell) = ijp
+  239.    
+  240.                        m_maxwell(k_counter) = val
+  241.    
+  242.                     enddo ! jp
+  243.                  enddo ! j
+  244.    
+  245.               endif
+  246.    
+  247.            enddo ! ip
+  248.         enddo ! i
+  249.         !-----------------------------------------------------------
+  250.    
+  251.         !-----------------------------------------------------------
+  252.         ! Compute block M(3,1)
+  253.         !
+  254.         do i=1,n_x_max
+  255.            do i_diff=-m_gyro,m_gyro-i_gyro
+  256.    
+  257.               ip = i_loop(i+i_diff)
+  258.    
+  259.               if (ip >= 1 .and. ip <= n_x) then
+  260.    
+  261.                  do j=1,n_blend
+  262.                     do jp=1,n_blend
+  263.    
+  264.                        val = abp_mm(i,i_diff,j,jp)
+  265.    
+  266.                        if (i_diff == 0) then
+  267.                           val = val-imp(i,j,jp,6) 
+  268.                        endif
+  269.    
+  270.                        ij  = i + (j-1)*n_x  + 2*n_x*n_blend
+  271.                        ijp = ip + (jp-1)*n_x
+  272.    
+  273.                        k_counter = k_counter+1
+  274.    
+  275.                        indx_maxwell(k_counter)           = ij
+  276.                        indx_maxwell(k_counter+n_maxwell) = ijp
+  277.    
+  278.                        m_maxwell(k_counter) = val
+  279.    
+  280.                     enddo ! jp
+  281.                  enddo ! j
+  282.    
+  283.               endif
+  284.    
+  285.            enddo ! ip
+  286.         enddo ! i
+  287.         !-----------------------------------------------------------
+  288.    
+  289.         !-----------------------------------------------------------
+  290.         ! Compute block M(2,3)
+  291.         !
+  292.         do i=1,n_x_max
+  293.            do j=1,n_blend
+  294.               do jp=1,n_blend
+  295.    
+  296.                  ij  = i + (j-1)*n_x  + n_x*n_blend 
+  297.                  ijp = i + (jp-1)*n_x + 2*n_x*n_blend
+  298.    
+  299.                  k_counter = k_counter+1
+  300.    
+  301.                  indx_maxwell(k_counter)           = ij
+  302.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  303.    
+  304.                  m_maxwell(k_counter) = -imp(i,j,jp,5)
+  305.    
+  306.               enddo ! jp
+  307.            enddo ! j
+  308.         enddo ! i
+  309.         !-----------------------------------------------------------
+  310.    
+  311.         !-----------------------------------------------------------
+  312.         ! Compute block M(3,2)
+  313.         !
+  314.         do i=1,n_x_max
+  315.            do j=1,n_blend
+  316.               do jp=1,n_blend
+  317.    
+  318.                  ij  = i + (j-1)*n_x  + 2*n_x*n_blend
+  319.                  ijp = i + (jp-1)*n_x + n_x*n_blend
+  320.    
+  321.                  k_counter = k_counter+1
+  322.    
+  323.                  indx_maxwell(k_counter)           = ij
+  324.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  325.    
+  326.                  m_maxwell(k_counter) = -imp(i,j,jp,7)
+  327.    
+  328.               enddo ! jp
+  329.            enddo ! j
+  330.         enddo ! i
+  331.         !-----------------------------------------------------------
+  332.    
+  333.      endif
+  334.    
+  335.      if (boundary_method ==1 .and. n_1(in_1) == 0) then
+  336.    
+  337.         !------------------------------------------------
+  338.         ! Here, we need to write a line of 1's in last 
+  339.         ! row (i=n_x) of blocks M(1,1), M(2,2), M(3,3).  A 
+  340.         ! line of zeros in the last rows of M(x,y) for y!=x
+  341.         ! will of course be automatic.
+  342.         !     
+  343.         ! We do this to ensure that all n=0 modes have 
+  344.         ! no radial average.
+  345.         !------------------------------------------------
+  346.    
+  347.         !------------------------------------------------
+  348.         ! Line of 1's in M(1,1)
+  349.         ! 
+  350.         i = n_x
+  351.         do j=1,n_blend
+  352.            do ip=1,n_x
+  353.    
+  354.               ! Diagonal in (j,jp)
+  355.               jp = j
+  356.    
+  357.               ij  = i + (j-1)*n_x
+  358.               ijp = ip + (jp-1)*n_x
+  359.    
+  360.               k_counter = k_counter+1
+  361.    
+  362.               indx_maxwell(k_counter)           = ij
+  363.               indx_maxwell(k_counter+n_maxwell) = ijp
+  364.    
+  365.               m_maxwell(k_counter) = (1.0,0.0)
+  366.    
+  367.            enddo ! ip
+  368.         enddo ! j
+  369.         !------------------------------------------------
+  370.    
+  371.         if (n_field > 1) then
+  372.    
+  373.            !------------------------------------------------
+  374.            ! Line of 1's in M(2,2)
+  375.            ! 
+  376.            i = n_x
+  377.            do j=1,n_blend
+  378.               do ip=1,n_x
+  379.    
+  380.                  ! Diagonal in (j,jp)
+  381.                  jp = j
+  382.    
+  383.                  ij  = i + (j-1)*n_x + n_x*n_blend
+  384.                  ijp = ip + (jp-1)*n_x + n_x*n_blend
+  385.    
+  386.                  k_counter = k_counter+1
+  387.    
+  388.                  indx_maxwell(k_counter)           = ij
+  389.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  390.    
+  391.                  m_maxwell(k_counter) = (1.0,0.0)
+  392.    
+  393.               enddo ! ip
+  394.            enddo ! j
+  395.            !------------------------------------------------
+  396.    
+  397.         endif
+  398.    
+  399.         if (n_field > 2) then
+  400.    
+  401.            !------------------------------------------------
+  402.            ! Line of 1's in M(3,3)
+  403.            ! 
+  404.            i = n_x
+  405.            do j=1,n_blend
+  406.               do ip=1,n_x
+  407.    
+  408.                  ! Diagonal in (j,jp)
+  409.                  jp = j
+  410.    
+  411.                  ij  = i + (j-1)*n_x   + 2*n_x*n_blend
+  412.                  ijp = ip + (jp-1)*n_x + 2*n_x*n_blend
+  413.    
+  414.                  k_counter = k_counter+1
+  415.    
+  416.                  indx_maxwell(k_counter)           = ij
+  417.                  indx_maxwell(k_counter+n_maxwell) = ijp
+  418.    
+  419.                  m_maxwell(k_counter) = (1.0,0.0)
+  420.    
+  421.               enddo ! ip
+  422.            enddo ! j
+  423.            !------------------------------------------------
+  424.    
+  425.         endif
+  426.    
+  427.      endif
+  428.    
+  429.      if (k_counter /= n_maxwell) then
+  430.         print *,k_counter,n_maxwell
+  431.         call catch_error("Element count mismatch in gyro_build_sparse_maxwell")
+  432.      endif
+  433.    
+  434.      if (debug_flag == 1 .and. i_proc == 0) then
+  435.         print *,'[gyro_build_sparse_maxwell done]'
+  436.      endif
+  437.    
+  438.    end subroutine gyro_build_sparse_maxwell
+  439.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_BUILD_SPARSE_MAXWELL (Line 431, file gyro_build_sparse_maxwell.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_BUILD_SPARSE_MAXWELL
+      Defined as:  Subroutine (line 24, file gyro_build_sparse_maxwell.f90)
+
+      Interface:   None
+
+      Calls:       CATCH_ERROR (Line 431, file gyro_build_sparse_maxwell.f90)
+
+        Uses:      GYRO_GLOBALS
+                   MATH_CONSTANTS
+                   GYRO_MAXWELL_PRIVATE
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BUILD_SPARSE_MAXWELL
+
+Name  Messages
+----  --------
+GYRO_MAXWELL_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BUILD_SPARSE_MAXWELL
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_BUILD_SPARSE_MAXWELL
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

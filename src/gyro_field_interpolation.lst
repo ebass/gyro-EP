@@ -1,0 +1,498 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_field_interpolation.f90
+Compiled : 01/19/21  15:35:35
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_field_interpolation.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_FIELD_INTERPOLATION
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_field_interpolation.f90
+Date     : 01/19/2021  15:35:36
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------------------
+    2.    ! gyro_field_interpolation
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  Compute Psi_a(R) and Chi_a(R) [Sec 3.7] of Technical Guide.
+    6.    !
+    7.    !  This requires first interpolating phi, A_par and B_par onto 
+    8.    !  fixed theta-grids and tau-grids.  
+    9.    !
+   10.    !  Psi_a(R) -> gyro_uv
+   11.    !
+   12.    !  gyro_uv(1) = G0a [ phi ]  
+   13.    !  gyro_uv(2) = G0a [ -v_par A_par ] 
+   14.    !  gyro_uv(3) = G1a [ -v_perp A_perp ]
+   15.    !
+   16.    !  Chi_a(R) -> kyro_uv
+   17.    !
+   18.    !  kyro_uv(1) = G2a [ phi ]  
+   19.    !  kyro_uv(2) = G2a [ -v_par A_par ] 
+   20.    !  kyro_uv(3) = G3a [ -v_perp A_perp ]
+   21.    !
+   22.    !  This is valid for periodic OR nonperiodic boundary
+   23.    !  conditions. 
+   24.    !
+   25.    !  NOTE:
+   26.    !   This routine is expensive so some coding is inelegant 
+   27.    !   for the sake of speed.
+   28.    !-----------------------------------------------------------------
+   29.    
+   30.    subroutine gyro_field_interpolation
+   31.    
+   32.      use gyro_globals
+   33.      use gyro_pointers
+   34.    
+   35.      !-----------------------------------------------------------------
+   36.      implicit none
+   37.      !
+   38.      real :: x
+   39.      !
+   40.      complex :: vtemp(n_field)
+   41.      complex :: cmplx_phase
+   42.      !
+   43.      complex, dimension(n_stack,i1_buffer:i2_buffer,n_field) :: vf
+   44.      complex, external :: BLEND_F
+   45.      !-----------------------------------------------------------------
+   46.    
+   47.      call gyro_timer_in('Field-interp.a')
+   48.    !$omp parallel do default(shared) private(cmplx_phase,j_int,x,vtemp,j)
+   49.      do i=1,n_x
+   50.         cmplx_phase = phase(in_1,i)
+   51.         do j_int=1,n_theta_int
+   52.    
+   53.            x = -1.0+2.0*(j_int-1)/n_theta_int
+   54.    
+   55.            vtemp(:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 55 
+  A loop starting at line 55 was not vectorized because it contains a reference to a non-vector intrinsic on line 55.
+
+   56.    
+   57.            do j=1,n_blend
+   58.               vtemp(:) = vtemp(:)+field_blend(j,i,:)*BLEND_F(j,x,cmplx_phase)
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 58 
+  A loop starting at line 58 was not vectorized because it contains a call to a subroutine or function on line 58.
+
+   59.            enddo
+   60.            phi(j_int,i,:) = vtemp(:) 
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 60 
+  A loop starting at line 60 was not vectorized because it contains a call to a subroutine or function on line 60.
+
+   61.    
+   62.         enddo ! j_int
+   63.      enddo ! i
+   64.    
+   65.      !---------------------------------------------------------------
+   66.      ! Interpolate phi, A_par, and B_par onto orbit-grid:
+   67.      !
+   68.    !$omp parallel do default(shared) private(p_nek_loc,p_nek,k,ck,m,m0,ix)
+   69.      do i=1,n_x
+   70.         p_nek_loc = 0
+   71.         do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+   72.    
+   73.            p_nek_loc = p_nek_loc+1
+   74.    
+   75.            k  = nek_k(p_nek)   
+   76.            ck = class(k)
+   77.    
+   78.            do m=1,n_stack
+   79.    
+   80.               m0 = m_phys(ck,m)
+   81.    
+   82.               do ix=1,n_field
+   83.                  field_tau(m,i,p_nek_loc,ix) = &
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 83 
+  A loop starting at line 83 was not vectorized because it contains a call to a subroutine or function on line 83.
+
+   84.                       sum(field_blend(:,i,ix)*c_blend(:,m0,i,p_nek_loc))
+   85.               enddo ! ix
+   86.    
+   87.            enddo ! m
+   88.    
+   89.         enddo ! p_nek
+   90.      enddo ! i
+   91.      !
+   92.      !---------------------------------------------------------------
+   93.    
+   94.      call gyro_timer_out('Field-interp.a')
+   95.      call gyro_timer_in('Field-interp.b')
+   96.    
+   97.      !---------------------------------------------------------------
+   98.      ! GK SPECIES:
+   99.      !
+  100.      ! gyro_u -> <phi> - v_par <A_par> + (m*v_perp^2)/(z*e*B)*G1[B_par]
+  101.      !
+  102.      p_nek_loc = 0
+  103.      do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+  104.    
+  105.         p_nek_loc = p_nek_loc+1
+  106.    
+  107.         ie = nek_e(p_nek)
+  108.         k  = nek_k(p_nek)
+  109.    
+  110.         ck = class(k)
+  111.    
+  112.         if (boundary_method == 1) then
+  113.            do i=1-m_gyro,0
+  114.               vf(:,i,:) = field_tau(:,i+n_x,p_nek_loc,:)
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 114 
+  A loop starting at line 114 was not vectorized because it contains a call to a subroutine or function on line 114.
+
+  115.            enddo
+  116.            do i=n_x+1,n_x+m_gyro-i_gyro
+  117.               vf(:,i,:) = field_tau(:,i-n_x,p_nek_loc,:)
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 117 
+  A loop starting at line 117 was not vectorized because it contains a call to a subroutine or function on line 117.
+
+  118.            enddo
+  119.         else
+  120.            do i=1-m_gyro,0
+  121.               vf(:,i,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 121 
+  A loop starting at line 121 was not vectorized because it contains a reference to a non-vector intrinsic on line 121.
+
+  122.            enddo
+  123.            do i=n_x+1,n_x+m_gyro-i_gyro
+  124.               vf(:,i,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 124 
+  A loop starting at line 124 was not vectorized because it contains a reference to a non-vector intrinsic on line 124.
+
+  125.            enddo
+  126.         endif
+  127.         do ix=1,n_field
+  128.            do i=1,n_x
+  129.               do m=1,n_stack
+  130.                  vf(m,i,ix) = field_tau(m,i,p_nek_loc,ix)
+  131.               enddo
+  132.            enddo
+  133.         enddo
+  134.    
+  135.         do is=1,n_gk
+  136.    
+  137.            select case (n_field) 
+  138.    
+  139.            case(1)
+  140.    
+  141.               gyro_uv(:,:,p_nek_loc,is,1) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 141 
+  A loop starting at line 141 was not vectorized because it contains a reference to a non-vector intrinsic on line 141.
+
+  142.               kyro_uv(:,:,p_nek_loc,is,1) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 142 
+  A loop starting at line 142 was not vectorized because it contains a reference to a non-vector intrinsic on line 142.
+
+  143.    
+  144.    !$omp parallel do default(shared) private(i_diff,m)
+  145.               do i=1,n_x
+  146.                  do i_diff=-m_gyro,m_gyro-i_gyro
+  147.                     do m=1,n_stack
+  148.    
+  149.                        ! Psi_a(R) in Technical Guide
+  150.                        gyro_uv(m,i,p_nek_loc,is,1) = gyro_uv(m,i,p_nek_loc,is,1)+&
+  151.                             w_gyro0(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  152.    
+  153.                        ! Chi_a(R) in Technical Guide
+  154.                        kyro_uv(m,i,p_nek_loc,is,1) = kyro_uv(m,i,p_nek_loc,is,1)+&
+  155.                             w_gyro2(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  156.    
+  157.                     enddo
+  158.                  enddo
+  159.               enddo
+  160.    
+  161.            case (2) 
+  162.    
+  163.               gyro_uv(:,:,p_nek_loc,is,1:2) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 163 
+  A loop starting at line 163 was not vectorized because it contains a reference to a non-vector intrinsic on line 163.
+
+  164.               kyro_uv(:,:,p_nek_loc,is,1:2) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 164 
+  A loop starting at line 164 was not vectorized because it contains a reference to a non-vector intrinsic on line 164.
+
+  165.    
+  166.    !$omp parallel do default(shared) private(i_diff,m)
+  167.               do i=1,n_x
+  168.                  do i_diff=-m_gyro,m_gyro-i_gyro
+  169.                     do m=1,n_stack
+  170.    
+  171.                        ! Psi_a(R) in Technical Guide
+  172.                        gyro_uv(m,i,p_nek_loc,is,1) = gyro_uv(m,i,p_nek_loc,is,1)+&
+  173.                             w_gyro0(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  174.                        gyro_uv(m,i,p_nek_loc,is,2) = gyro_uv(m,i,p_nek_loc,is,2)+&
+  175.                             w_gyro0(m,i_diff,i,p_nek_loc,is)* &
+  176.                             (-v_para(m,i,p_nek_loc,is)*vf(m,i+i_diff,2))
+  177.    
+  178.                        ! Chi_a(R) in Technical Guide
+  179.                        kyro_uv(m,i,p_nek_loc,is,1) = kyro_uv(m,i,p_nek_loc,is,1) + &
+  180.                             w_gyro2(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  181.                        kyro_uv(m,i,p_nek_loc,is,2) = kyro_uv(m,i,p_nek_loc,is,2) + &
+  182.                             w_gyro2(m,i_diff,i,p_nek_loc,is)*&
+  183.                             (-v_para(m,i,p_nek_loc,is)*vf(m,i+i_diff,2))
+  184.                     enddo
+  185.                  enddo
+  186.               enddo
+  187.    !$omp end parallel do
+  188.    
+  189.            case (3)
+  190.    
+  191.               gyro_uv(:,:,p_nek_loc,is,1:3) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 191 
+  A loop starting at line 191 was not vectorized because it contains a reference to a non-vector intrinsic on line 191.
+
+  192.               kyro_uv(:,:,p_nek_loc,is,1:3) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 192 
+  A loop starting at line 192 was not vectorized because it contains a reference to a non-vector intrinsic on line 192.
+
+  193.    
+  194.    !$omp parallel do default(shared) private(i_diff,m)
+  195.               do i=1,n_x
+  196.                  do i_diff=-m_gyro,m_gyro-i_gyro
+  197.                     do m=1,n_stack
+  198.    
+  199.                        ! Psi_a(R) in Technical Guide
+  200.                        gyro_uv(m,i,p_nek_loc,is,1) = gyro_uv(m,i,p_nek_loc,is,1)+&
+  201.                             w_gyro0(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  202.                        gyro_uv(m,i,p_nek_loc,is,2) = gyro_uv(m,i,p_nek_loc,is,2)+&
+  203.                             w_gyro0(m,i_diff,i,p_nek_loc,is)* &
+  204.                             (-v_para(m,i,p_nek_loc,is)*vf(m,i+i_diff,2))
+  205.                        gyro_uv(m,i,p_nek_loc,is,3) = gyro_uv(m,i,p_nek_loc,is,3)+&
+  206.                             (w_gyro1(m,i_diff,i,p_nek_loc,is) &
+  207.                             *2.0*energy(ie)*lambda(i,k)*tem_s(is,i)/z(is))*&
+  208.                             vf(m,i+i_diff,3)
+  209.    
+  210.                        ! Chi_a(R) in Technical Guide
+  211.                        kyro_uv(m,i,p_nek_loc,is,1) = kyro_uv(m,i,p_nek_loc,is,1) + &
+  212.                             w_gyro2(m,i_diff,i,p_nek_loc,is)*vf(m,i+i_diff,1)
+  213.                        kyro_uv(m,i,p_nek_loc,is,2) = kyro_uv(m,i,p_nek_loc,is,2) + &
+  214.                             w_gyro2(m,i_diff,i,p_nek_loc,is)*&
+  215.                             (-v_para(m,i,p_nek_loc,is)*vf(m,i+i_diff,2))
+  216.                        kyro_uv(m,i,p_nek_loc,is,3) = kyro_uv(m,i,p_nek_loc,is,3)+&
+  217.                             w_gyro3(m,i_diff,i,p_nek_loc,is) &
+  218.                             *2.0*energy(ie)*lambda(i,k)*tem_s(is,i)/z(is)*&
+  219.                             vf(m,i+i_diff,3)
+  220.                       
+  221.                     enddo
+  222.                  enddo
+  223.               enddo
+  224.    !$omp end parallel do
+  225.    
+  226.            end select
+  227.    
+  228.         enddo ! is
+  229.    
+  230.      enddo ! p_nek_loc
+  231.      !
+  232.      !----------------------------------------------------------------
+  233.    
+  234.      if (electron_method == 2) then
+  235.    
+  236.         ! Drift-kinetic ELECTRONS:
+  237.         ! 
+  238.         ! G0e   -> 1
+  239.         ! G1e   -> 1/2
+  240.         ! Psi_e -> phi - v_par A_par + (1/2) [2*ene*lambda*temp/z*B_par]
+  241.         !
+  242.         ! G2e   -> 0
+  243.         ! G3e   -> 0
+  244.         ! Chi_e -> 0
+  245.    
+  246.         p_nek_loc = 0
+  247.         do p_nek=1+i_proc_1,n_nek_1,n_proc_1
+  248.            p_nek_loc = p_nek_loc+1
+  249.            ie = nek_e(p_nek)
+  250.            k  = nek_k(p_nek)
+  251.    
+  252.            select case (n_field) 
+  253.    
+  254.            case(1)
+  255.    
+  256.               gyro_uv(:,:,p_nek_loc,n_spec,1) = field_tau(:,:,p_nek_loc,1)
+ftn-6262 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 256 
+  A loop starting at line 256 was not vectorized because it contains a call to a subroutine or function on line 256.
+
+  257.    
+  258.            case(2)
+  259.    
+  260.    !$omp parallel do default(shared) private(m)
+  261.               do i=1,n_x
+  262.                  do m=1,n_stack
+  263.                     gyro_uv(m,i,p_nek_loc,n_spec,1) = field_tau(m,i,p_nek_loc,1)
+  264.                     gyro_uv(m,i,p_nek_loc,n_spec,2) = &
+  265.                          -v_para(m,i,p_nek_loc,n_spec)*field_tau(m,i,p_nek_loc,2)
+  266.                  enddo
+  267.               enddo
+  268.    
+  269.            case (3)
+  270.    
+  271.    !$omp parallel do default(shared) private(m)
+  272.               do i=1,n_x
+  273.                  do m=1,n_stack
+  274.                     gyro_uv(m,i,p_nek_loc,n_spec,1) = field_tau(m,i,p_nek_loc,1)
+  275.                     gyro_uv(m,i,p_nek_loc,n_spec,2) = &
+  276.                          -v_para(m,i,p_nek_loc,n_spec)*field_tau(m,i,p_nek_loc,2)
+  277.                     gyro_uv(m,i,p_nek_loc,n_spec,3) = &
+  278.                          energy(ie)*lambda(i,k)*tem_s(n_spec,i)/z(n_spec) &
+  279.                          *field_tau(m,i,p_nek_loc,3)
+  280.                  enddo
+  281.               enddo
+  282.            end select
+  283.    
+  284.         enddo ! p_nek
+  285.    
+  286.         kyro_uv(:,:,:,n_spec,:) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 286 
+  A loop starting at line 286 was not vectorized because it contains a reference to a non-vector intrinsic on line 286.
+
+  287.    
+  288.      endif
+  289.    
+  290.    
+  291.      do is=1,n_kinetic
+  292.         do p_nek_loc=1,n_nek_loc_1
+  293.            do i=1,n_x
+  294.               do m=1,n_stack
+  295.                  gyro_u(m,i,p_nek_loc,is) = sum(gyro_uv(m,i,p_nek_loc,is,:))
+ftn-6263 ftn: VECTOR GYRO_FIELD_INTERPOLATION, File = gyro_field_interpolation.f90, Line = 295 
+  A loop starting at line 295 was not vectorized because it contains a reference to a non-vector intrinsic on line 295.
+
+  296.               enddo
+  297.            enddo
+  298.         enddo
+  299.      enddo
+  300.    
+  301.      call gyro_timer_out('Field-interp.b')
+  302.    
+  303.      if (debug_flag == 1 .and. i_proc == 0) then
+  304.         print *,'[gyro_field_interpolation done]'
+  305.      endif
+  306.    
+  307.    end subroutine gyro_field_interpolation
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+BLEND_F
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_FIELD_INTERPOLATION (Line 58, file gyro_field_interpolation.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_FIELD_INTERPOLATION
+      Defined as:  Subroutine (line 30, file gyro_field_interpolation.f90)
+
+      Interface:   None
+
+      Calls:       BLEND_F (Line 58, file gyro_field_interpolation.f90)
+                   GYRO_TIMER_IN (Line 47, file gyro_field_interpolation.f90)
+                   SUM(Intrinsic) (Line 84, file gyro_field_interpolation.f90)
+                   SUM(Intrinsic) (Line 295, file gyro_field_interpolation.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_POINTERS
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_FIELD_INTERPOLATION
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_FIELD_INTERPOLATION
+
+Name  Messages
+----  --------
+GYRO_TIMER_IN
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_FIELD_INTERPOLATION (Line 47, file gyro_field_interpolation.f90)
+
+Name  Messages
+----  --------
+GYRO_TIMER_OUT
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+SUM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_FIELD_INTERPOLATION (Line 84, file gyro_field_interpolation.f90)
+                   GYRO_FIELD_INTERPOLATION (Line 295, file gyro_field_interpolation.f90)
+
+Name  Messages
+----  --------
+__SUM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,391 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_nl_direct.f90
+Compiled : 01/19/21  15:35:45
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_nl_direct.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_NL_DIRECT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_nl_direct.f90
+Date     : 01/19/2021  15:35:45
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-------------------------------------------------------------------
+    2.    ! gyro_nl_direct.f90 
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  This routine evaluates the ExB nonlinearity with both periodic
+    6.    !  and nonperiodic boundary conditions using the (F,G)-conservative 
+    7.    !  difference scheme.
+    8.    !-------------------------------------------------------------------
+    9.    
+   10.    subroutine gyro_nl_direct
+   11.    
+   12.      use gyro_globals
+   13.      use gyro_pointers
+   14.      use gyro_nl_private
+   15.      use math_constants
+   16.      use ompdata
+   17.    
+   18.      !--------------------------------------------
+   19.      implicit none
+   20.      !
+   21.      complex, dimension(-n_max:n_max,i1_dx:i2_dx) :: fn
+   22.      complex, dimension(-n_max:n_max,i1_dx:i2_dx) :: gn
+   23.      complex, dimension(0:n_max,n_x) :: nl
+   24.      !
+   25.      complex, dimension(-n_max:n_max,n_x) :: fn_p
+   26.      complex, dimension(-n_max:n_max,n_x) :: gn_p
+   27.      complex, dimension(-n_max:n_max,n_x) :: fn_r
+   28.      complex, dimension(-n_max:n_max,n_x) :: gn_r
+   29.      !
+   30.      complex, dimension(0:n_max,n_x) :: fgr
+   31.      complex, dimension(0:n_max,n_x) :: fgr_p
+   32.      complex, dimension(0:n_max,i1_dx:i2_dx) :: fgp
+   33.      complex, dimension(0:n_max,n_x) :: fgp_r
+   34.      complex, dimension(0:n_max,n_x) :: fg2
+   35.      !
+   36.      complex :: add1
+   37.      complex :: add2
+   38.      complex :: add3
+   39.      !--------------------------------------------
+   40.    
+   41.      do is=1,n_kinetic
+   42.         do i_split=1,msplit_SSUB
+   43.    
+   44.            ! fn, gn and fgp have ip indices;
+   45.            ! must be zeroed.
+   46.    !$omp parallel private(add1,add2,add3,i,nn,i_diff,n1)
+   47.            do i = ibeg, iend
+   48.               do nn=0,n_max
+   49.                  gn(nn,i) = h_tran(i,i_split,i_p(nn),is)
+   50.                  fn(nn,i) = gyro_u_tran(i,i_split,i_p(nn),is)
+   51.               enddo ! nn
+   52.               do nn=1,n_max
+   53.                  gn(-nn,i) = conjg(gn(nn,i))
+   54.                  fn(-nn,i) = conjg(fn(nn,i))
+   55.               enddo ! nn
+   56.            enddo ! i
+   57.    !$omp barrier
+   58.    !$omp single
+   59.            if (boundary_method == 1) then
+   60.               do i=i1_dx,0
+   61.                  fn(0:n_max,i) = fn(0:n_max,i+n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 61 
+  A loop starting at line 61 was not vectorized because it contains a reference to a non-vector intrinsic on line 61.
+
+   62.                  gn(0:n_max,i) = gn(0:n_max,i+n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 62 
+  A loop starting at line 62 was not vectorized because it contains a reference to a non-vector intrinsic on line 62.
+
+   63.               enddo
+   64.               do i=n_x+1,i2_dx
+   65.                  fn(0:n_max,i) = fn(0:n_max,i-n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 65 
+  A loop starting at line 65 was not vectorized because it contains a reference to a non-vector intrinsic on line 65.
+
+   66.                  gn(0:n_max,i) = gn(0:n_max,i-n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 66 
+  A loop starting at line 66 was not vectorized because it contains a reference to a non-vector intrinsic on line 66.
+
+   67.               enddo
+   68.            else
+   69.               do i=i1_dx,0
+   70.                  fn(0:n_max,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 70 
+  A loop starting at line 70 was not vectorized because it contains a reference to a non-vector intrinsic on line 70.
+
+   71.                  gn(0:n_max,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 71 
+  A loop starting at line 71 was not vectorized because it contains a reference to a non-vector intrinsic on line 71.
+
+   72.               enddo
+   73.               do i=n_x+1,i2_dx
+   74.                  fn(0:n_max,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 74 
+  A loop starting at line 74 was not vectorized because it contains a reference to a non-vector intrinsic on line 74.
+
+   75.                  gn(0:n_max,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 75 
+  A loop starting at line 75 was not vectorized because it contains a reference to a non-vector intrinsic on line 75.
+
+   76.               enddo
+   77.            endif
+   78.    
+   79.            do i=i1_dx,0
+   80.               do nn=1,n_max
+   81.                  gn(-nn,i) = conjg(gn(nn,i))
+   82.                  fn(-nn,i) = conjg(fn(nn,i))
+   83.               enddo ! nn
+   84.            enddo ! i
+   85.            do i=n_x+1,i2_dx
+   86.               do nn=1,n_max
+   87.                  gn(-nn,i) = conjg(gn(nn,i))
+   88.                  fn(-nn,i) = conjg(fn(nn,i))
+   89.               enddo ! nn
+   90.            enddo ! i
+   91.    !$omp end single
+   92.    !$omp barrier  ! ensure all gn, fn values are available
+   93.            !---------------------------------------------------------------
+   94.            !
+   95.            ! THIS IS EXPENSIVE LOOP #1
+   96.            !
+   97.            do i = ibeg, iend
+   98.               ! df/dp, dg/dp
+   99.               fn_p(:,i) = -i_c*n_p(:)*fn(:,i)
+ftn-6262 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 99 
+  A loop starting at line 99 was not vectorized because it contains a call to a subroutine or function on line 99.
+
+  100.               gn_p(:,i) = -i_c*n_p(:)*gn(:,i)
+ftn-6262 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 100 
+  A loop starting at line 100 was not vectorized because it contains a call to a subroutine or function on line 100.
+
+  101.               ! df/dr, dg/dr
+  102.               fn_r(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 102 
+  A loop starting at line 102 was not vectorized because it contains a reference to a non-vector intrinsic on line 102.
+
+  103.               gn_r(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 103 
+  A loop starting at line 103 was not vectorized because it contains a reference to a non-vector intrinsic on line 103.
+
+  104.               do i_diff=-m_dx,m_dx-i_dx
+  105.                  do nn=0,n_max
+  106.                     fn_r(nn,i) = fn_r(nn,i)+w_d1(i_diff)*fn(nn,i+i_diff)
+  107.                     gn_r(nn,i) = gn_r(nn,i)+w_d1(i_diff)*gn(nn,i+i_diff)
+  108.                  enddo ! i_diff
+  109.               enddo
+  110.    
+  111.               do nn=1,n_max
+  112.                  fn_r(-nn,i) = conjg(fn_r(nn,i))
+  113.                  gn_r(-nn,i) = conjg(gn_r(nn,i))
+  114.               enddo ! nn
+  115.    
+  116.            !---------------------------------------------------------------
+  117.            ! Nonlinear convolution
+  118.            !
+  119.               do nn=0,n_max
+  120.                  add1 = (0.0,0.0)
+  121.                  add2 = (0.0,0.0)
+  122.                  add3 = (0.0,0.0)
+  123.                  do n1=-n_max+nn,n_max
+  124.    
+  125.                     ! f dg/dr - g df/dr
+  126.    
+  127.                     add1 = add1+&
+  128.                          fn(n1,i)*gn_r(nn-n1,i)-gn(n1,i)*fn_r(nn-n1,i)
+  129.    
+  130.                     ! g df/dp - f dg/dp
+  131.    
+  132.                     add2 = add2+&
+  133.                          gn(n1,i)*fn_p(nn-n1,i)-fn(n1,i)*gn_p(nn-n1,i)
+  134.    
+  135.                     ! df/dp dg/dr - df/dr dg/dp
+  136.    
+  137.                     add3 = add3+&
+  138.                          fn_p(n1,i)*gn_r(nn-n1,i)-fn_r(n1,i)*gn_p(nn-n1,i)
+  139.    
+  140.                  enddo ! n1
+  141.                  fgr(nn,i) = add1
+  142.                  fgp(nn,i) = add2
+  143.                  fg2(nn,i) = add3
+  144.               enddo ! nn
+  145.            enddo ! i
+  146.    !$omp barrier
+  147.            !---------------------------------------------------------------
+  148.    !$omp single
+  149.            if (boundary_method == 1) then
+  150.               do i=i1_dx,0
+  151.                  fgp(:,i) = fgp(:,i+n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 151 
+  A loop starting at line 151 was not vectorized because it contains a reference to a non-vector intrinsic on line 151.
+
+  152.               enddo
+  153.               do i=n_x+1,i2_dx
+  154.                  fgp(:,i) = fgp(:,i-n_x)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 154 
+  A loop starting at line 154 was not vectorized because it contains a reference to a non-vector intrinsic on line 154.
+
+  155.               enddo
+  156.            else
+  157.               do i=i1_dx,0
+  158.                  fgp(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 158 
+  A loop starting at line 158 was not vectorized because it contains a reference to a non-vector intrinsic on line 158.
+
+  159.               enddo
+  160.               do i=n_x+1,i2_dx
+  161.                  fgp(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 161 
+  A loop starting at line 161 was not vectorized because it contains a reference to a non-vector intrinsic on line 161.
+
+  162.               enddo
+  163.            endif
+  164.    !$omp end single
+  165.    !$omp barrier
+  166.            !---------------------------------------------------------------
+  167.            ! d/dr (g df/dp - f dg/dp)
+  168.            !
+  169.            ! THIS IS EXPENSIVE LOOP #2
+  170.            !
+  171.            !
+  172.            do i = ibeg, iend
+  173.               fgp_r(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_DIRECT, File = gyro_nl_direct.f90, Line = 173 
+  A loop starting at line 173 was not vectorized because it contains a reference to a non-vector intrinsic on line 173.
+
+  174.               do i_diff=-m_dx,m_dx-i_dx
+  175.                  do nn=0,n_max
+  176.                     fgp_r(nn,i) = fgp_r(nn,i)+w_d1(i_diff)*fgp(nn,i+i_diff)
+  177.                  enddo ! nn
+  178.               enddo ! i_diff
+  179.    
+  180.            !------------------------------------------------
+  181.            ! Arakawa scheme:
+  182.            !
+  183.            ! fgr_p -> d/dp (f dg/dr - g df/dr)
+  184.            !
+  185.            ! d/dp (f dg/dr - g df/dr)
+  186.            ! + d/dr (g df/dp - f dg/dp)
+  187.            ! + df/dp dg/dr - df/dr dg/dp
+  188.            !
+  189.               do nn=0,n_max
+  190.                  fgr_p(nn,i) = -i_c*n_p(nn)*fgr(nn,i)
+  191.                  nl(nn,i) = c_nl_i(i)*(fgr_p(nn,i)+fgp_r(nn,i)+fg2(nn,i))
+  192.                  h_tran(i,i_split,i_p(nn),is) = nl(nn,i)/3.0
+  193.               enddo ! nn
+  194.            enddo ! i
+  195.    !$omp end parallel
+  196.            !------------------------------------------------
+  197.    
+  198.         enddo ! i_split
+  199.      enddo ! is
+  200.    
+  201.    end subroutine gyro_nl_direct
+  202.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CONJG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NL_DIRECT (Line 53, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 54, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 81, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 82, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 87, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 88, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 112, file gyro_nl_direct.f90)
+                   GYRO_NL_DIRECT (Line 113, file gyro_nl_direct.f90)
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_DIRECT
+
+Name  Messages
+----  --------
+GYRO_NL_DIRECT
+      Defined as:  Subroutine (line 10, file gyro_nl_direct.f90)
+
+      Interface:   None
+
+      Calls:       CONJG(Intrinsic) (Line 53, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 54, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 81, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 82, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 87, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 88, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 112, file gyro_nl_direct.f90)
+                   CONJG(Intrinsic) (Line 113, file gyro_nl_direct.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_POINTERS
+                   GYRO_NL_PRIVATE
+                   MATH_CONSTANTS
+                   OMPDATA
+
+Name  Messages
+----  --------
+GYRO_NL_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_DIRECT
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_DIRECT
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_DIRECT
+
+Name  Messages
+----  --------
+OMPDATA
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_DIRECT
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

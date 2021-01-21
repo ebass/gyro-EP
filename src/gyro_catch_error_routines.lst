@@ -1,0 +1,788 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_catch_error_routines.f90
+Compiled : 01/19/21  15:35:32
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_catch_error_routines.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : CATCH_BLOWUP
+          CATCH_ERROR
+          CATCH_HALT_SIGNAL
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_catch_error_routines.f90
+Date     : 01/19/2021  15:35:33
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !------------------------------------------------
+    2.    ! catch_blowup.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  This routine traps a blow-up of the numerical
+    6.    !  solution by monitoring the potential amplitude. 
+    7.    !------------------------------------------------
+    8.    
+    9.    subroutine catch_blowup
+   10.    
+   11.      use mpi
+   12.      use gyro_globals
+   13.    
+   14.      !---------------------------------------------------
+   15.      implicit none
+   16.      !
+   17.      real, parameter :: phi_limit = 0.5
+   18.      real :: phi_local
+   19.      real :: phi_max
+   20.      !---------------------------------------------------
+   21.    
+   22.      !------------------------------------------------
+   23.      ! Halt on large field
+   24.      !
+   25.      phi_local = maxval(abs(field_blend))
+ftn-6297 ftn: VECTOR CATCH_BLOWUP, File = gyro_catch_error_routines.f90, Line = 25 
+  A loop starting at line 25 was not vectorized because a recurrence was found at line 25.
+
+   26.      !
+   27.      call MPI_ALLREDUCE(phi_local, &
+   28.           phi_max, &
+   29.           1, &
+   30.           MPI_DOUBLE_PRECISION, &
+   31.           MPI_MAX, &
+   32.           NEW_COMM_2, &
+   33.           i_err)
+   34.      
+   35.      if (phi_max > phi_limit .and. nonlinear_flag == 1) then
+   36.         call gyro_set_exit_status('field blowup',1)
+   37.      endif
+   38.      !
+   39.      !------------------------------------------------
+   40.    
+   41.    end subroutine catch_blowup
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   42.    
+   43.    !-----------------------------------------------------------
+   44.    ! catch_error.f90
+   45.    !
+   46.    ! PURPOSE:
+   47.    !  Routine to print error message, finalize MPI, and
+   48.    !  stop program execution gracefully. 
+   49.    !-----------------------------------------------------------
+   50.    
+   51.    subroutine catch_error(message)
+   52.    
+   53.      use gyro_globals
+   54.    
+   55.      implicit none
+   56.    
+   57.      character (len=*), intent(in) :: message
+   58.    
+   59.      select case (output_flag)
+   60.    
+   61.      case (0)
+   62.    
+   63.         if ((i_proc == 0) .and. (gkeigen_j_set == 0)) then
+   64.           print *, '----------------------------------------------------------'
+   65.           print *, message
+   66.           print *, '----------------------------------------------------------'
+   67.         endif
+   68.    
+   69.      case (1)
+   70.    
+   71.         if ((i_proc == 0) .and. (gkeigen_j_set == 0)) then 
+   72.            open(unit=1,file=trim(runfile),status='old',position='append')
+   73.            write(1,10) '----------------------------------------------------------'
+   74.            write(1,10) message
+   75.            write(1,10) '----------------------------------------------------------'
+   76.            close(1)
+   77.         endif
+   78.    
+   79.      end select
+   80.    
+   81.      call MPI_finalize(i_err)
+   82.      stop
+   83.    
+   84.    10 format(a)
+   85.    
+   86.    end subroutine catch_error
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   87.    
+   88.    !------------------------------------------------
+   89.    ! catch_halt_signal.f90
+   90.    !
+   91.    ! PURPOSE:
+   92.    !  halt code on signal.
+   93.    !------------------------------------------------
+   94.    
+   95.    subroutine catch_halt_signal
+   96.    
+   97.      use mpi
+   98.      use gyro_globals
+   99.    
+  100.      !--------------------
+  101.      implicit none
+  102.      !
+  103.      integer :: signal
+  104.      logical :: lfe
+  105.      !--------------------
+  106.    
+  107.      !------------------------------------------------
+  108.      ! Halt signal
+  109.      !
+  110.      if (i_proc == 0) then
+  111.         inquire(file='halt',exist=lfe)
+  112.         if (lfe .eqv. .true.) then
+  113.            open(unit=1,file='halt',status='old')
+  114.            read(1,*) signal
+  115.            close(1)
+  116.         else
+  117.            signal = 0
+  118.         endif
+  119.      endif
+  120.      !
+  121.      call MPI_BCAST(signal,&
+  122.           1,&
+  123.           MPI_INTEGER,&
+  124.           0,&
+  125.           GYRO_COMM_WORLD,&
+  126.           i_err)  
+  127.      !
+  128.      if (abs(signal) == 1) then
+  129.         call gyro_set_exit_status('user halt',1)
+  130.      endif
+  131.      !------------------------------------------------
+  132.    
+  133.    end subroutine catch_halt_signal
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                     C o m m o n   B l o c k   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB5/                            Length: 4 bytes
+
+     CATCH_BLOWUP                     Block is used from MPI_CONSTANTS
+     CATCH_HALT_SIGNAL                Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIFCMB9/                            Length: 4 bytes
+
+     CATCH_BLOWUP                     Block is used from MPI_CONSTANTS
+     CATCH_HALT_SIGNAL                Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV1/                            Length: 28 bytes
+
+     CATCH_BLOWUP                     Block is used from MPI_CONSTANTS
+     CATCH_HALT_SIGNAL                Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIV2/                            Length: 24 bytes
+
+     CATCH_BLOWUP                     Block is used from MPI_CONSTANTS
+     CATCH_HALT_SIGNAL                Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+Blk  Program Unit                     Messages
+---  ------------                     --------
+/MPIPRIVC/                            Length: 2 bytes
+
+     CATCH_BLOWUP                     Block is used from MPI_CONSTANTS
+     CATCH_HALT_SIGNAL                Block is used from MPI_CONSTANTS
+
+     Member Comparison
+     -----------------
+     The common block members are declared the same.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+ABS(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CATCH_BLOWUP (Line 25, file gyro_catch_error_routines.f90)
+                   _F90_TRIM(Intrinsic) (Line 128, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+CATCH_BLOWUP
+      Defined as:  Subroutine (line 9, file gyro_catch_error_routines.f90)
+
+      Interface:   None
+
+      Calls:       ABS(Intrinsic) (Line 25, file gyro_catch_error_routines.f90)
+                   MAXVAL(Intrinsic) (Line 25, file gyro_catch_error_routines.f90)
+                   MPI_ALLREDUCE (Line 27, file gyro_catch_error_routines.f90)
+                   GYRO_SET_EXIT_STATUS (Line 36, file gyro_catch_error_routines.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+CATCH_ERROR
+      Defined as:  Subroutine (line 51, file gyro_catch_error_routines.f90)
+
+      Interface:   None
+
+      Calls:       TRIM(Intrinsic) (Line 72, file gyro_catch_error_routines.f90)
+                   MPI_FINALIZE (Line 81, file gyro_catch_error_routines.f90)
+
+        Uses:      GYRO_GLOBALS
+
+Name  Messages
+----  --------
+CATCH_HALT_SIGNAL
+      Defined as:  Subroutine (line 95, file gyro_catch_error_routines.f90)
+
+      Interface:   None
+
+      Calls:       MPI_BCAST (Line 121, file gyro_catch_error_routines.f90)
+                   ABS(Intrinsic) (Line 128, file gyro_catch_error_routines.f90)
+                   GYRO_SET_EXIT_STATUS (Line 129, file gyro_catch_error_routines.f90)
+
+        Uses:      MPI
+                   MPI_BASE  (indirectly)
+                   MPI_SIZEOFS  (indirectly)
+                   MPI_CONSTANTS  (indirectly)
+                   GYRO_GLOBALS
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+COMMNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+DATATYPENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLEREQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+ERRHANDLERNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+FILENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GROUPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     CATCH_BLOWUP
+                   CATCH_ERROR
+                   CATCH_HALT_SIGNAL
+
+Name  Messages
+----  --------
+GYRO_SET_EXIT_STATUS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CATCH_BLOWUP (Line 36, file gyro_catch_error_routines.f90)
+                   _F90_TRIM(Intrinsic) (Line 129, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+INFOEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+INFONEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MAXVAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CATCH_BLOWUP (Line 25, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+MESSAGEEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MESSAGENEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI
+      Defined as:  No definitions.
+
+      Used By:     CATCH_BLOWUP
+                   CATCH_HALT_SIGNAL
+
+Name  Messages
+----  --------
+MPI_ALLREDUCE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   CATCH_BLOWUP (Line 27, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+MPI_BASE
+      Defined as:  No definitions.
+
+      Used By:     CATCH_BLOWUP  (indirectly)
+                   CATCH_HALT_SIGNAL  (indirectly)
+
+Name  Messages
+----  --------
+MPI_BCAST
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   _F90_TRIM(Intrinsic) (Line 121, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+MPI_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     CATCH_BLOWUP  (indirectly)
+                   CATCH_HALT_SIGNAL  (indirectly)
+
+Name  Messages
+----  --------
+MPI_FINALIZE
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   REQUESTNEQ in MPI_CONSTANTS (Line 81, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+MPI_SIZEOFS
+      Defined as:  No definitions.
+
+      Used By:     CATCH_BLOWUP  (indirectly)
+                   CATCH_HALT_SIGNAL  (indirectly)
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CH in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CHV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CX in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_CXV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_D in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_DV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I1V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I2V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8 in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_I8V in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_IV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_L in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_LV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_R in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+MPI_SIZEOF_RV in MPI_SIZEOFS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+OPNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+REQUESTNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   REQUESTNEQ in MPI_CONSTANTS (Line 72, file gyro_catch_error_routines.f90)
+
+Name  Messages
+----  --------
+WINEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+WINNEQ in MPI_CONSTANTS
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+_F90_TRIM(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+__MAXVAL(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

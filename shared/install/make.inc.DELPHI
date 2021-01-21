@@ -1,0 +1,30 @@
+#---------------------------------------------------
+# DELPHI, EOS, HESTIA, VENUS, etc. at General Atomics
+# Make sure to source /u/candy/local_software/setup 
+# (even in your .login file on VENUS)
+#---------------------------------------------------
+
+FC	= $(F77) -module $(GACODE_ROOT)/modules -mp
+F77	= mpif90
+
+FMATH	= -r8 
+FOPT	= -fastsse
+FDEBUG	= -g -Ktrap=fp -Mbounds -Minform,inform
+FBOUND	= -Minform,inform -Mbounds
+
+# System math libraries
+
+ROOT=/u/candy/local_software
+
+LMATH=/opt/pgi/linux86-64/11.10/lib/liblapack.a \
+      /opt/pgi/linux86-64/11.10/lib/libblas.a
+
+# OPTIONAL: netCDF (for gyro2gkv)
+
+NETCDF = $(ROOT)/netcdf/lib/libnetcdf.a
+NETCDF_INC = $(ROOT)/netcdf/include
+
+# Archive 
+
+ARCH = ar cr
+

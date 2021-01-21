@@ -1,0 +1,113 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/BLEND/BLEND_do.f90
+Compiled : 01/19/21  15:35:06
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -c BLEND_do.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : BLEND_DO
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/BLEND/BLEND_do.f90
+Date     : 01/19/2021  15:35:06
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !-----------------------------------------------------
+    2.    ! BLEND_do.f90
+    3.    !
+    4.    ! REVISIONS
+    5.    ! 22 Dec 00: jc
+    6.    !  Created.
+    7.    ! 14 Nov 03: jc
+    8.    !  This routine is no longer used by GYRO.
+    9.    !---------------------------------------------
+   10.    
+   11.    subroutine BLEND_do(c_IN)
+   12.    
+   13.      use BLEND_private
+   14.    
+   15.      implicit none
+   16.    
+   17.      complex, intent(in), dimension(n_fit) :: c_IN
+   18.    
+   19.      ! Block-cyclic LU decomposition and solve:
+   20.    
+   21.      c0 = c_IN
+ftn-6332 ftn: VECTOR BLEND_DO, File = BLEND_do.f90, Line = 21 
+  A loop starting at line 21 was not vectorized because it does not map well onto the target architecture.
+
+   22.    
+   23.      call ZGETRS('N',n_fit,1,cs,n_fit,i_piv,c0,n_fit,info)
+   24.    
+   25.    end subroutine BLEND_do
+   26.    
+   27.    
+   28.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+BLEND_DO
+      Defined as:  Subroutine (line 11, file BLEND_do.f90)
+
+      Interface:   None
+
+      Calls:       ZGETRS (Line 23, file BLEND_do.f90)
+
+        Uses:      BLEND_PRIVATE
+
+Name  Messages
+----  --------
+BLEND_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     BLEND_DO
+
+Name  Messages
+----  --------
+ZGETRS
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   BLEND_DO (Line 23, file BLEND_do.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

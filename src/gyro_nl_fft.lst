@@ -1,0 +1,464 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /global/u2/b/bassem/gyro-EP/src/gyro_nl_fft.f90
+Compiled : 01/19/21  15:35:45
+Compiler : Version 9.1.0
+Ftnlx    : Version 9.1.0 
+Target   : x86-64
+Command  : ftn_driver.exe -hcpu=haswell -hdynamic -D__CRAYXC -D__CRAY_HASWELL
+           -D__CRAYXT_COMPUTE_LINUX_TARGET -hnetwork=aries -hnoomp -em
+           -J/global/homes/b/bassem/gyro-EP/modules -sreal64 -eD -Ktrap=fp -m1
+           -Rbcdps -G0 -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -c gyro_nl_fft.f90
+           -I/opt/cray/pe/cce/9.1.0/cce-clang/x86_64/lib/clang/9.0.0/include
+           -I/opt/cray/pe/cce/9.1.0/cce/x86_64/include/craylibs -I/usr/include
+           -I/usr/include -I/opt/cray/pe/fftw/3.3.8.4/haswell/include
+           -I/opt/cray/pe/libsci/19.06.1/CRAY/9.0/x86_64/include
+           -I/opt/cray/pe/mpt/7.7.10/gni/mpich-cray/9.0/include
+           -I/opt/cray/pe/hdf5/1.10.5.2/cray/9.0/include
+           -I/opt/cray/pe/netcdf/4.6.3.2/cray/9.0/include
+           -I/opt/cray/rca/2.2.20-7.0.1.1_4.53__g8e3fb5b.ari/include
+           -I/opt/cray/alps/6.6.58-7.0.1.1_6.10__g437d88db.ari/include
+           -I/opt/cray/xpmem/2.2.20-7.0.1.1_4.14__g0475745.ari/include
+           -I/opt/cray/gni-headers/5.0.12.0-7.0.1.1_6.32__g3b1768f.ari/include
+           -I/opt/cray/dmapp/7.1.1-7.0.1.1_4.54__g38cf134.ari/include
+           -I/opt/cray/pe/pmi/5.0.14/include
+           -I/opt/cray/ugni/6.0.14.0-7.0.1.1_7.40__ge78e5b0.ari/include
+           -I/opt/cray/udreg/2.3.2-7.0.1.1_3.38__g8175d3d.ari/include
+           -I/opt/cray/wlm_detect/1.3.3-7.0.1.1_4.16__g7109084.ari/include
+           -I/opt/cray/krca/2.2.6-7.0.1.1_5.39__gb641b12.ari/include
+           -I/opt/cray-hss-devel/9.0.0/include
+Program
+  Units  : GYRO_NL_FFT
+
+ftnlx report
+------------
+Source   : /global/u2/b/bassem/gyro-EP/src/gyro_nl_fft.f90
+Date     : 01/19/2021  15:35:45
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    1.    !----------------------------------------------------------------
+    2.    ! gyro_nl_fft.fftw3.f90
+    3.    !
+    4.    ! PURPOSE:
+    5.    !  This routine evaluates the ExB nonlinearity with periodic or
+    6.    !  nonperiodic boundary conditions using the (F,G)-conservative 
+    7.    !  difference scheme with FFT in the toroidal direction.
+    8.    !
+    9.    ! NOTES:
+   10.    !  FFTW3 version.
+   11.    !----------------------------------------------------------------
+   12.    
+   13.    subroutine gyro_nl_fft
+   14.    
+   15.      use gyro_globals
+   16.      use gyro_pointers
+   17.      use gyro_nl_private
+   18.      use math_constants
+   19.      use ompdata
+   20.    
+   21.      !--------------------------------------------
+   22.      implicit none
+   23.      !
+   24.      complex, dimension(-n_max:n_max,i1_buffer:i2_buffer) :: fn
+   25.      complex, dimension(-n_max:n_max,i1_buffer:i2_buffer) :: gn
+   26.      complex, dimension(0:n_max,n_x) :: nl
+   27.      complex, dimension(0:n_max,i1_buffer:i2_buffer) :: fgp
+   28.      !
+   29.      complex :: fn_p
+   30.      complex :: gn_p
+   31.      complex :: fn_r
+   32.      complex :: gn_r
+   33.      !
+   34.      complex :: fgr
+   35.      complex :: fgr_p
+   36.      complex :: fgp_r
+   37.      complex :: fg2
+   38.      !
+   39.      real :: fg_r
+   40.      real :: gf_r
+   41.      real :: gf_p
+   42.      real :: fg_p
+   43.      real :: f_pg_r
+   44.      real :: f_rg_p
+   45.      !
+   46.      complex :: fg_r_c
+   47.      complex :: gf_r_c
+   48.      complex :: f_pg_r_c
+   49.      complex :: f_rg_p_c
+   50.      !
+   51.      !--------------------------------------------
+   52.    
+   53.      do is=1,n_kinetic
+   54.         do i_split=1,msplit_SSUB
+   55.    
+   56.            ! fn, gn and fgp have ip indices; 
+   57.            ! must be zeroed.
+   58.    
+   59.    !$omp parallel private(fn_r,gn_r,fn_p,gn_p,i,nn,i_diff)
+   60.    !$omp single
+   61.            do i=i1_buffer,0
+   62.               fn(:,i)  = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 62 
+  A loop starting at line 62 was not vectorized because it contains a reference to a non-vector intrinsic on line 62.
+
+   63.               gn(:,i)  = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 63 
+  A loop starting at line 63 was not vectorized because it contains a reference to a non-vector intrinsic on line 63.
+
+   64.               fgp(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 64 
+  A loop starting at line 64 was not vectorized because it contains a reference to a non-vector intrinsic on line 64.
+
+   65.            enddo
+   66.            do i=n_x+1,i2_buffer
+   67.               fn(:,i)  = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 67 
+  A loop starting at line 67 was not vectorized because it contains a reference to a non-vector intrinsic on line 67.
+
+   68.               gn(:,i)  = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 68 
+  A loop starting at line 68 was not vectorized because it contains a reference to a non-vector intrinsic on line 68.
+
+   69.               fgp(:,i) = (0.0,0.0)
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 69 
+  A loop starting at line 69 was not vectorized because it contains a reference to a non-vector intrinsic on line 69.
+
+   70.            enddo
+   71.    !$omp end single
+   72.            do i = ibeg, iend
+   73.               do nn=0,n_max
+   74.                  gn(nn,i) = h_tran(i,i_split,i_p(nn),is)
+   75.                  fn(nn,i) = gyro_u_tran(i,i_split,i_p(nn),is)
+   76.               enddo ! nn
+   77.            enddo ! i
+   78.    !$omp barrier  ! wait for all fn, gn to be available
+   79.    
+   80.            !------------------------------------------------
+   81.            !
+   82.            !
+   83.            do i = ibeg, iend
+   84.               v_fft3(:,i,:) = 0.0
+ftn-6263 ftn: VECTOR GYRO_NL_FFT, File = gyro_nl_fft.f90, Line = 84 
+  A loop starting at line 84 was not vectorized because it contains a reference to a non-vector intrinsic on line 84.
+
+   85.               do nn=0,n_max
+   86.                  fn_r = (0.0,0.0)
+   87.                  gn_r = (0.0,0.0)
+   88.                  !---------------------------------------------------------------
+   89.                  ! df/dr, dg/dr
+   90.                  !
+   91.                  do i_diff=-m_dx,m_dx-i_dx
+   92.                     fn_r = fn_r+w_d1(i_diff)*fn(nn,i_loop(i+i_diff))
+   93.                     gn_r = gn_r+w_d1(i_diff)*gn(nn,i_loop(i+i_diff))
+   94.                  enddo ! i_diff
+   95.                  !------------------------------------------------
+   96.                  ! df/dp, dg/dp
+   97.                  !
+   98.                  fn_p = -i_c*n_p(nn)*fn(nn,i)
+   99.                  gn_p = -i_c*n_p(nn)*gn(nn,i)
+  100.                  !---------------------------------------------------------------
+  101.                  ! Dealiasing and wrap-around of 
+  102.                  ! f, g, df/dp, dg/dp, df/dr, dg/dr
+  103.                  !--------------------------------------------------
+  104.                  ! Supervector loading I
+  105.                  !
+  106.                  v_fft3(nn,i,1) = real(fn(nn,i))
+  107.                  v_fft3(nn,i,2) = real(gn(nn,i))
+  108.                  v_fft3(nn,i,3) = real(fn_p)
+  109.                  v_fft3(nn,i,4) = real(gn_p)
+  110.                  v_fft3(nn,i,5) = real(fn_r)
+  111.                  v_fft3(nn,i,6) = real(gn_r)
+  112.                  if (nn /= 0) then
+  113.                     v_fft3(n_fft-nn,i,1) = aimag(fn(nn,i))
+  114.                     v_fft3(n_fft-nn,i,2) = aimag(gn(nn,i))
+  115.                     v_fft3(n_fft-nn,i,3) = aimag(fn_p)
+  116.                     v_fft3(n_fft-nn,i,4) = aimag(gn_p)
+  117.                     v_fft3(n_fft-nn,i,5) = aimag(fn_r)
+  118.                     v_fft3(n_fft-nn,i,6) = aimag(gn_r)
+  119.                  endif
+  120.    
+  121.               enddo ! nn
+  122.            enddo ! i
+  123.    !$omp end parallel
+  124.    
+  125.            !---------------------------------------------------
+  126.            ! Backward FFT
+  127.            !
+  128.            call dfftw_execute(plan_b)
+  129.    
+  130.            !---------------------------------------------------------------
+  131.            ! Real space multiplications
+  132.            !
+  133.    !$omp parallel private(fg_r,gf_r,gf_p,fg_p,f_pg_r,f_rg_p)
+  134.            do i = ibeg, iend
+  135.               do nn=0,n_fft-1
+  136.                  !f dg/dr
+  137.                  fg_r   =  vt_fft3(nn,i,1)*vt_fft3(nn,i,6)
+  138.    
+  139.                  !g df/dr
+  140.                  gf_r   =  vt_fft3(nn,i,2)*vt_fft3(nn,i,5)
+  141.    
+  142.                  !g df/dp
+  143.                  gf_p   =  vt_fft3(nn,i,2)*vt_fft3(nn,i,3)
+  144.    
+  145.                  !f dg/dp
+  146.                  fg_p   =  vt_fft3(nn,i,1)*vt_fft3(nn,i,4)
+  147.    
+  148.                  ! df/dp dg/dr
+  149.                  f_pg_r =  vt_fft3(nn,i,3)*vt_fft3(nn,i,6)
+  150.    
+  151.                  ! df/dr dg/dp
+  152.                  f_rg_p =  vt_fft3(nn,i,5)*vt_fft3(nn,i,4)
+  153.    
+  154.                  !---------------------------------------------------------------
+  155.                  ! Supervector loading II
+  156.                  ! 
+  157.                  vt_fft3(nn,i,1) = fg_r
+  158.                  vt_fft3(nn,i,2) = gf_r
+  159.                  vt_fft3(nn,i,3) = gf_p
+  160.                  vt_fft3(nn,i,4) = fg_p
+  161.                  vt_fft3(nn,i,5) = f_pg_r
+  162.                  vt_fft3(nn,i,6) = f_rg_p   
+  163.               enddo !nn
+  164.            enddo
+  165.    !$omp end parallel
+  166.            !---------------------------------------------------------------
+  167.    
+  168.            !---------------------------------------------------------------
+  169.            ! Forward FFT
+  170.            !
+  171.            call dfftw_execute(plan_f)
+  172.    
+  173.            !--------------------------------------------------
+  174.            ! Re-Construction of complex arrays
+  175.            ! 
+  176.            !--------------------------------------------------
+  177.            !  g df/dp - f dg/dp, 
+  178.    !$omp parallel private(fgp_r,fg_r_c,gf_r_c,f_pg_r_c,f_rg_p_c,fgr,fg2,fgr_p)
+  179.            do i = ibeg, iend
+  180.               fgp(0,i) = (cmplx(v_fft3(0,i,3),0.0) - &
+  181.                           cmplx(v_fft3(0,i,4),0.0))/n_fft
+  182.               do nn=1,n_max
+  183.                  fgp(nn,i) = (cmplx(v_fft3(nn,i,3),v_fft3(n_fft-nn,i,3))- &
+  184.                               cmplx(v_fft3(nn,i,4),v_fft3(n_fft-nn,i,4)))/n_fft
+  185.               enddo ! nn 
+  186.            enddo ! i
+  187.    !$omp barrier   ! ensure all fgp values are available
+  188.            !--------------------------------------------------
+  189.    
+  190.            !---------------------------------------------------------------
+  191.            do i = ibeg, iend
+  192.               do nn=0,n_max
+  193.                  !---------------------------------------------------------------
+  194.                  ! d/dr (g df/dp - f dg/dp)
+  195.                  !
+  196.                  fgp_r = (0.0,0.0)
+  197.                  do i_diff=-m_dx,m_dx-i_dx
+  198.                     fgp_r = fgp_r+w_d1(i_diff)*fgp(nn,i_loop(i+i_diff))
+  199.                  enddo ! i_diff
+  200.    
+  201.                  if (nn == 0) then
+  202.                     fg_r_c   = cmplx(v_fft3(0,i,1),0.0)
+  203.                     gf_r_c   = cmplx(v_fft3(0,i,2),0.0)
+  204.                     f_pg_r_c = cmplx(v_fft3(0,i,5),0.0)
+  205.                     f_rg_p_c = cmplx(v_fft3(0,i,6),0.0)   
+  206.                  else
+  207.                     fg_r_c   = cmplx(v_fft3(nn,i,1),v_fft3(n_fft-nn,i,1))
+  208.                     gf_r_c   = cmplx(v_fft3(nn,i,2),v_fft3(n_fft-nn,i,2))
+  209.                     f_pg_r_c = cmplx(v_fft3(nn,i,5),v_fft3(n_fft-nn,i,5))
+  210.                     f_rg_p_c = cmplx(v_fft3(nn,i,6),v_fft3(n_fft-nn,i,6)) 
+  211.                  end if
+  212.    
+  213.                  !----------------------------------------------------------------
+  214.                  ! f dg/dr - g df/dr, 
+  215.                  !  g df/dp - f dg/dp,   (above, before this loop)
+  216.                  !   df/dp dg/dr - df/dr dg/dp
+  217.                  !
+  218.    
+  219.                  !f dg/dr - g df/dr
+  220.                  fgr = (fg_r_c - gf_r_c)/n_fft
+  221.    
+  222.                  !df/dp dg/dr - df/dr dg/dp
+  223.                  fg2 = (f_pg_r_c - f_rg_p_c)/n_fft
+  224.    
+  225.                  ! d/dp (f dg/dr - g df/dr)
+  226.                  fgr_p = -i_c*n_p(nn)*fgr
+  227.    
+  228.                  !------------------------------------------------
+  229.                  ! Arakawa scheme:
+  230.                  !
+  231.                  ! d/dp (f dg/dr - g df/dr)
+  232.                  !   + d/dr (g df/dp - f dg/dp)
+  233.                  !       + df/dp dg/dr - df/dr dg/dp
+  234.                  !
+  235.                  nl(nn,i) = fgr_p + fgp_r + fg2
+  236.                  !------------------------------------------------
+  237.                  ! Finally, update global RHS (use h_tran for efficiency):
+  238.                  h_tran(i,i_split,i_p(nn),is) = (c_nl_i(i)/3.0)*nl(nn,i)
+  239.    
+  240.               enddo
+  241.            enddo
+  242.    !$omp end parallel
+  243.    
+  244.         enddo ! i_split 
+  245.      enddo ! is
+  246.    
+  247.    end subroutine gyro_nl_fft
+  248.    
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         E x t e r n a l   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name  Messages
+----  --------
+AIMAG(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NL_FFT (Line 113, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 114, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 115, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 116, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 117, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 118, file gyro_nl_fft.f90)
+
+Name  Messages
+----  --------
+CHAR(Intrinsic)
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+CMPLX(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NL_FFT (Line 180, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 181, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 183, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 184, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 202, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 203, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 204, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 205, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 207, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 208, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 209, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 210, file gyro_nl_fft.f90)
+
+Name  Messages
+----  --------
+DFFTW_EXECUTE
+      Defined as:  No definitions.
+
+                   No calls.  It is not called and does not use any procedure.
+
+      Interface:   None
+
+Name  Messages
+----  --------
+GYRO_GLOBALS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_FFT
+
+Name  Messages
+----  --------
+GYRO_NL_FFT
+      Defined as:  Subroutine (line 13, file gyro_nl_fft.f90)
+
+      Interface:   None
+
+      Calls:       REAL(Intrinsic) (Line 106, file gyro_nl_fft.f90)
+                   REAL(Intrinsic) (Line 107, file gyro_nl_fft.f90)
+                   REAL(Intrinsic) (Line 108, file gyro_nl_fft.f90)
+                   REAL(Intrinsic) (Line 109, file gyro_nl_fft.f90)
+                   REAL(Intrinsic) (Line 110, file gyro_nl_fft.f90)
+                   REAL(Intrinsic) (Line 111, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 113, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 114, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 115, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 116, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 117, file gyro_nl_fft.f90)
+                   AIMAG(Intrinsic) (Line 118, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 180, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 181, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 183, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 184, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 202, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 203, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 204, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 205, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 207, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 208, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 209, file gyro_nl_fft.f90)
+                   CMPLX(Intrinsic) (Line 210, file gyro_nl_fft.f90)
+
+        Uses:      GYRO_GLOBALS
+                   GYRO_POINTERS
+                   GYRO_NL_PRIVATE
+                   MATH_CONSTANTS
+                   OMPDATA
+
+Name  Messages
+----  --------
+GYRO_NL_PRIVATE
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_FFT
+
+Name  Messages
+----  --------
+GYRO_POINTERS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_FFT
+
+Name  Messages
+----  --------
+MATH_CONSTANTS
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_FFT
+
+Name  Messages
+----  --------
+OMPDATA
+      Defined as:  No definitions.
+
+      Used By:     GYRO_NL_FFT
+
+Name  Messages
+----  --------
+REAL(Intrinsic)
+      Defined as:  No definitions.
+
+      Interface:   None
+
+      Called By:   GYRO_NL_FFT (Line 106, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 107, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 108, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 109, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 110, file gyro_nl_fft.f90)
+                   GYRO_NL_FFT (Line 111, file gyro_nl_fft.f90)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
