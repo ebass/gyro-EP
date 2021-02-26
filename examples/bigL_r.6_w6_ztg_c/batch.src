@@ -1,0 +1,10 @@
+#!/bin/bash -l
+#SBATCH -J .
+#SBATCH -A m808
+#SBATCH -o /scratch2/scratchdirs/waltz/sim_EP/./batch.out
+#SBATCH -e /scratch2/scratchdirs/waltz/sim_EP/./batch.err
+#SBATCH -p regular
+#SBATCH -t 2:30:00
+#SBATCH -N 27
+ 
+gyro -start cont -e . -n 640 -nomp 1 -numa 2 -mpinuma 12 -p /scratch2/scratchdirs/waltz/sim_EP

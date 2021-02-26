@@ -1,0 +1,10 @@
+ModuleCmd_Switch.c(179):ERROR:152: Module 'PrgEnv-intel' is currently not loaded
+ModuleCmd_Switch.c(179):ERROR:152: Module 'PrgEnv-intel' is currently not loaded
+ModuleCmd_Switch.c(179):ERROR:152: Module 'PrgEnv-intel' is currently not loaded
+cat: /global/homes/w/waltz/gyro-EP/.VERSION: No such file or directory
+ModuleCmd_Switch.c(179):ERROR:152: Module 'PrgEnv-intel' is currently not loaded
+slurmstepd: error: *** JOB 39878392 ON nid00749 CANCELLED AT 2021-02-24T10:52:17 DUE TO TIME LIMIT ***
+slurmstepd: error: *** STEP 39878392.0 ON nid00749 CANCELLED AT 2021-02-24T10:52:17 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: got SIGCONT
+srun: forcing job termination

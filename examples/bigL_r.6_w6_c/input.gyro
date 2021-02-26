@@ -1,0 +1,183 @@
+#J60m16.1x.6M2XB
+#------------------------------------------------------
+
+LINSOLVE_METHOD=1
+#VELOCITY_DIST_METHOD_2=1
+#GKEIGEN_PROC_MULT=1800
+#
+#GKEIGEN_METHOD=1
+#GKEIGEN_TOL=0.00001
+#GKEIGEN_ITER=40
+#GKEIGEN_KSPACE_DIM=1200
+#GKEIGEN_N_VALUES=20
+
+#EMF_FLAG=0
+
+# Number of radial gridpoints (should be even)
+RADIAL_GRID=150
+#RADIAL_GRID=240
+#RADIAL_GRID=480
+
+
+# Banding parameters
+RADIAL_DERIVATIVE_BAND=2
+RADIAL_GYRO_BAND=20
+RADIAL_UPWIND=1.0
+EXPLICIT_DAMP_GRID=10
+
+# Number of gridpoints in an orbit section
+ORBIT_GRID=6
+
+# Number of blending functions
+BLEND_GRID=6
+
+# Order of blending functions (2=tent,3=quadratic,4=cubic)
+BLEND_FIT_ORDER=3
+
+# Velocity-space grid:
+PASS_GRID=4
+TRAP_GRID=4
+ENERGY_GRID=8
+ENERGY_MAX=6.0
+
+# Number of plotted points in theta
+THETA_PLOT=20
+
+# Toroidal grid (minimum, number and spacing):
+#TOROIDAL_MIN=7
+#TOROIDAL_GRID=1
+#TOROIDAL_SEP=2
+
+TOROIDAL_MIN=0
+TOROIDAL_GRID=10
+TOROIDAL_SEP=1
+# Reference toroidal mode (for calculation of
+# box length)
+TOROIDAL_REFERENCE=3
+
+# *NEW*
+# Factor to multiply box size
+BOX_MULTIPLIER=10.0
+#BOX_MULTIPLIER=52.0
+#BOX_MULTIPLIER=67.6
+BOX_MULTIPLIER=8.
+BOX_MULTIPLIER=6.
+
+# r-grid spacing flag (0=equal, 1=unequal)
+NONUNIFORM_GRID_FLAG=0
+#NONUNIFORM_GRID_FLAG=1
+
+# Normalized central radius (r0/a)
+#RADIUS=0.5
+RADIUS=0.6
+
+# rho_s/a
+#RHO_STAR=0.004
+
+
+# Time step
+TIME_STEP=0.01
+#TIME_STEP=0.05
+INTEGRATOR_METHOD=2
+
+# Maximum run time
+TIME_MAX=-500.0001
+
+# Time steps between data output steps
+TIME_SKIP=100
+
+# Boundary Conditions (periodic=1,nonperiodic=2)
+BOUNDARY_METHOD=2
+
+#neoclassical
+#NEO_METHOD=2
+
+#transport
+#TRANSPORT_FLAG=1
+#TRANSPORT_FLAG=0
+
+
+# Nonlinear simulation flag (0=linear,1=nonlinear)
+NONLINEAR_FLAG=0
+
+# Initial amplitudes
+AMP_PHI_N=1e-3
+AMP_PHI_0=0.0
+
+# Model for electron dynamics (1=adiabatic,2=kinetic)
+ELECTRON_METHOD=2
+
+# Square root of ion/electron mass ratio, and electron beta
+MU_ELECTRON=40.
+AMPERE_SCALE=1.0
+MU_2=1.0
+Z_2=1.0
+
+# Collision frequencies
+#NU_II=0.0
+NU_EI=1.0
+NU_EI_SCALE=0.0
+
+NU_I_KROOK=0.0
+#NU_E_DRAG=0.0
+
+# Radial profile method:
+#  1=flux-tube, s-alpha geometry
+#  2=power-law
+#  3=experimental
+#  4=variable shear
+#  5=flux-tube, shaped Miller geometry
+#  6=GTC-style profiles
+RADIAL_PROFILE_METHOD=3
+DENSITY_METHOD=2
+FLAT_PROFILE_FLAG=0
+
+NI_OVER_NE_2=1.0
+
+# Doppler rotation flag 
+#DOPPLER_METHOD=4
+
+DOPPLER_SCALE=0.0
+PGAMMA_SCALE=0.0
+MACH_SCALE=0.0
+
+EPS_DLNTDR=0.00
+
+GEO_GRADBCURV_FLAG=0
+N_FIELD=2
+
+# Kelvin-Helmholtz drive flag
+#KH_METHOD=2
+#ROTATION_THEORY_METHOD=2
+
+# *NEW*
+# Control of adaptive source(1:on  0:off -1:old)
+SOURCE_FLAG=1
+
+# Source wave selector:(increase with physical box size)
+N_SOURCE=3
+NU_SOURCE=1.0
+
+
+# Verbose screen output (0=off,1=on)
+VERBOSE_FLAG=0
+
+# Debugging information/printing (0=off,1=on)
+DEBUG_FLAG=0
+
+#OUTPUT_METHOD=2
+
+#RESTART_NEW_FLAG=1
+
+#RESTART_SKIP_STEP=500
+RESTART_DATA_SKIP=50
+RESTART_DATA_SKIP=5
+RESTART_DATA_SKIP=8
+
+Q_SCALE=1.00
+LINDIFF_METHOD=2
+PLOT_N_FLAG=1
+PLOT_E_FLAG=1
+PLOT_V_FLAG=1
+VELOCITY_OUTPUT_FLAG=1
+# -- Begin overlay

@@ -1,0 +1,11 @@
+#!/bin/bash -l
+#SBATCH -J .
+#SBATCH -A m808
+#SBATCH -o ./batch.out
+#SBATCH -e ./batch.err
+#SBATCH -p debug
+#SBATCH -t 0:30:00
+#SBATCH -N 10
+#SBATCH --constraint=haswell
+ 
+gyro -start new -e . -n 320 -nomp 1 -numa 2 -mpinuma 16 
