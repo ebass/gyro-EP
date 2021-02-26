@@ -50,6 +50,8 @@ subroutine gyro_make_ampere_matrix
   lindx(2)  = 2*n_ampere
   lvalue(2) = n_ampere
 
+  if(allocated(m_ampere))  deallocate(m_ampere)        !GQLCGM  2.09.21 dealloc
+  if(allocated(indx_ampere))  deallocate(indx_ampere)  !GQLCGM  2.09.21 dealloc
   allocate(m_ampere(lvalue(2)))
   allocate(indx_ampere(lindx(2)))
 

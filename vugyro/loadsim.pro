@@ -54,14 +54,17 @@ pro loadsim, input_dir
 
      openr,1,'input.profiles.gen',err=i_err
 
-     if (i_err eq 5) then begin
+     print, 'i_err = ', i_err 
+     if (i_err eq 0) then begin
 
         print_found,'input.profiles.gen',1
         exists_exp_profile = 1
 
         readf,1,ncol_exp
         readf,1,nblock_exp
-        readf,1,n_rho
+        readf,1,nshot
+	readf,1,n_ion
+	readf,1,n_rho
         readf,1,bt_exp 
         readf,1,ip_exp
         readf,1,rvbv

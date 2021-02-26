@@ -12,6 +12,7 @@ OBJECTS = math_constants.o \
           bound_deriv.o \
           bound_extrap.o \
           cub_spline.o \
+	  cub_spline_reverse.o \
           cub_spline_deriv.o \
           cub_spline_deriv2.o \
           energy_integral.o \

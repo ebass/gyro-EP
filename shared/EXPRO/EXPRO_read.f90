@@ -20,5 +20,7 @@ subroutine EXPRO_read
   call EXPRO_read_driver
   call EXPRO_compute_derived
 
+  call EXPRO_write_derived(1,'input.profiles.extra')  ! EMB 1-29-2021
+
 end subroutine EXPRO_read
 

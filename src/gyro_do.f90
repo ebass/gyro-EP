@@ -13,12 +13,17 @@ subroutine gyro_do
   use gyro_interface
   use math_constants
   use GEO_interface
+  use GQLCGM_globals  !GQLCGM 01.25.21
+
 
   !--------------------------------------
   implicit none
   !
   logical :: rfe
   !--------------------------------------
+
+  i_do_GQLCGM = 1  !HARDWIRE GQLCGM  02.05.21
+  i_do_field_stat = 1 !1 yes 0 no
 
   ! Begin with clean exit status
   !
@@ -122,6 +127,7 @@ subroutine gyro_do
   !
   ! Parallel setup 
   !
+  if(i_proc ==0) print *, 'gyrotest_flag=',gyrotest_flag, 'in gyro_do.f90'  !GQLCGM  02.05.21
   if (gyrotest_flag == 0) then
      call gyro_mpi_grid
   else
@@ -285,6 +291,7 @@ subroutine gyro_do
   ! Dump input parameters runfile
   !
   call gyro_write_input
+  call send_line('[After gyro_write_input in gyro_do.f90]')
   !---------------------------------------
 
   !---------------------------------------------------------------
@@ -294,9 +301,11 @@ subroutine gyro_do
        trim(path)//'out.gyro.profile',&
        trim(path)//'out.gyro.units',&
        trim(path)//'out.gyro.geometry_arrays',1)
+  call send_line('[After gyro_write_initdata in gyro_do.f90]')
   !
   ! Close geometry (GEO) library
   call GEO_alloc(0)
+  call send_line('[After GEO_alloc in gyro_do.f90]')
   !---------------------------------------------------------------
 
   !------------------------------------------------------------
@@ -308,6 +317,7 @@ subroutine gyro_do
      call gyro_set_exit_status('test complete',0)
      return
   endif
+  call send_line('[After gyrotest_flag in gyro_do.f90]')
   !------------------------------------------------------------
 
   if (restart_method == 0 .or. restart_method == 3) then
@@ -317,6 +327,7 @@ subroutine gyro_do
      ! Rewind (cont)
      io_control = output_flag*3
   endif
+  call send_line('[ Before 1st gyro_write_timedata in gyro_do.f90]')
   if (gkeigen_j_set == 0) then
      call gyro_write_timedata
   endif
@@ -325,6 +336,7 @@ subroutine gyro_do
   ! NEW SIMULATION ONLY: write *initial conditions*
   !
 
+  call send_line('[ Before 2nd gyro_write_timedata in gyro_do.f90]')
   if (restart_method /= 1) then
      ! Write to output files.
      io_control = output_flag*2
@@ -333,6 +345,15 @@ subroutine gyro_do
      endif
   endif
   !--------------------------------------------
+
+  !HARDWIRE GQLCGM  01.25.21
+
+  call send_line('[ Before call GQLCGM_setup in gyro_do.f90]')
+
+  if(i_do_GQLCGM .gt. 0) call GQLCGM_setup
+
+  call send_line('[ After call GQLCGM_setup in gyro_do.f90]')
+
 
   select case (linsolve_method)
 

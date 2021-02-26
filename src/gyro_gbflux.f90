@@ -17,7 +17,7 @@ subroutine gyro_gbflux
   use mpi
   use gyro_globals
   use math_constants
-
+  use GQLCGM_globals !GQLCGM   01.25.21
   !-------------------------------------------------------------
   implicit none
   !
@@ -180,6 +180,7 @@ subroutine gyro_gbflux
         ! [Gamma_a, Q_a, Pi_a, S_a] / Q_i normalization for linear diffusivities.
 
         gbflux_norm = gbflux(1,1,2)
+        if(i_do_GQLCGM == 1) gbflux_norm =1.0  !GQLCGM 01.22.21
 
         gbflux_mom(:,:)           = gbflux_mom(:,:)/gbflux_norm
         gbflux(:,:,:)             = gbflux(:,:,:)/gbflux_norm

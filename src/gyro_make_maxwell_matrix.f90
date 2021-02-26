@@ -132,6 +132,8 @@ subroutine gyro_make_maxwell_matrix
   lindx(3)  = 2*n_maxwell
   lvalue(3) = n_maxwell
 
+  if(allocated(m_maxwell))  deallocate(m_maxwell)        !GQLCGM  2.09.21 dealloc
+  if(allocated(indx_maxwell))  deallocate(indx_maxwell)  !GQLCGM  2.09.21 dealloc
   allocate(m_maxwell(lvalue(3)))
   allocate(indx_maxwell(lindx(3)))
 

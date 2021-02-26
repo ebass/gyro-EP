@@ -130,6 +130,12 @@ subroutine gyro_omegas
                    (dlnndr_s(is,i)+(energy(ie)-1.5)*dlntdr_s(is,i))*&
                    den_s(is,i)
            enddo
+
+           do is=1,n_kinetic
+              omega_star_n(m,i,p_nek_loc,is) = krho_i(in_1,i)*&
+                   dlnndr_s(is,i)*&
+                   den_s(is,i)
+           enddo
            !--------------------------------------------------------
 
            !-----------------------------------------------------

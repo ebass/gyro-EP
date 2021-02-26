@@ -14,6 +14,7 @@
 subroutine gyro_write_timedata
 
   use gyro_globals
+  use GQLCGM_globals !GQLCGM 2.08.21
   use mpi
 
   !---------------------------------------------------
@@ -222,6 +223,15 @@ subroutine gyro_write_timedata
      endif
      !-----------------------------------------------------------------
 
+     ! GQLCGM  01.27.21
+  if(data_step == 0) then
+   gbflux(:,:,:) = 0.0
+   gbflux_mom(:,:) = 0.0
+   gbflux_i(:,:,:,:) = 0.0
+
+   call send_line('data_step=0, gbflux,gbflux_mom,gbflux_i zeroed at t=0')
+  endif
+
      if (i_proc == 0 .and. lindiff_method > 1) then
 
         call write_local_real( &
@@ -241,6 +251,142 @@ subroutine gyro_write_timedata
         endif
 
      endif !i_proc ==0 and lindiff >1 
+
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+     if(i_do_GQLCGM .ge. 1) then  !GQLCGM 2.08.21
+             call send_line('**[ GQLCGM_advance]')
+        if(i_proc ==0) then
+           print *, data_step, t_current
+        endif
+        if(t_current .gt. 0.) then
+          if(i_proc ==0) then
+           print *, 'update EP and  GQLCGM reset field matrix '
+           print *, '------------------------------------------------------'
+          endif
+!get flux_EP_s(:,n_x) and flux_EP(:,n_grid_EP)  !GQLCGM 2.10.21
+      do i_sEP =1,i_do_GQLCGM
+
+       if(i_proc ==0) then
+        print *, 'den_s(1+i_do_GQLCGM,ir_norm)=',den_s(1+i_do_GQLCGM,ir_norm)
+        print *, 'den_EP_s(i_sEP,ir_norm)/den_norm=', den_EP_s(i_sEP,ir_norm)/den_norm
+        print *, 'den_sd_EP_s(i_sEP,ir_norm)/den_norm=', den_sd_EP_s(i_sEP,ir_norm)/den_norm
+
+        print *, 'alpha_s(1+i_do_GQLCGM,ir_norm)=',alpha_s(1+i_do_GQLCGM,ir_norm)
+
+        print *, 'dlnndr_s(1+i_do_GQLCGM,ir_norm)=',dlnndr_s(1+i_do_GQLCGM,ir_norm)
+        print *, 'dlnndr_EP_s(i_sEP,ir_norm)=',dlnndr_EP_s(i_sEP,ir_norm)
+       endif
+
+       flux_EP_s(i_sEP,:) = gbflux_i(1+i_sEP,1,1,:) + gbflux_i(1+i_sEP,2,1,:)
+       if(i_proc ==0) print *, 'max flux_EP_s(i_sEP,:)=',maxval(flux_EP_s(i_sEP,:))
+       flux_EP_s(i_sEP,:) = flux_EP_s(i_sEP,:)*flux_gbnorm_EP
+       if(i_proc ==0) print *, 'max metric flux_EP_s(i_sEP,:)=',maxval(flux_EP_s(i_sEP,:))
+       !small fine grid to course large grid
+         r_EP(:) = r_EP(:)/a_meters  !2.12.21
+       call cub_spline_reverse(r_s,flux_EP_s(i_sEP,:),n_x,r_EP,flux_EP(i_sEP,:),n_grid_EP)
+         r_EP(:) = r_EP(:)*a_meters
+       if(i_proc ==0) print *, 'max flux_EP(i_sEP,:)=',maxval(flux_EP(i_sEP,:))
+
+
+       if(i_proc==0 ) then
+           if(modulo(data_step,10)==0) then
+        !!!!   if(modulo(data_step,50)==0) then
+               print *, 'metric flux_EP_s'
+               print *, '------------------------------------------------------'
+               do i=1,n_x
+                print *, r_s(i), flux_EP_s(i_sEP,i)
+               enddo
+
+               print *, 'metric flux_EP'
+               print *, '------------------------------------------------------'
+               do i_EP=1,n_grid_EP
+                print *, r_EP(i_EP)/a_meters, flux_EP(i_sEP,i_EP)
+               enddo
+          endif
+       endif
+
+      enddo !i_sEP
+
+
+!EP tranport from last data_step 
+ 
+    call GQLCGM_EPtransport
+
+!    den_EP(:,:) =den_sd_EP(:,:)  !override GQLCGM_EPtransport  2.23.21  tested i_update_gyro_GQLCGM OK 
+    
+    !add slow down by relaxation GQLCGM 2.22.21
+     do i_sEP =1,i_do_GQLCGM
+!       den_EP(i_sEP,:) = 0.1*den_EP(i_sEP,:) + 0.9*den_prev_EP(i_sEP,:) 
+     den_EP(i_sEP,:) = 0.05*den_EP(i_sEP,:) + 0.95*den_prev_EP(i_sEP,:)
+!     den_EP(i_sEP,:) = 0.04*den_EP(i_sEP,:) + 0.96*den_prev_EP(i_sEP,:)
+!      den_EP(i_sEP,:) = 0.03*den_EP(i_sEP,:) + 0.97*den_prev_EP(i_sEP,:)
+!      den_EP(i_sEP,:) = 0.02*den_EP(i_sEP,:) + 0.98*den_prev_EP(i_sEP,:)
+!      den_EP(i_sEP,:) = 0.01*den_EP(i_sEP,:) + 0.99*den_prev_EP(i_sEP,:) 
+!       den_EP(i_sEP,:) = 0.001*den_EP(i_sEP,:) + 0.999*den_prev_EP(i_sEP,:) 
+       den_prev_EP(i_sEP,:) = den_EP(i_sEP,:)
+     enddo !i_sEP
+
+    if(i_proc ==0) then
+     !!!if(modulo(data_step,50)==0) then
+      if(modulo(data_step,10)==0) then
+     !!!if(modulo(data_step,1)==0) then
+    do i_sEP =1,i_do_GQLCGM
+               print *, 'den_EP den_sd_EP '
+               print *, '------------------------------------------------------'
+               do i_EP=1,n_grid_EP
+                print *, i_EP,den_EP(i_sEP,i_EP), den_sd_EP(i_sEP,i_EP)
+               enddo
+    enddo !i_sEP
+       print *, 'error_EP(i_sEP)=',error_EP(:)
+     endif
+    endif
+
+    i_update_gyro_GQLCGM = 1   !2.23.21
+
+
+  if (i_update_gyro_GQLCGM .gt. 0) then  !2.22.21
+
+    do i_sEP =1,i_do_GQLCGM
+        r_EP(:) = r_EP(:)/a_meters  !2.12.21
+       call cub_spline(r_EP,den_EP(i_sEP,:),n_grid_EP,r_s,den_EP_s(i_sEP,:),n_x)   !note metric units den_EP and deb_EP_s
+        r_EP(:) = r_EP(:)*a_meters
+    enddo !i_sEP
+
+
+!set EP factors for field matrix reset
+
+         do i_sEP=1,i_do_GQLCGM
+
+          den_s(1+i_sEP, :) = den_EP_s(i_sEP,:)/den_norm
+
+          do i=1,n_x
+           alpha_s(1+i_sEP,i) = den_EP_s(i_sEP,i)/tem_s(1+i_sEP,i)/den_norm
+          enddo
+
+          do i=2,n_x-1
+            dlnndr_EP_s(i_sEP,i) = -(den_EP_s(i_sEP,i+1)-den_EP_s(i_sEP,i-1))/(r_s(i+1)-r_s(i-1))/den_EP_s(i_sEP,i)
+          enddo
+          dlnndr_EP_s(i_sEP,1) = dlnndr_EP_s(i_sEP,2)
+          dlnndr_EP_s(i_sEP,n_x) = dlnndr_EP_s(i_sEP,n_x-1)
+
+         enddo !i_sEP
+
+  endif !i_update_gyro_GQLCGM
+
+!field matrix reset
+        call gyro_make_poisson_matrix
+        call gyro_make_ampere_matrix
+        call gyro_make_maxwell_matrix
+
+        if(i_proc ==0) print *, '------------------------------------------------------'
+
+        endif !t_current .gt. 0.
+        call send_line('**[ GQLCGM_advance_finished]')
+
+     endif !i_do_GQLCGM .ge. 1
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
 
      !=============
      ! END LINEAR 

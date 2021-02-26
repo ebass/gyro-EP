@@ -16,6 +16,8 @@ subroutine gyro_rhs_total
   use math_constants
   use ompdata
 
+  use GQLCGM_globals !GQLCGM 2.19.21
+
   !-----------------------------------------------------------------------------
   implicit none
   !
@@ -106,6 +108,7 @@ subroutine gyro_rhs_total
            enddo
         enddo !i
 
+
   !----------------------------------------------------------------------
   ! Buffer damping
   !
@@ -117,6 +120,35 @@ subroutine gyro_rhs_total
   !----------------------------------------------------------------------
      enddo !p_nek_loc
   enddo !is
+
+        if(i_do_GQLCGM .gt. 0 .and. i_update_gyro_GQLCGM .gt. 0) then !GQLCGM 2.19.21
+         do i_sEP=1,i_do_GQLCGM
+
+   do is=1,n_kinetic
+    if(is .eq. 1+i_sEP) then
+
+     do p_nek_loc=1,n_nek_loc_1
+
+           do i = ibeg, iend
+            do m=1,n_stack
+            !cancellation and renorm omega_star  for EP
+            rhs(m,i,p_nek_loc,is) = rhs(m,i,p_nek_loc,is)+&
+                    i_c*omega_star(m,i,p_nek_loc,is)*gyro_u(m,i,p_nek_loc,is)*(1.-den_EP_s(i_sEP,i)/den_sd_EP_s(i_sEP,i))
+
+            !cancellation and replacement omega_star_n for EP
+            rhs(m,i,p_nek_loc,is) = rhs(m,i,p_nek_loc,is)+&
+                    i_c*omega_star_n(m,i,p_nek_loc,is)*gyro_u(m,i,p_nek_loc,is)*&
+                    (1. - dlnndr_EP_s(i_sEP,i)/dlnndr_s(is,i))*den_EP_s(i_sEP,i)/den_sd_EP_s(i_sEP,i)
+           enddo
+          enddo
+
+     enddo ! p_nek_loc
+    endif ! is
+   enddo !is
+
+         enddo !i_sEP
+        endif !i_do_GQLCGM
+
 !$omp end parallel
 
   !----------------------------------------------------------------------

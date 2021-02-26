@@ -57,6 +57,8 @@ subroutine gyro_make_poisson_matrix
   lindx(1)  = 2*n_poisson
   lvalue(1) = n_poisson
 
+  if(allocated(m_poisson))  deallocate(m_poisson)        !GQLCGM  2.09.21 dealloc
+  if(allocated(indx_poisson))  deallocate(indx_poisson)  !GQLCGM  2.09.21 dealloc
   allocate(m_poisson(lvalue(1)))
   allocate(indx_poisson(lindx(1)))
 

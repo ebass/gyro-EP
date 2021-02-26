@@ -71,6 +71,13 @@ subroutine gyro_alloc_profile_sim(flag)
      allocate(omega_eb_s(n_x))
 
      allocate(den_s(n_spec,n_x))
+
+     allocate(den_sd_EP_s(2,n_x))  !GQLCGM 2.05.21
+     allocate(den_EP_s(2,n_x))     !GQLCGM 2.05.21
+     allocate(dlnndr_EP_s(2,n_x))   !GQLCGM 2.19.21
+
+     allocate(flux_EP_s(2,n_x))    !GQLCGM 2.08.21
+
      allocate(tem_s(n_spec,n_x))
      allocate(b_unit_s(n_x))
 
@@ -162,6 +169,13 @@ subroutine gyro_alloc_profile_sim(flag)
      deallocate(omega_eb_s)
 
      deallocate(den_s)
+
+     deallocate(den_sd_EP_s)  !GQLCGM 2.05.21
+     deallocate(dlnndr_EP_s)  !GQLCGM 2.19.21
+     deallocate(den_EP_s)     !GQLCGM 2.05.21
+
+     deallocate(flux_EP_s)     !GQLCGM 2.08.21
+
      deallocate(tem_s)
      deallocate(b_unit_s)
 

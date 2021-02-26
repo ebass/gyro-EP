@@ -52,6 +52,7 @@ module gyro_globals
   ! (working)
   !
   integer :: i_restart
+  integer :: i_do_field_stat !1 yes 0 no  GQLCGM 2.10.21
   !---------------------------------------------------------
 
   !---------------------------------------------------------
@@ -765,6 +766,13 @@ module gyro_globals
   real, dimension(:,:,:), allocatable :: a_fourier_geo_s
   !----------------------------------------------
 
+  real, dimension(:,:), allocatable :: den_sd_EP_s  !GQLCGM  2.05.21  time = 0  
+  ! den_sd_EP_s(1:2,:) = den_s(2:3,:)               !should check      i_do_GQLCGM = 1 1EP,  =2 2EP
+  real, dimension(:,:), allocatable :: den_EP_s     !changes in time with GQLCGM EP transport
+  real, dimension(:,:), allocatable :: dlnndr_EP_s  ! d ln (den_EP_s) / dr
+
+  real, dimension(:,:), allocatable :: flux_EP_s
+
   !---------------------------------------------------------
   ! Field and field coefficients:
   !
@@ -871,6 +879,8 @@ module gyro_globals
   !
   real, allocatable, dimension(:,:,:,:) :: omega_d1
   real, allocatable, dimension(:,:,:,:) :: omega_star
+
+  real, allocatable, dimension(:,:,:,:) :: omega_star_n !GQLCGM 2.19.21
   !
   real, allocatable, dimension(:,:,:,:) :: omega_dr
   !

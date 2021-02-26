@@ -39,24 +39,25 @@ subroutine gyro_write_step(datafile,io)
 
      if (silent_flag == 0 .and. linsolve_method == 1) then
 
-        if (nonlinear_flag == 0) then
-           print '(a,1pe9.3,a,1pe10.3,1pe10.3,a,1pe9.3,a,5(1pe9.3,1x))',&
-                '[t = ',t_current,&
-                '][w = ',omega_linear(1,1),&
-                '][dw = ',abs(omega_linear(1,2)),&
-                '] t_err: ',time_error(:)
-           do in=2,n_n
-              print '(t16,a,1pe10.3,1pe10.3,a,1pe9.3,a)',&
-                   '[w = ',omega_linear(in,1),&
-                   '][dw = ',abs(omega_linear(in,2)),&
-                   ']'
-           enddo
-        else
-           print '(a,1pe9.3,a,5(1pe9.3,1x))',&
-                '[t = ',t_current,&
-                '] t_err: ',time_error(:)
-        endif
-
+!GQLCGM 02.01.21
+!        if (nonlinear_flag == 0) then
+!           print '(a,1pe9.3,a,1pe10.3,1pe10.3,a,1pe9.3,a,5(1pe9.3,1x))',&
+!                '[t = ',t_current,&
+!                '][w = ',omega_linear(1,1),&
+!                '][dw = ',abs(omega_linear(1,2)),&
+!                '] t_err: ',time_error(:)
+!           do in=2,n_n
+!              print '(t16,a,1pe10.3,1pe10.3,a,1pe9.3,a)',&
+!                   '[w = ',omega_linear(in,1),&
+!                   '][dw = ',abs(omega_linear(in,2)),&
+!                   ']'
+!           enddo
+!        else
+!           print '(a,1pe9.3,a,5(1pe9.3,1x))',&
+!                '[t = ',t_current,&
+!                '] t_err: ',time_error(:)
+!        endif
+!
      endif
 
      open(unit=io,file=datafile,status='old',position='append')

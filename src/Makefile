@@ -146,7 +146,10 @@ OBJECTS += gyro_globals.o \
           gyro_write_step.o \
           gyro_write_timedata.o \
           gyro_write_timers.o \
-          gyro_velocity_sum.o 
+	  GQLCGM_globals.o \
+	  GQLCGM_setup.o \
+	  GQLCGM_EPtransport.o \
+          gyro_velocity_sum.o   
 
 
 .SUFFIXES : .o .f90
